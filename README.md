@@ -184,10 +184,19 @@
     .export-note{font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.7;}
     pre{white-space:pre-wrap;word-break:break-word;font-family:'Courier New',monospace;font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin:1rem 0;max-height:360px;overflow-y:auto;color:var(--text);line-height:1.6;}
     .btn-group{display:flex;gap:8px;flex-wrap:wrap;}
+    .header-nav{display:flex;gap:4px;align-items:center;}
+    .hnav-btn{font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;padding:6px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all .15s;white-space:nowrap;}
+    .hnav-btn:hover{background:var(--surface2);color:var(--text);}
+    .hnav-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+    .user-label-text{}
+    @media(max-width:900px){.user-label-text{display:none;}}
+    @media(max-width:768px){
       .layout{grid-template-columns:1fr;}.sidebar{display:none;}
       .main{padding:1rem;}.stats-row{grid-template-columns:repeat(3,1fr);}
       .form-grid,.form-grid.three{grid-template-columns:1fr;}
       .day-grid{grid-template-columns:repeat(4,1fr);}
+      .header-nav{gap:2px;}.hnav-btn{font-size:11px;padding:5px 8px;}
+      .logout-btn{font-size:11px;padding:5px 8px;}
     }
   </style>
 </head>
@@ -239,9 +248,16 @@
       </div>
     </div>
     <div class="header-right">
+      <div class="header-nav" id="headerNav">
+        <button class="hnav-btn" onclick="showPage('add')" id="hnav-add">Add</button>
+        <button class="hnav-btn" onclick="showPage('view')" id="hnav-view">Entries</button>
+        <button class="hnav-btn" onclick="showPage('team')" id="hnav-team">Team</button>
+        <button class="hnav-btn" onclick="showPage('export')" id="hnav-export">PDF</button>
+        <button class="hnav-btn" onclick="showPage('teamexport')" id="hnav-teamexport">Sheets</button>
+      </div>
       <div class="user-pill">
         <div class="user-avatar" id="userAvatar">?</div>
-        <span id="userLabel">—</span>
+        <span id="userLabel" class="user-label-text">—</span>
       </div>
       <button class="logout-btn" onclick="doLogout()">Sign out</button>
     </div>
@@ -491,6 +507,7 @@ function launchApp(username,fullname){
   entries=JSON.parse(localStorage.getItem('fwa_entries_'+username)||'[]');
   const users=getUsers();
   if(users[username]&&users[username].name) document.getElementById('hName').value=users[username].name;
+  document.getElementById('hnav-add').classList.add('active');
   renderRecent();
 }
 
@@ -927,8 +944,10 @@ function downloadTeamTSV() {
 function showPage(page){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.sidebar-item').forEach(i=>i.classList.remove('active'));
+  document.querySelectorAll('.hnav-btn').forEach(i=>i.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
   const n=document.getElementById('nav-'+page);if(n)n.classList.add('active');
+  const hn=document.getElementById('hnav-'+page);if(hn)hn.classList.add('active');
   if(page==='view')renderView();
   if(page==='export')buildPDFPreview();
   if(page==='team'){loadTeamData();renderTeamTabs();renderTeamTables();}
