@@ -422,7 +422,11 @@
         <div class="card" id="teamAddForm">
           <div class="card-title" id="teamAddTitle">Add entry</div>
           <div class="form-grid">
-            <div class="field"><label>Person name</label><input type="text" id="tPerson" placeholder="e.g. Paula Beatrice Valencia" /></div>
+            <div class="field"><label>Person name</label>
+              <select id="tPerson">
+                <option value="">Select person</option>
+              </select>
+            </div>
             <div class="field"><label>Project</label><input type="text" id="tProject" placeholder="e.g. Dx Labs '25" /></div>
           </div>
           <div class="form-grid full" style="margin-bottom:12px;">
@@ -836,7 +840,14 @@ async function exportPDF(){
 }
 
 // ── TEAM DELIVERABLES ────────────────────
-const TEAMS = ['Admin Team','Communications Team','Management Team','Project Team','Research Team'];
+const TEAMS = ['Admin Team','Communications Team','Project Team','Research Team','Management Team'];
+const TEAM_MEMBERS = {
+  'Admin Team': ['John Mark Paya','Paula Beatrize Valencia','Rozhelle Yu'],
+  'Communications Team': ['Marianne Laron','Eileen Rudi'],
+  'Project Team': ['John Paul Cristobal','Duane Burdeos','Keith Andrei Layson'],
+  'Research Team': ['Katheryn Hidalgo','Veronica Consolacion'],
+  'Management Team': ['Marisha Beloro','Kristofferson Dela Cruz','Regine Pustadan']
+};
 const STATUSES = ['Completed','Ongoing Progress','Not Initiated'];
 let activeTeam = TEAMS[0];
 // teamData: { period: { teamName: [{id, person, project, deliverable, status, assignees}] } }
@@ -851,6 +862,13 @@ function ensureTeamPeriod(period, team) {
   if (!teamData[period][team]) teamData[period][team] = [];
 }
 
+function updatePersonDropdown() {
+  const sel = document.getElementById('tPerson');
+  const members = TEAM_MEMBERS[activeTeam] || [];
+  sel.innerHTML = '<option value="">Select person</option>' +
+    members.map(m => `<option value="${m}">${m}</option>`).join('');
+}
+
 function addTeamRow() {
   const period = getTPeriod();
   const person = document.getElementById('tPerson').value.trim();
@@ -858,12 +876,11 @@ function addTeamRow() {
   const deliverable = document.getElementById('tDeliverable').value.trim();
   const status = document.getElementById('tStatus').value;
   const assignees = document.getElementById('tAssignees').value.trim();
-  if (!person) { alert('Please enter a person name.'); return; }
+  if (!person) { alert('Please select a person.'); return; }
   if (!deliverable) { alert('Please describe the deliverable.'); return; }
   ensureTeamPeriod(period, activeTeam);
   teamData[period][activeTeam].push({ id: Date.now(), person, project, deliverable, status, assignees });
   saveTeamData();
-  // Clear form fields except person (for quick re-entry)
   ['tProject','tDeliverable','tAssignees'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('tStatus').value = 'Ongoing Progress';
   renderTeamTables();
@@ -886,7 +903,7 @@ function renderTeamTabs() {
   document.getElementById('teamAddTitle').textContent = `Add entry — ${activeTeam}`;
 }
 
-function switchTeam(team) { activeTeam = team; renderTeamTabs(); renderTeamTables(); }
+function switchTeam(team) { activeTeam = team; renderTeamTabs(); updatePersonDropdown(); renderTeamTables(); }
 
 function statusBadge(s) {
   if (s==='Completed') return `<span style="background:#e8f5e9;color:#2e7d32;font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;">${s}</span>`;
@@ -961,52 +978,46 @@ function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&
 function buildTeamTSV() {
   const period = getTPeriod();
 
-  // Collect all people across all teams for this period
-  const allPeople = [];
+  // Collect all persons across all teams in fixed order
+  const allPersonBlocks = [];
   TEAMS.forEach(team => {
-    const rows = (teamData[period] && teamData[period][team]) ? teamData[period][team] : [];
-    const people = [...new Set(rows.map(r => r.person))];
-    people.forEach(p => { if (!allPeople.find(x => x.person===p && x.team===team)) allPeople.push({person:p, team}); });
+    const members = TEAM_MEMBERS[team] || [];
+    members.forEach(person => {
+      const rows = (teamData[period] && teamData[period][team])
+        ? teamData[period][team].filter(r => r.person === person)
+        : [];
+      allPersonBlocks.push({ person, team, rows });
+    });
   });
 
-  if (!allPeople.length) {
+  if (!allPersonBlocks.length) {
     document.getElementById('team-tsv').textContent = 'No entries yet.';
     return '';
   }
 
   const lines = [];
 
-  // Row 1: Person names as headers (with empty cols between each person's block)
-  // Each person gets 4 columns: Project, Target Deliverables, Status, Assignees
-  // Separated by one blank column (column F in the screenshot)
-  const personBlocks = allPeople.map(({person, team}) => {
-    const rows = (teamData[period] && teamData[period][team]) ? teamData[period][team].filter(r=>r.person===person) : [];
-    return {person, team, rows};
-  });
-
-  // Build header row 1: person names spanning 4 cols each
+  // Row 1: person names as headers — each person gets 4 cols, separated by blank col
   const headerR1 = [];
-  personBlocks.forEach((block, idx) => {
+  allPersonBlocks.forEach((block, idx) => {
     headerR1.push(`"${block.person}"`, '""', '""', '""');
-    if (idx < personBlocks.length - 1) headerR1.push('""'); // separator col
+    if (idx < allPersonBlocks.length - 1) headerR1.push('""');
   });
   lines.push(headerR1.join('\t'));
 
-  // Build header row 2: column labels under each person
+  // Row 2: column sub-headers under each person
   const headerR2 = [];
-  personBlocks.forEach((block, idx) => {
+  allPersonBlocks.forEach((block, idx) => {
     headerR2.push('"Project"', '"Target Deliverables"', '"Status"', '"Assignees"');
-    if (idx < personBlocks.length - 1) headerR2.push('""');
+    if (idx < allPersonBlocks.length - 1) headerR2.push('""');
   });
   lines.push(headerR2.join('\t'));
 
-  // Find the max number of rows across all persons
-  const maxRows = Math.max(...personBlocks.map(b => b.rows.length), 0);
-
-  // Build data rows
+  // Data rows — expand to max row count across all persons
+  const maxRows = Math.max(...allPersonBlocks.map(b => b.rows.length), 0);
   for (let i = 0; i < maxRows; i++) {
     const row = [];
-    personBlocks.forEach((block, idx) => {
+    allPersonBlocks.forEach((block, idx) => {
       const r = block.rows[i];
       if (r) {
         row.push(
@@ -1018,7 +1029,7 @@ function buildTeamTSV() {
       } else {
         row.push('""','""','""','""');
       }
-      if (idx < personBlocks.length - 1) row.push('""');
+      if (idx < allPersonBlocks.length - 1) row.push('""');
     });
     lines.push(row.join('\t'));
   }
@@ -1090,7 +1101,7 @@ function showPage(page){
   const hn=document.getElementById('hnav-'+page);if(hn)hn.classList.add('active');
   if(page==='view')renderView();
   if(page==='export')buildPDFPreview();
-  if(page==='team'){loadTeamData();renderTeamTabs();renderTeamTables();}
+  if(page==='team'){loadTeamData();renderTeamTabs();updatePersonDropdown();renderTeamTables();}
   if(page==='teamexport'){loadTeamData();buildTeamTSV();}
 }
 </script>
