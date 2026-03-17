@@ -707,9 +707,9 @@ function buildPDFPreview(){
     html+=`<tr>
       <td>${e.date||''}</td>
       <td>${e.project?'<span style="color:#888;font-size:10px;">['+e.project+']</span><br>':''}${e.desc}</td>
-      <td style="text-align:center;">${e.status==='ongoing'?'✓':''}</td>
-      <td style="text-align:center;">${e.status==='completed'?'✓':''}</td>
-      <td style="text-align:center;">${e.status==='recurring'?'✓':''}</td>
+      <td style="text-align:center;">${e.status==='ongoing'?'x':''}</td>
+      <td style="text-align:center;">${e.status==='completed'?'x':''}</td>
+      <td style="text-align:center;">${e.status==='recurring'?'x':''}</td>
       <td>${e.notes||''}${th?'<div style="margin-top:4px;">'+th+'</div>':''}</td>
     </tr>`;
   });
@@ -770,7 +770,7 @@ async function exportPDF(){
     const wi=we.filter(e=>e.period===wk);
     tb.push([{content:`Week of ${wk}`,colSpan:6,styles:{fillColor:[254,230,150],textColor:[0,0,0],fontStyle:'bold',fontSize:8,cellPadding:3}}]);rm.push(-1);
     wi.forEach(e=>{
-      tb.push([e.date||'',(e.project?'['+e.project+']\n':'')+e.desc,e.status==='ongoing'?'✓':'',e.status==='completed'?'✓':'',e.status==='recurring'?'✓':'',e.notes||'']);
+      tb.push([e.date||'',(e.project?'['+e.project+']\n':'')+e.desc,e.status==='ongoing'?'x':'',e.status==='completed'?'x':'',e.status==='recurring'?'x':'',e.notes||'']);
       rm.push(we.indexOf(e));
     });
   });
@@ -957,35 +957,71 @@ function renderTeamTables() {
 
 function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-// Build TSV — grouped by person name, matching the spreadsheet layout
+// Build TSV — person names as column headers side by side (matching screenshot layout)
 function buildTeamTSV() {
   const period = getTPeriod();
-  const lines = [];
 
-  // Header
-  lines.push(['Team','Person','Project','Target Deliverable','Status','Assignees'].map(c=>`"${c}"`).join('\t'));
-
+  // Collect all people across all teams for this period
+  const allPeople = [];
   TEAMS.forEach(team => {
     const rows = (teamData[period] && teamData[period][team]) ? teamData[period][team] : [];
-    if (!rows.length) return;
-
-    // Group by person
     const people = [...new Set(rows.map(r => r.person))];
-    people.forEach(person => {
-      const pRows = rows.filter(r => r.person === person);
-      pRows.forEach((row, idx) => {
-        lines.push([
-          idx === 0 ? team : '',       // team name only on first row of each team
-          idx === 0 ? person : '',     // person name only on first row per person per team
-          row.project || '',
-          row.deliverable || '',
-          row.status || '',
-          row.assignees || ''
-        ].map(c=>`"${String(c).replace(/"/g,'""')}"`).join('\t'));
-      });
-    });
-    lines.push(['','','','','','']); // blank row between teams
+    people.forEach(p => { if (!allPeople.find(x => x.person===p && x.team===team)) allPeople.push({person:p, team}); });
   });
+
+  if (!allPeople.length) {
+    document.getElementById('team-tsv').textContent = 'No entries yet.';
+    return '';
+  }
+
+  const lines = [];
+
+  // Row 1: Person names as headers (with empty cols between each person's block)
+  // Each person gets 4 columns: Project, Target Deliverables, Status, Assignees
+  // Separated by one blank column (column F in the screenshot)
+  const personBlocks = allPeople.map(({person, team}) => {
+    const rows = (teamData[period] && teamData[period][team]) ? teamData[period][team].filter(r=>r.person===person) : [];
+    return {person, team, rows};
+  });
+
+  // Build header row 1: person names spanning 4 cols each
+  const headerR1 = [];
+  personBlocks.forEach((block, idx) => {
+    headerR1.push(`"${block.person}"`, '""', '""', '""');
+    if (idx < personBlocks.length - 1) headerR1.push('""'); // separator col
+  });
+  lines.push(headerR1.join('\t'));
+
+  // Build header row 2: column labels under each person
+  const headerR2 = [];
+  personBlocks.forEach((block, idx) => {
+    headerR2.push('"Project"', '"Target Deliverables"', '"Status"', '"Assignees"');
+    if (idx < personBlocks.length - 1) headerR2.push('""');
+  });
+  lines.push(headerR2.join('\t'));
+
+  // Find the max number of rows across all persons
+  const maxRows = Math.max(...personBlocks.map(b => b.rows.length), 0);
+
+  // Build data rows
+  for (let i = 0; i < maxRows; i++) {
+    const row = [];
+    personBlocks.forEach((block, idx) => {
+      const r = block.rows[i];
+      if (r) {
+        row.push(
+          `"${(r.project||'').replace(/"/g,'""')}"`,
+          `"${(r.deliverable||'').replace(/"/g,'""')}"`,
+          `"${(r.status||'').replace(/"/g,'""')}"`,
+          `"${(r.assignees||'').replace(/"/g,'""')}"`
+        );
+      } else {
+        row.push('""','""','""','""');
+      }
+      if (idx < personBlocks.length - 1) row.push('""');
+    });
+    lines.push(row.join('\t'));
+  }
 
   const tsv = lines.join('\n');
   document.getElementById('team-tsv').textContent = tsv;
