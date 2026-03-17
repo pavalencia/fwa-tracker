@@ -455,13 +455,13 @@
         </div>
         <div class="card-title" style="margin-top:4px;">Work arrangement (per day)</div>
         <div class="day-grid">
-          <div class="day-cell"><label>Mon</label><select id="dMon"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>Rest Day</option></select></div>
-          <div class="day-cell"><label>Tue</label><select id="dTue"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>Rest Day</option></select></div>
-          <div class="day-cell"><label>Wed</label><select id="dWed"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>Rest Day</option></select></div>
-          <div class="day-cell"><label>Thu</label><select id="dThu"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>Rest Day</option></select></div>
-          <div class="day-cell"><label>Fri</label><select id="dFri"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>Rest Day</option></select></div>
-          <div class="day-cell"><label>Sat</label><select id="dSat"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>Rest Day</option></select></div>
-          <div class="day-cell"><label>Sun</label><select id="dSun"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>Rest Day</option></select></div>
+          <div class="day-cell"><label>Mon</label><select id="dMon"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>SURP</option><option>ITDC</option><option>Rest Day</option></select></div>
+          <div class="day-cell"><label>Tue</label><select id="dTue"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>SURP</option><option>ITDC</option><option>Rest Day</option></select></div>
+          <div class="day-cell"><label>Wed</label><select id="dWed"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>SURP</option><option>ITDC</option><option>Rest Day</option></select></div>
+          <div class="day-cell"><label>Thu</label><select id="dThu"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>SURP</option><option>ITDC</option><option>Rest Day</option></select></div>
+          <div class="day-cell"><label>Fri</label><select id="dFri"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>SURP</option><option>ITDC</option><option>Rest Day</option></select></div>
+          <div class="day-cell"><label>Sat</label><select id="dSat"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>SURP</option><option>ITDC</option><option>Rest Day</option></select></div>
+          <div class="day-cell"><label>Sun</label><select id="dSun"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>SURP</option><option>ITDC</option><option>Rest Day</option></select></div>
         </div>
       </div>
 
@@ -505,7 +505,11 @@
         <div class="card-title">Signature block</div>
         <div class="form-grid" style="margin-bottom:12px;">
           <div class="field"><label>Submitted by (name)</label><input type="text" id="sigSubmitted" placeholder="e.g. Juan dela Cruz" /></div>
+          <div class="field"><label>Submitted by (position)</label><input type="text" id="sigSubmittedPos" placeholder="e.g. Administrative Aide" /></div>
+        </div>
+        <div class="form-grid" style="margin-bottom:12px;">
           <div class="field"><label>Reviewed by (name)</label><input type="text" id="sigReviewed" placeholder="e.g. Maria Santos" /></div>
+          <div class="field"><label>Reviewed by (position)</label><input type="text" id="sigReviewedPos" placeholder="e.g. Project Development Officer" /></div>
         </div>
         <div class="sig-fixed-box">
           <div class="sig-fixed-title">Approved by — fixed</div>
@@ -595,7 +599,9 @@
       office: document.getElementById('hOffice').value.trim(),
       period: document.getElementById('hPeriod').value.trim(),
       submitted: document.getElementById('sigSubmitted').value.trim(),
+      submittedPos: document.getElementById('sigSubmittedPos').value.trim(),
       reviewed: document.getElementById('sigReviewed').value.trim(),
+      reviewedPos: document.getElementById('sigReviewedPos').value.trim(),
       days: {
         Mon:document.getElementById('dMon').value, Tue:document.getElementById('dTue').value,
         Wed:document.getElementById('dWed').value, Thu:document.getElementById('dThu').value,
@@ -724,8 +730,8 @@
     });
     html+=`</tbody></table>`;
     html+=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:16px;font-size:11px;">
-      <div><div style="color:var(--text-muted);margin-bottom:18px;">Submitted by:</div><div style="border-top:1px solid var(--text);padding-top:4px;font-weight:600;">${h.submitted||'___________________'}</div></div>
-      <div><div style="color:var(--text-muted);margin-bottom:18px;">Reviewed by:</div><div style="border-top:1px solid var(--text);padding-top:4px;font-weight:600;">${h.reviewed||'___________________'}</div></div>
+      <div><div style="color:var(--text-muted);margin-bottom:18px;">Submitted by:</div><div style="border-top:1px solid var(--text);padding-top:4px;font-weight:600;">${h.submitted||'___________________'}</div><div style="color:var(--text-muted);font-size:10px;">${h.submittedPos||''}</div></div>
+      <div><div style="color:var(--text-muted);margin-bottom:18px;">Reviewed by:</div><div style="border-top:1px solid var(--text);padding-top:4px;font-weight:600;">${h.reviewed||'___________________'}</div><div style="color:var(--text-muted);font-size:10px;">${h.reviewedPos||''}</div></div>
       <div><div style="color:var(--text-muted);margin-bottom:18px;">Approved by:</div><div style="border-top:1px solid var(--text);padding-top:4px;font-weight:600;">Peter A. Sy</div><div style="color:var(--text-muted);">Vice President for Digital Transformation</div></div>
     </div>`;
     el.innerHTML=html;
@@ -738,9 +744,11 @@
     const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
     const pw=210,ml=15,mr=15,contentW=pw-ml-mr;
     let y=18;
+
+    // Header
     doc.setFont('helvetica','bold'); doc.setFontSize(11);
     doc.text('UNIVERSITY OF THE PHILIPPINES',pw/2,y,{align:'center'}); y+=5;
-    doc.setFontSize(10); doc.text('<CU>',pw/2,y,{align:'center'}); y+=10;
+    doc.setFontSize(10); doc.text('Office of the Vice President for Digital Transformation',pw/2,y,{align:'center'}); y+=10;
     doc.setFont('helvetica','normal'); doc.setFontSize(10);
     doc.text('Name',ml,y); doc.line(ml+10,y+0.5,ml+70,y+0.5); doc.text(h.name,ml+12,y);
     doc.text('Office/Unit',ml+80,y); doc.line(ml+97,y+0.5,ml+contentW,y+0.5); doc.text(h.office,ml+99,y);
@@ -751,6 +759,8 @@
     const pLabel='For the Period of ';
     doc.text(pLabel,pw/2-30,y); doc.line(pw/2-30+doc.getTextWidth(pLabel),y+0.5,pw/2+35,y+0.5);
     doc.text(h.period,pw/2-30+doc.getTextWidth(pLabel)+2,y); y+=8;
+
+    // Work arrangement table
     const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],cellW=contentW/7;
     doc.setFillColor(254,249,231); doc.rect(ml,y,contentW,7,'F');
     doc.setDrawColor(150,150,150); doc.rect(ml,y,contentW,14);
@@ -764,60 +774,168 @@
       doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.text(h.days[d]||'',x+cellW/2,y+6.2,{align:'center'});
     });
     y+=10;
-    const tableRows=we.map(e=>[
-      e.date||'', (e.project?'['+e.project+'] ':'')+e.desc,
-      e.status==='ongoing'?'✓':'', e.status==='completed'?'✓':'', e.status==='recurring'?'✓':'',
-      e.notes+((e.images||[]).length?(e.notes?' | ':'')+'[see photo(s)]':'')
-    ]);
-    doc.autoTable({
-      startY:y, margin:{left:ml,right:mr},
-      head:[[
-        {content:'DATE\n(optional)',styles:{fillColor:[254,249,231],textColor:[0,0,0],fontStyle:'bold',halign:'center'}},
-        {content:'ACTIVITY/ TASK',styles:{fillColor:[254,249,231],textColor:[0,0,0],fontStyle:'bold',halign:'center'}},
-        {content:'O',styles:{fillColor:[254,249,231],textColor:[0,0,0],fontStyle:'bold',halign:'center'}},
-        {content:'C',styles:{fillColor:[254,249,231],textColor:[0,0,0],fontStyle:'bold',halign:'center'}},
-        {content:'R',styles:{fillColor:[254,249,231],textColor:[0,0,0],fontStyle:'bold',halign:'center'}},
-        {content:'REMARKS\n(MUST include mode of verification)',styles:{fillColor:[254,249,231],textColor:[0,0,0],fontStyle:'bold',halign:'center'}}
-      ]],
-      body:tableRows,
-      columnStyles:{0:{cellWidth:22,fontSize:8},1:{cellWidth:78,fontSize:8},2:{cellWidth:10,halign:'center',fontSize:9},3:{cellWidth:10,halign:'center',fontSize:9},4:{cellWidth:10,halign:'center',fontSize:9},5:{cellWidth:55,fontSize:8}},
-      styles:{lineColor:[180,180,180],lineWidth:0.3,cellPadding:2.5},
-      headStyles:{lineColor:[180,180,180],lineWidth:0.3}, theme:'grid'
-    });
-    let finalY=doc.lastAutoTable.finalY+5;
-    doc.setFontSize(7.5); doc.setFont('helvetica','italic');
-    doc.text('* Work from Home, Satellite Office or Another Fixed Place within the Philippines',ml,finalY);
-    finalY+=12;
-    if (finalY+35>280) { doc.addPage(); finalY=20; }
-    const colW=contentW/3;
-    [{label:'Submitted by:',name:h.submitted||''},{label:'Reviewed by:',name:h.reviewed||''},{label:'Approved by:',name:'Peter A. Sy',title:'Vice President for Digital Transformation'}].forEach((col,i)=>{
-      const x=ml+i*colW;
-      doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.text(col.label,x,finalY);
-      doc.line(x,finalY+14,x+colW-6,finalY+14);
-      doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.text(col.name,x,finalY+19);
-      if (col.title) { doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.text(col.title,x,finalY+24); }
-    });
-    const allImgEntries=we.filter(e=>(e.images||[]).length>0);
-    if (allImgEntries.length>0) {
-      doc.addPage(); let py=18;
-      doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.text('VERIFICATION PHOTOS',pw/2,py,{align:'center'}); py+=3;
-      doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.text(`${h.period} | ${h.name} | ${h.office}`,pw/2,py+4,{align:'center'}); py+=12;
-      for (const e of allImgEntries) {
-        if (py>250) { doc.addPage(); py=18; }
-        doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.text(`${e.desc}${e.date?' ('+e.date+')':''}`,ml,py); py+=5;
-        if (e.notes) { doc.setFont('helvetica','italic'); doc.setFontSize(8); doc.text('Remarks: '+e.notes,ml,py); py+=5; }
-        let imgX=ml;
-        for (const img of (e.images||[])) {
-          try {
-            const imgW=55,imgH=42;
-            if (imgX+imgW>pw-mr) { imgX=ml; py+=imgH+6; }
-            if (py+imgH>270) { doc.addPage(); py=18; imgX=ml; }
-            doc.addImage(img.dataUrl,'JPEG',imgX,py,imgW,imgH); imgX+=imgW+6;
-          } catch(err) {}
-        }
-        py+=48; doc.setDrawColor(200,200,200); doc.line(ml,py-4,pw-mr,py-4);
-      }
+
+    // Pre-load all images as base64 promises, measure heights
+    // Col widths: date=22, task=68, O=10, C=10, R=10, remarks=60
+    const COL = {date:22, task:68, o:10, c:10, r:10, remarks:60};
+
+    // Build body rows with didDrawCell for images
+    // We'll use autoTable with didDrawCell to render images inside the Remarks cell
+    const IMG_W = 40, IMG_H = 30, IMG_PAD = 2;
+
+    // Pre-convert all images
+    async function loadImg(dataUrl) {
+      return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = dataUrl;
+      });
     }
+
+    // For each entry, figure out extra height needed for images in remarks
+    const entryImgData = [];
+    for (const e of we) {
+      const imgs = e.images||[];
+      const loaded = [];
+      for (const img of imgs) {
+        const el = await loadImg(img.dataUrl);
+        if (el) loaded.push({ dataUrl: img.dataUrl, el });
+      }
+      entryImgData.push(loaded);
+    }
+
+    // Calculate per-row min cell height: text height + image rows
+    function getRemarksCellHeight(e, imgs) {
+      const textLines = e.notes ? Math.ceil(e.notes.length / 30) : 0;
+      const textH = Math.max(textLines * 4, 6);
+      if (!imgs.length) return textH + 4;
+      const imgsPerRow = Math.floor(COL.remarks / (IMG_W + IMG_PAD));
+      const rows = Math.ceil(imgs.length / Math.max(imgsPerRow,1));
+      return textH + rows * (IMG_H + IMG_PAD) + 6;
+    }
+
+    // Group entries by period label (week) — use entry.period as week label
+    const weekLabels = [...new Set(we.map(e => e.period))];
+
+    const tableBody = [];
+    const rowMeta = []; // track which we[] index each body row corresponds to (-1 = week label row)
+
+    weekLabels.forEach(wk => {
+      const wkEntries = we.filter(e => e.period === wk);
+      // Week label row
+      tableBody.push([{
+        content: `Week of ${wk}`,
+        colSpan: 6,
+        styles: { fillColor: [254,230,150], textColor:[0,0,0], fontStyle:'bold', fontSize:8, cellPadding:3 }
+      }]);
+      rowMeta.push(-1);
+
+      wkEntries.forEach((e, idx) => {
+        const globalIdx = we.indexOf(e);
+        const imgs = entryImgData[globalIdx] || [];
+        const cellH = getRemarksCellHeight(e, imgs);
+        tableBody.push([
+          e.date||'',
+          (e.project ? '['+e.project+']\n' : '') + e.desc,
+          e.status==='ongoing'?'✓':'',
+          e.status==='completed'?'✓':'',
+          e.status==='recurring'?'✓':'',
+          e.notes||''
+        ]);
+        rowMeta.push(globalIdx);
+      });
+    });
+
+    doc.autoTable({
+      startY: y,
+      margin: {left:ml, right:mr},
+      head:[[
+        {content:'DATE\n(optional)',styles:{fillColor:[254,249,231],textColor:[0,0,0],fontStyle:'bold',halign:'center',fontSize:7}},
+        {content:'ACTIVITY/ TASK',styles:{fillColor:[254,249,231],textColor:[0,0,0],fontStyle:'bold',halign:'center',fontSize:7}},
+        {content:'O',styles:{fillColor:[254,249,231],textColor:[0,0,0],fontStyle:'bold',halign:'center',fontSize:7}},
+        {content:'C',styles:{fillColor:[254,249,231],textColor:[0,0,0],fontStyle:'bold',halign:'center',fontSize:7}},
+        {content:'R',styles:{fillColor:[254,249,231],textColor:[0,0,0],fontStyle:'bold',halign:'center',fontSize:7}},
+        {content:'REMARKS\n(MUST include mode of verification or link to output)',styles:{fillColor:[254,249,231],textColor:[0,0,0],fontStyle:'bold',halign:'center',fontSize:7}}
+      ]],
+      body: tableBody,
+      columnStyles:{
+        0:{cellWidth:COL.date, fontSize:7, valign:'top'},
+        1:{cellWidth:COL.task, fontSize:7, valign:'top'},
+        2:{cellWidth:COL.o, halign:'center', fontSize:8, valign:'top'},
+        3:{cellWidth:COL.c, halign:'center', fontSize:8, valign:'top'},
+        4:{cellWidth:COL.r, halign:'center', fontSize:8, valign:'top'},
+        5:{cellWidth:COL.remarks, fontSize:7, valign:'top'}
+      },
+      styles:{lineColor:[180,180,180], lineWidth:0.3, cellPadding:2, overflow:'linebreak'},
+      headStyles:{lineColor:[180,180,180], lineWidth:0.3},
+      theme:'grid',
+      didDrawCell: function(data) {
+        // Only draw images in the Remarks column (col 5) for data rows
+        if (data.section !== 'body') return;
+        if (data.column.index !== 5) return;
+        const bodyRowIdx = data.row.index;
+        if (bodyRowIdx < 0 || bodyRowIdx >= rowMeta.length) return;
+        const entryIdx = rowMeta[bodyRowIdx];
+        if (entryIdx < 0) return; // week label row
+        const imgs = entryImgData[entryIdx];
+        if (!imgs || !imgs.length) return;
+
+        // Position images below text in the remarks cell
+        const cellX = data.cell.x;
+        const cellY = data.cell.y;
+        const cellW2 = data.cell.width;
+        const textH = (data.cell.text && data.cell.text.length) ? data.cell.text.length * 4 + 2 : 6;
+        let imgX = cellX + IMG_PAD;
+        let imgY = cellY + textH + 2;
+        const maxX = cellX + cellW2 - IMG_PAD;
+
+        imgs.forEach(img => {
+          if (imgX + IMG_W > maxX) { imgX = cellX + IMG_PAD; imgY += IMG_H + IMG_PAD; }
+          try { doc.addImage(img.dataUrl, 'JPEG', imgX, imgY, IMG_W, IMG_H); } catch(e2){}
+          imgX += IMG_W + IMG_PAD;
+        });
+      },
+      // Force taller rows for entries with images
+      didParseCell: function(data) {
+        if (data.section !== 'body') return;
+        const bodyRowIdx = data.row.index;
+        if (bodyRowIdx < 0 || bodyRowIdx >= rowMeta.length) return;
+        const entryIdx = rowMeta[bodyRowIdx];
+        if (entryIdx < 0) return;
+        const imgs = entryImgData[entryIdx];
+        if (!imgs || !imgs.length) return;
+        const imgsPerRow = Math.max(1, Math.floor(COL.remarks / (IMG_W + IMG_PAD)));
+        const imgRows = Math.ceil(imgs.length / imgsPerRow);
+        const extraH = imgRows * (IMG_H + IMG_PAD) + 4;
+        data.cell.styles.minCellHeight = extraH + 12;
+      }
+    });
+
+    let finalY = doc.lastAutoTable.finalY + 5;
+    doc.setFontSize(7.5); doc.setFont('helvetica','italic');
+    doc.text('* Work from Home, Satellite Office or Another Fixed Place within the Philippines', ml, finalY);
+    finalY += 12;
+
+    // Signature block
+    if (finalY + 40 > 280) { doc.addPage(); finalY = 20; }
+    const colW = contentW / 3;
+    const sigCols = [
+      { label:'Submitted by:', name: h.submitted||'', pos: h.submittedPos||'' },
+      { label:'Reviewed by:', name: h.reviewed||'', pos: h.reviewedPos||'' },
+      { label:'Approved by:', name:'Peter A. Sy', pos:'Vice President for Digital Transformation' }
+    ];
+    sigCols.forEach((col, i) => {
+      const x = ml + i * colW;
+      doc.setFont('helvetica','normal'); doc.setFontSize(9);
+      doc.text(col.label, x, finalY);
+      doc.line(x, finalY+16, x+colW-6, finalY+16);
+      doc.setFont('helvetica','bold'); doc.setFontSize(9);
+      doc.text(col.name, x, finalY+21);
+      doc.setFont('helvetica','normal'); doc.setFontSize(8);
+      if (col.pos) doc.text(col.pos, x, finalY+26);
+    });
+
     doc.save(`FWA_${(h.name||'Report').replace(/\s+/g,'_')}_${(h.period||'Period').replace(/[^a-z0-9]/gi,'_')}.pdf`);
   }
 
@@ -843,7 +961,7 @@
         t+='\n';
       });
     });
-    t+=`\n──────────────────────────────\nSubmitted by: ${h.submitted||'___________'}     Reviewed by: ${h.reviewed||'___________'}     Approved by: Peter A. Sy, Vice President for Digital Transformation`;
+    t+=`\n──────────────────────────────\nSubmitted by: ${h.submitted||'___________'} (${h.submittedPos||''})\nReviewed by: ${h.reviewed||'___________'} (${h.reviewedPos||''})\nApproved by: Peter A. Sy, Vice President for Digital Transformation`;
     document.getElementById('export-docs').textContent=t;
   }
 
