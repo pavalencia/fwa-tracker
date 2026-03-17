@@ -407,7 +407,7 @@
       <div class="page" id="page-team">
         <div class="page-header">
           <div class="page-title">Team deliverables</div>
-          <div class="page-desc">Log deliverables per team. Data is shared and saved per browser session.</div>
+          <div class="page-desc">Log deliverables per team and person. Summarized by person for export.</div>
         </div>
         <div class="card">
           <div class="card-title">Week / period</div>
@@ -417,6 +417,31 @@
         </div>
 
         <div class="team-tabs" id="teamTabs"></div>
+
+        <!-- Add row form -->
+        <div class="card" id="teamAddForm">
+          <div class="card-title" id="teamAddTitle">Add entry</div>
+          <div class="form-grid">
+            <div class="field"><label>Person name</label><input type="text" id="tPerson" placeholder="e.g. Paula Beatrice Valencia" /></div>
+            <div class="field"><label>Project</label><input type="text" id="tProject" placeholder="e.g. Dx Labs '25" /></div>
+          </div>
+          <div class="form-grid full" style="margin-bottom:12px;">
+            <div class="field"><label>Target deliverable</label><input type="text" id="tDeliverable" placeholder="Describe the deliverable..." /></div>
+          </div>
+          <div class="form-grid" style="margin-bottom:12px;">
+            <div class="field"><label>Status</label>
+              <select id="tStatus">
+                <option value="Completed">Completed</option>
+                <option value="Ongoing Progress" selected>Ongoing Progress</option>
+                <option value="Not Initiated">Not Initiated</option>
+              </select>
+            </div>
+            <div class="field"><label>Assignees</label><input type="text" id="tAssignees" placeholder="e.g. Paula Beatrice" /></div>
+          </div>
+          <button class="btn btn-primary" onclick="addTeamRow()">+ Add entry</button>
+        </div>
+
+        <!-- Summary per person -->
         <div id="teamTableArea"></div>
       </div>
 
@@ -424,15 +449,26 @@
       <div class="page" id="page-teamexport">
         <div class="page-header">
           <div class="page-title">Team → Google Sheets</div>
-          <div class="page-desc">Export all team deliverables as tab-separated values. Open Google Sheets → paste with Ctrl+Shift+V.</div>
+          <div class="page-desc">Export all team deliverables summarized per person. Two ways to get it into Google Sheets.</div>
         </div>
         <div class="card">
-          <div class="export-note">The exported table matches the format in your team tracker spreadsheet — grouped by person name, with columns: Name, Project, Target Deliverables, Status, Assignees. Copy and paste with <strong>Ctrl+Shift+V</strong> (unformatted paste) in Google Sheets.</div>
-          <pre id="team-tsv"></pre>
+          <div class="card-title">Option 1 — Copy & paste</div>
+          <div class="export-note">Copy the tab-separated data below, open Google Sheets, click an empty cell, and paste with <strong>Ctrl+Shift+V</strong> (unformatted paste). Each column will land in its own cell.</div>
+          <pre id="team-tsv" style="max-height:260px;"></pre>
           <div class="btn-group">
             <button class="btn btn-primary" onclick="copyTeamTSV()">Copy for Sheets</button>
             <button class="btn" onclick="downloadTeamTSV()">⬇ Download .tsv</button>
             <button class="btn" onclick="buildTeamTSV()">Refresh</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Option 2 — Open directly in Google Sheets</div>
+          <div class="export-note">Click the button below to download the .tsv file, then import it into Google Sheets via <strong>File → Import → Upload</strong>. Or use the link generator below to create a pre-filled Google Sheet from your data.</div>
+          <div style="margin-bottom:12px;">
+            <button class="btn btn-primary" onclick="openInSheets()">Open in Google Sheets ↗</button>
+          </div>
+          <div style="font-size:12px;color:var(--text-muted);background:var(--surface2);border-radius:var(--radius-sm);padding:10px 14px;" id="sheetsLinkBox">
+            Click "Open in Google Sheets" to generate your link.
           </div>
         </div>
       </div>
@@ -803,11 +839,11 @@ async function exportPDF(){
 const TEAMS = ['Admin Team','Communications Team','Management Team','Project Team','Research Team'];
 const STATUSES = ['Completed','Ongoing Progress','Not Initiated'];
 let activeTeam = TEAMS[0];
-let teamData = {}; // { period: { teamName: [{id,project,deliverable,status,assignees}] } }
+// teamData: { period: { teamName: [{id, person, project, deliverable, status, assignees}] } }
+let teamData = {};
 
 function saveTeamData() { localStorage.setItem('fwa_team_data', JSON.stringify(teamData)); }
 function loadTeamData() { teamData = JSON.parse(localStorage.getItem('fwa_team_data') || '{}'); }
-
 function getTPeriod() { return document.getElementById('tPeriod').value.trim() || '(Period not set)'; }
 
 function ensureTeamPeriod(period, team) {
@@ -815,11 +851,21 @@ function ensureTeamPeriod(period, team) {
   if (!teamData[period][team]) teamData[period][team] = [];
 }
 
-function addTeamRow(team) {
+function addTeamRow() {
   const period = getTPeriod();
-  ensureTeamPeriod(period, team);
-  teamData[period][team].push({ id: Date.now(), project:'', deliverable:'', status:'Ongoing Progress', assignees:'' });
+  const person = document.getElementById('tPerson').value.trim();
+  const project = document.getElementById('tProject').value.trim();
+  const deliverable = document.getElementById('tDeliverable').value.trim();
+  const status = document.getElementById('tStatus').value;
+  const assignees = document.getElementById('tAssignees').value.trim();
+  if (!person) { alert('Please enter a person name.'); return; }
+  if (!deliverable) { alert('Please describe the deliverable.'); return; }
+  ensureTeamPeriod(period, activeTeam);
+  teamData[period][activeTeam].push({ id: Date.now(), person, project, deliverable, status, assignees });
   saveTeamData();
+  // Clear form fields except person (for quick re-entry)
+  ['tProject','tDeliverable','tAssignees'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('tStatus').value = 'Ongoing Progress';
   renderTeamTables();
 }
 
@@ -831,25 +877,21 @@ function deleteTeamRow(team, id) {
   renderTeamTables();
 }
 
-function updateTeamCell(team, id, field, value) {
-  const period = getTPeriod();
-  if (!teamData[period] || !teamData[period][team]) return;
-  const row = teamData[period][team].find(r => r.id === id);
-  if (row) { row[field] = value; saveTeamData(); }
-}
-
 function renderTeamTabs() {
-  document.getElementById('teamTabs').innerHTML = TEAMS.map(t =>
-    `<button class="team-tab${t===activeTeam?' active':''}" onclick="switchTeam('${t}')">${t}</button>`
-  ).join('');
+  document.getElementById('teamTabs').innerHTML = TEAMS.map(t => {
+    const period = getTPeriod();
+    const count = (teamData[period] && teamData[period][t]) ? teamData[period][t].length : 0;
+    return `<button class="team-tab${t===activeTeam?' active':''}" onclick="switchTeam('${t}')">${t}${count?' <span style="font-size:10px;opacity:.7;">('+count+')</span>':''}</button>`;
+  }).join('');
+  document.getElementById('teamAddTitle').textContent = `Add entry — ${activeTeam}`;
 }
 
 function switchTeam(team) { activeTeam = team; renderTeamTabs(); renderTeamTables(); }
 
-function statusClass(s) {
-  if (s==='Completed') return 's-completed';
-  if (s==='Ongoing Progress') return 's-ongoing';
-  return 's-notinit';
+function statusBadge(s) {
+  if (s==='Completed') return `<span style="background:#e8f5e9;color:#2e7d32;font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;">${s}</span>`;
+  if (s==='Ongoing Progress') return `<span style="background:#fdf3d8;color:#7a5a0e;font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;">${s}</span>`;
+  return `<span style="background:var(--surface2);color:var(--text-muted);font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;">${s}</span>`;
 }
 
 function renderTeamTables() {
@@ -857,89 +899,151 @@ function renderTeamTables() {
   ensureTeamPeriod(period, activeTeam);
   const rows = teamData[period][activeTeam] || [];
 
-  let html = `<div class="card" style="padding:0;overflow:hidden;">
-    <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
-      <span style="font-size:13px;font-weight:600;color:var(--text);">${activeTeam}</span>
-      <span style="font-size:12px;color:var(--text-muted);">${period} · ${rows.length} row${rows.length!==1?'s':''}</span>
-    </div>
-    <div class="team-table-wrap" style="border:none;border-radius:0;">
-      <table class="team-table">
-        <thead><tr>
-          <th style="width:160px;">Project</th>
-          <th>Target Deliverables</th>
-          <th style="width:150px;">Status</th>
-          <th style="width:150px;">Assignees</th>
-          <th style="width:36px;"></th>
-        </tr></thead>
-        <tbody>`;
+  if (!rows.length) {
+    document.getElementById('teamTableArea').innerHTML = `<div class="empty-state">No entries yet for ${activeTeam}. Add one above.</div>`;
+    return;
+  }
 
-  rows.forEach(row => {
-    html += `<tr>
-      <td><input type="text" value="${escHtml(row.project)}" placeholder="Project name" onchange="updateTeamCell('${activeTeam}',${row.id},'project',this.value)" /></td>
-      <td><input type="text" value="${escHtml(row.deliverable)}" placeholder="Describe the deliverable..." onchange="updateTeamCell('${activeTeam}',${row.id},'deliverable',this.value)" /></td>
-      <td>
-        <select onchange="updateTeamCell('${activeTeam}',${row.id},'status',this.value)">
-          ${STATUSES.map(s=>`<option value="${s}"${row.status===s?' selected':''}>${s}</option>`).join('')}
-        </select>
-      </td>
-      <td><input type="text" value="${escHtml(row.assignees)}" placeholder="e.g. Bea, Kris" onchange="updateTeamCell('${activeTeam}',${row.id},'assignees',this.value)" /></td>
-      <td><button class="del-row-btn" onclick="deleteTeamRow('${activeTeam}',${row.id})">×</button></td>
-    </tr>`;
+  // Group by person
+  const people = [...new Set(rows.map(r => r.person))];
+
+  let html = '';
+  people.forEach(person => {
+    const pRows = rows.filter(r => r.person === person);
+    html += `<div class="card" style="padding:0;overflow:hidden;margin-bottom:1rem;">
+      <div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface2);">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;flex-shrink:0;">${person.charAt(0).toUpperCase()}</div>
+          <span style="font-size:13px;font-weight:600;color:var(--text);">${escHtml(person)}</span>
+        </div>
+        <span style="font-size:11px;color:var(--text-muted);">${pRows.length} deliverable${pRows.length!==1?'s':''}</span>
+      </div>
+      <div class="team-table-wrap" style="border:none;border-radius:0;">
+        <table class="team-table">
+          <thead><tr>
+            <th style="width:140px;">Project</th>
+            <th>Target Deliverable</th>
+            <th style="width:130px;">Status</th>
+            <th style="width:130px;">Assignees</th>
+            <th style="width:32px;"></th>
+          </tr></thead>
+          <tbody>`;
+    pRows.forEach(row => {
+      html += `<tr>
+        <td style="font-size:12px;">${escHtml(row.project)||'<span style="color:var(--text-faint);">—</span>'}</td>
+        <td style="font-size:12px;">${escHtml(row.deliverable)}</td>
+        <td>${statusBadge(row.status)}</td>
+        <td style="font-size:12px;">${escHtml(row.assignees)||'<span style="color:var(--text-faint);">—</span>'}</td>
+        <td><button class="del-row-btn" onclick="deleteTeamRow('${activeTeam}',${row.id})">×</button></td>
+      </tr>`;
+    });
+    html += `</tbody></table></div></div>`;
   });
 
-  html += `</tbody></table></div>
-    <div style="padding:8px 12px;">
-      <button class="add-row-btn" onclick="addTeamRow('${activeTeam}')">+ Add row</button>
-    </div>
-  </div>`;
+  // Summary stats
+  const total = rows.length;
+  const done = rows.filter(r=>r.status==='Completed').length;
+  const ongoing = rows.filter(r=>r.status==='Ongoing Progress').length;
+  const notinit = rows.filter(r=>r.status==='Not Initiated').length;
+  html = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1rem;">
+    <div class="stat-card"><div class="stat-val">${total}</div><div class="stat-lbl">Total</div></div>
+    <div class="stat-card"><div class="stat-val">${done}</div><div class="stat-lbl">Completed</div></div>
+    <div class="stat-card"><div class="stat-val">${ongoing}</div><div class="stat-lbl">Ongoing</div></div>
+    <div class="stat-card"><div class="stat-val">${notinit}</div><div class="stat-lbl">Not initiated</div></div>
+  </div>` + html;
 
   document.getElementById('teamTableArea').innerHTML = html;
 }
 
 function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+// Build TSV — grouped by person name, matching the spreadsheet layout
 function buildTeamTSV() {
   const period = getTPeriod();
   const lines = [];
-  // Header row
-  lines.push(['Name','Project','Target Deliverables','Status','Assignees'].join('\t'));
+
+  // Header
+  lines.push(['Team','Person','Project','Target Deliverable','Status','Assignees'].map(c=>`"${c}"`).join('\t'));
 
   TEAMS.forEach(team => {
     const rows = (teamData[period] && teamData[period][team]) ? teamData[period][team] : [];
     if (!rows.length) return;
-    // Team name header row (bold marker)
-    lines.push([team,'','','',''].join('\t'));
-    rows.forEach(row => {
-      lines.push([
-        '',
-        row.project||'',
-        row.deliverable||'',
-        row.status||'',
-        row.assignees||''
-      ].map(c=>`"${String(c).replace(/"/g,'""')}"`).join('\t'));
+
+    // Group by person
+    const people = [...new Set(rows.map(r => r.person))];
+    people.forEach(person => {
+      const pRows = rows.filter(r => r.person === person);
+      pRows.forEach((row, idx) => {
+        lines.push([
+          idx === 0 ? team : '',       // team name only on first row of each team
+          idx === 0 ? person : '',     // person name only on first row per person per team
+          row.project || '',
+          row.deliverable || '',
+          row.status || '',
+          row.assignees || ''
+        ].map(c=>`"${String(c).replace(/"/g,'""')}"`).join('\t'));
+      });
     });
-    lines.push(['','','','','']); // blank row between teams
+    lines.push(['','','','','','']); // blank row between teams
   });
 
-  document.getElementById('team-tsv').textContent = lines.join('\n');
+  const tsv = lines.join('\n');
+  document.getElementById('team-tsv').textContent = tsv;
+  return tsv;
 }
 
 function copyTeamTSV() {
-  buildTeamTSV();
-  navigator.clipboard.writeText(document.getElementById('team-tsv').textContent).then(() => {
+  const tsv = buildTeamTSV();
+  navigator.clipboard.writeText(tsv).then(() => {
     const b = event.target, orig = b.textContent;
     b.textContent = 'Copied!'; setTimeout(() => b.textContent = orig, 1800);
   });
 }
 
 function downloadTeamTSV() {
-  buildTeamTSV();
-  const text = document.getElementById('team-tsv').textContent;
+  const tsv = buildTeamTSV();
   const period = getTPeriod();
-  const blob = new Blob([text], { type:'text/tab-separated-values' });
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-  a.download = `TeamDeliverables_${period.replace(/[^a-z0-9]/gi,'_')}.tsv`; a.click();
+  const blob = new Blob([tsv], { type: 'text/tab-separated-values' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `TeamDeliverables_${period.replace(/[^a-z0-9]/gi,'_')}.tsv`;
+  a.click();
 }
+
+function openInSheets() {
+  const tsv = buildTeamTSV();
+  const period = getTPeriod();
+
+  // Encode as CSV for Google Sheets import URL
+  // Convert TSV to CSV
+  const csv = tsv.split('\n').map(line =>
+    line.split('\t').map(cell => {
+      // cells are already quoted in our TSV, strip outer quotes first
+      const val = cell.replace(/^"|"$/g,'').replace(/""/g,'"');
+      return '"' + val.replace(/"/g,'""') + '"';
+    }).join(',')
+  ).join('\n');
+
+  // Create a data URI and open Google Sheets import
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+
+  // Show instructions + download link since Sheets can't open blob URLs directly
+  const sheetsBox = document.getElementById('sheetsLinkBox');
+  sheetsBox.innerHTML = `
+    <div style="margin-bottom:10px;font-size:12px;color:var(--text);font-weight:500;">How to open in Google Sheets:</div>
+    <ol style="font-size:12px;color:var(--text-muted);line-height:2;padding-left:18px;">
+      <li>Click <strong>Download CSV</strong> below to save the file</li>
+      <li>Go to <a href="https://sheets.new" target="_blank" style="color:var(--accent);">sheets.new</a> to open a new Google Sheet</li>
+      <li>Click <strong>File → Import → Upload</strong> and select the downloaded file</li>
+      <li>Choose <strong>"Replace spreadsheet"</strong> or <strong>"Insert new sheet"</strong> → click Import</li>
+    </ol>
+    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+      <a href="${url}" download="TeamDeliverables_${period.replace(/[^a-z0-9]/gi,'_')}.csv" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;padding:7px 14px;background:var(--accent);color:#fff;border-radius:6px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">⬇ Download CSV</a>
+      <a href="https://sheets.new" target="_blank" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;padding:7px 14px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">Open Google Sheets ↗</a>
+    </div>`;
+}
+
 
 function showPage(page){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
