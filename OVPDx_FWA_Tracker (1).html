@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OVPDx FWA Accomplishment Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    :root {
+      --bg:#f7f6f2;--surface:#fff;--surface2:#f0ede6;
+      --border:#e2ddd6;--border-strong:#c8c2b8;
+      --text:#1a1816;--text-muted:#6b665f;--text-faint:#a09a92;
+      --accent:#2d5016;--accent-light:#eaf2e0;
+      --radius:10px;--radius-sm:6px;
+      --shadow:0 1px 3px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.04);
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6;}
+
+    /* LOGIN */
+    .login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);}
+    .login-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2.5rem 2rem;width:100%;max-width:400px;box-shadow:var(--shadow);}
+    .login-logo{display:flex;align-items:center;gap:10px;margin-bottom:1.75rem;}
+    .login-logo-mark{width:36px;height:36px;background:var(--accent);border-radius:9px;display:flex;align-items:center;justify-content:center;}
+    .login-logo-mark svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;}
+    .login-tabs{display:flex;gap:4px;margin-bottom:1.5rem;border-bottom:1px solid var(--border);}
+    .login-tab{font-family:'DM Sans',sans-serif;font-size:13px;padding:8px 14px;border:none;background:none;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;}
+    .login-tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:500;}
+    .lfield{margin-bottom:14px;}
+    .lfield label{font-size:11px;font-weight:500;color:var(--text-muted);display:block;margin-bottom:5px;}
+    .lfield input{width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);outline:none;transition:border-color .15s,box-shadow .15s;}
+    .lfield input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(45,80,22,.08);}
+    .lbtn{width:100%;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;padding:10px;border-radius:var(--radius-sm);border:none;background:var(--accent);color:#fff;cursor:pointer;margin-top:4px;transition:background .15s;}
+    .lbtn:hover{background:#234010;}
+    .lmsg{font-size:12px;margin-top:10px;text-align:center;min-height:18px;}
+    .lmsg.err{color:#c0392b;}.lmsg.ok{color:var(--accent);}
+
+    /* APP */
+    #app{display:none;}
+    .site-header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100;box-shadow:var(--shadow);}
+    .logo{display:flex;align-items:center;gap:10px;}
+    .logo-mark{width:32px;height:32px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .logo-mark svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;}
+    .logo-text{font-size:15px;font-weight:600;letter-spacing:-.02em;}
+    .logo-sub{font-size:11px;color:var(--text-muted);font-weight:400;}
+    .header-right{display:flex;align-items:center;gap:10px;}
+    .user-pill{display:flex;align-items:center;gap:8px;padding:5px 12px 5px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:99px;font-size:12px;color:var(--text-muted);}
+    .user-avatar{width:24px;height:24px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff;flex-shrink:0;}
+    .logout-btn{font-family:'DM Sans',sans-serif;font-size:12px;padding:5px 12px;border:1px solid var(--border);border-radius:99px;background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all .15s;}
+    .logout-btn:hover{background:#fee;color:#c0392b;border-color:#fcc;}
+
+    /* LAYOUT */
+    .layout{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 60px);}
+    .sidebar{background:var(--surface);border-right:1px solid var(--border);padding:1.5rem 0;position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto;}
+    .sidebar-section{margin-bottom:1.5rem;}
+    .sidebar-label{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-faint);padding:0 1.25rem;margin-bottom:4px;}
+    .sidebar-item{display:flex;align-items:center;gap:10px;padding:8px 1.25rem;font-size:13px;color:var(--text-muted);cursor:pointer;border-left:2px solid transparent;transition:all .15s;}
+    .sidebar-item:hover{background:var(--surface2);color:var(--text);}
+    .sidebar-item.active{color:var(--accent);border-left-color:var(--accent);background:var(--accent-light);font-weight:500;}
+    .sidebar-icon{width:16px;height:16px;flex-shrink:0;opacity:.7;}
+    .sidebar-item.active .sidebar-icon{opacity:1;}
+    .main{padding:2rem;max-width:860px;}
+    .page{display:none;}.page.active{display:block;animation:fadeIn .2s ease;}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    .page-header{margin-bottom:1.75rem;}
+    .page-title{font-family:'DM Serif Display',serif;font-size:26px;font-weight:400;letter-spacing:-.02em;margin-bottom:4px;}
+    .page-desc{font-size:13px;color:var(--text-muted);}
+
+    /* CARDS */
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;box-shadow:var(--shadow);}
+    .card-title{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text-faint);margin-bottom:1rem;padding-bottom:8px;border-bottom:1px solid var(--border);}
+
+    /* FORMS */
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+    .form-grid.three{grid-template-columns:1fr 1fr 1fr;}
+    .form-grid.full{grid-template-columns:1fr;}
+    .field{display:flex;flex-direction:column;}
+    .field label{font-size:11px;font-weight:500;color:var(--text-muted);margin-bottom:5px;letter-spacing:.02em;}
+    .field input[type="text"],.field select,.field textarea{font-family:'DM Sans',sans-serif;font-size:13px;padding:8px 11px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);outline:none;width:100%;transition:border-color .15s,box-shadow .15s;}
+    .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(45,80,22,.08);}
+    .field textarea{resize:vertical;min-height:64px;line-height:1.5;}
+    .day-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:4px;}
+    .day-cell label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-faint);text-align:center;display:block;margin-bottom:4px;}
+    .day-cell select{font-size:11px;padding:5px 3px;text-align:center;}
+
+    /* BUTTONS */
+    .btn{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;padding:8px 16px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px;}
+    .btn:hover{background:var(--surface2);border-color:var(--border-strong);}
+    .btn-primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+    .btn-primary:hover{background:#234010;border-color:#234010;}
+    .btn-group{display:flex;gap:8px;flex-wrap:wrap;}
+
+    /* UPLOAD */
+    .upload-zone{border:1.5px dashed var(--border-strong);border-radius:var(--radius-sm);padding:16px;text-align:center;cursor:pointer;background:var(--surface2);transition:background .15s,border-color .15s;}
+    .upload-zone:hover,.upload-zone.dragover{background:var(--accent-light);border-color:var(--accent);}
+    .upload-zone input[type="file"]{display:none;}
+    .upload-zone-text{font-size:12px;color:var(--text-muted);line-height:1.6;}
+    .upload-zone-text strong{color:var(--text);}
+    .thumb-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+    .thumb{position:relative;width:96px;height:64px;border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border);}
+    .thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+    .thumb-del{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+    .thumb-badge{position:absolute;bottom:3px;left:3px;font-size:9px;background:rgba(0,0,0,.45);color:#fff;padding:1px 5px;border-radius:3px;}
+
+    /* ENTRIES */
+    .entry-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:12px;transition:border-color .15s;animation:fadeIn .15s ease;}
+    .entry-item:hover{border-color:var(--border-strong);}
+    .entry-body{flex:1;min-width:0;}
+    .entry-tags{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:5px;}
+    .entry-desc{font-size:14px;color:var(--text);}
+    .entry-notes{font-size:12px;color:var(--text-muted);margin-top:3px;}
+    .entry-imgs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+    .entry-img{width:64px;height:44px;border-radius:4px;object-fit:cover;border:1px solid var(--border);cursor:pointer;}
+    .entry-del{background:none;border:none;color:var(--text-faint);font-size:18px;cursor:pointer;padding:0 2px;line-height:1;flex-shrink:0;}
+    .entry-del:hover{color:#c0392b;}
+
+    /* BADGES */
+    .badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;letter-spacing:.02em;white-space:nowrap;}
+    .badge-project{background:var(--accent-light);color:var(--accent);}
+    .badge-ongoing{background:#fdf3d8;color:#7a5a0e;}
+    .badge-completed{background:#e8f5e9;color:#2e7d32;}
+    .badge-recurring{background:#e3f2fd;color:#1565c0;}
+    .badge-notinit{background:var(--surface2);color:var(--text-muted);}
+    .badge-date,.badge-photo{background:var(--surface2);color:var(--text-muted);}
+
+    /* STATS */
+    .stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:1.5rem;}
+    .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;box-shadow:var(--shadow);}
+    .stat-val{font-size:24px;font-weight:600;color:var(--text);letter-spacing:-.02em;}
+    .stat-lbl{font-size:11px;color:var(--text-muted);margin-top:2px;}
+
+    /* SIG */
+    .sig-fixed-box{background:var(--surface2);border-radius:var(--radius-sm);padding:10px 14px;}
+    .sig-fixed-title{font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:4px;}
+    .sig-fixed-name{font-size:13px;font-weight:600;color:var(--text);}
+    .sig-fixed-role{font-size:12px;color:var(--text-muted);}
+    .sig-fixed-note{font-size:11px;color:var(--text-faint);font-style:italic;margin-top:4px;}
+
+    /* EXPORT */
+    .export-note{font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.7;}
+    .preview-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin:1rem 0;overflow-x:auto;}
+    .preview-table{width:100%;border-collapse:collapse;font-size:11px;}
+    .preview-table th{background:#fef9e7;border:1px solid #ccc;padding:6px 8px;text-align:left;font-weight:600;}
+    .preview-table td{border:1px solid #ddd;padding:5px 8px;vertical-align:top;}
+
+    /* GROUPS */
+    .proj-group{margin-bottom:1.5rem;}
+    .proj-group-header{font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+    .proj-count{font-size:11px;color:var(--text-muted);font-weight:400;}
+    .empty-state{text-align:center;padding:3rem 0;color:var(--text-faint);font-size:13px;}
+
+    /* LIGHTBOX */
+    .lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;align-items:center;justify-content:center;}
+    .lightbox.open{display:flex;}
+    .lightbox img{max-width:90vw;max-height:85vh;border-radius:var(--radius);object-fit:contain;}
+    .lightbox-close{position:absolute;top:20px;right:24px;color:#fff;font-size:28px;background:none;border:none;cursor:pointer;}
+
+    /* TEAM DELIVERABLES */
+    .team-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.25rem;}
+    .team-tab{font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;padding:6px 14px;border:1px solid var(--border);border-radius:99px;background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all .15s;}
+    .team-tab:hover{background:var(--surface2);}
+    .team-tab.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+    .team-table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);}
+    .team-table{width:100%;border-collapse:collapse;font-size:13px;min-width:700px;}
+    .team-table th{background:#f7f6f2;border-bottom:1px solid var(--border);padding:9px 12px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--text-muted);white-space:nowrap;}
+    .team-table td{border-bottom:1px solid var(--border);padding:8px 12px;vertical-align:middle;}
+    .team-table tr:last-child td{border-bottom:none;}
+    .team-table tr:hover td{background:var(--surface2);}
+    .team-table input[type="text"],.team-table select{font-family:'DM Sans',sans-serif;font-size:12px;padding:5px 8px;border:1px solid transparent;border-radius:4px;background:transparent;color:var(--text);width:100%;outline:none;transition:border-color .15s,background .15s;}
+    .team-table input[type="text"]:focus,.team-table select:focus{border-color:var(--accent);background:var(--surface);box-shadow:0 0 0 2px rgba(45,80,22,.07);}
+    .team-table input[type="text"]:hover,.team-table select:hover{background:var(--surface);border-color:var(--border);}
+    .del-row-btn{background:none;border:none;color:var(--text-faint);font-size:16px;cursor:pointer;padding:0 4px;line-height:1;}
+    .del-row-btn:hover{color:#c0392b;}
+    .add-row-btn{font-family:'DM Sans',sans-serif;font-size:12px;padding:6px 14px;border:1px dashed var(--border-strong);border-radius:var(--radius-sm);background:transparent;color:var(--text-muted);cursor:pointer;width:100%;margin-top:8px;transition:all .15s;}
+    .add-row-btn:hover{background:var(--accent-light);border-color:var(--accent);color:var(--accent);}
+    .status-pill{font-size:11px;font-weight:500;padding:3px 10px;border-radius:99px;white-space:nowrap;}
+    .s-completed{background:#e8f5e9;color:#2e7d32;}
+    .s-ongoing{background:#fdf3d8;color:#7a5a0e;}
+    .s-notinit{background:var(--surface2);color:var(--text-muted);}
+    .export-note{font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.7;}
+    pre{white-space:pre-wrap;word-break:break-word;font-family:'Courier New',monospace;font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin:1rem 0;max-height:360px;overflow-y:auto;color:var(--text);line-height:1.6;}
+    .btn-group{display:flex;gap:8px;flex-wrap:wrap;}
+    .header-nav{display:flex;gap:4px;align-items:center;}
+    .hnav-btn{font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;padding:6px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all .15s;white-space:nowrap;}
+    .hnav-btn:hover{background:var(--surface2);color:var(--text);}
+    .hnav-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+    .user-label-text{}
+    @media(max-width:900px){.user-label-text{display:none;}}
+    @media(max-width:768px){
+      .layout{grid-template-columns:1fr;}.sidebar{display:none;}
+      .main{padding:1rem;}.stats-row{grid-template-columns:repeat(3,1fr);}
+      .form-grid,.form-grid.three{grid-template-columns:1fr;}
+      .day-grid{grid-template-columns:repeat(4,1fr);}
+      .header-nav{gap:2px;}.hnav-btn{font-size:11px;padding:5px 8px;}
+      .logout-btn{font-size:11px;padding:5px 8px;}
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-mark">
+        <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+      </div>
+      <div>
+        <div style="font-size:15px;font-weight:600;letter-spacing:-.02em;">FWA Tracker</div>
+        <div style="font-size:11px;color:var(--text-muted);">OVPDx · UP System</div>
+      </div>
+    </div>
+    <div class="login-tabs">
+      <button class="login-tab active" id="ltab-login" onclick="switchLoginTab('login')">Sign in</button>
+      <button class="login-tab" id="ltab-register" onclick="switchLoginTab('register')">Create account</button>
+    </div>
+    <div id="lpane-login">
+      <div class="lfield"><label>Username</label><input type="text" id="loginUser" placeholder="Enter your username" /></div>
+      <div class="lfield"><label>Password</label><input type="password" id="loginPass" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin()" /></div>
+      <button class="lbtn" onclick="doLogin()">Sign in</button>
+      <div class="lmsg" id="loginMsg"></div>
+    </div>
+    <div id="lpane-register" style="display:none;">
+      <div class="lfield"><label>Full name</label><input type="text" id="regName" placeholder="e.g. Bea Valencia" /></div>
+      <div class="lfield"><label>Username</label><input type="text" id="regUser" placeholder="Choose a username" /></div>
+      <div class="lfield"><label>Password</label><input type="password" id="regPass" placeholder="Choose a password (min 4 chars)" /></div>
+      <div class="lfield"><label>Confirm password</label><input type="password" id="regPass2" placeholder="Repeat password" onkeydown="if(event.key==='Enter')doRegister()" /></div>
+      <button class="lbtn" onclick="doRegister()">Create account</button>
+      <div class="lmsg" id="registerMsg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header class="site-header">
+    <div class="logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+      </div>
+      <div>
+        <div class="logo-text">FWA Tracker</div>
+        <div class="logo-sub">OVPDx · UP System</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="header-nav" id="headerNav">
+        <button class="hnav-btn" onclick="showPage('add')" id="hnav-add">Add</button>
+        <button class="hnav-btn" onclick="showPage('view')" id="hnav-view">Entries</button>
+        <button class="hnav-btn" onclick="showPage('team')" id="hnav-team">Team</button>
+        <button class="hnav-btn" onclick="showPage('export')" id="hnav-export">PDF</button>
+        <button class="hnav-btn" onclick="showPage('teamexport')" id="hnav-teamexport">Sheets</button>
+      </div>
+      <div class="user-pill">
+        <div class="user-avatar" id="userAvatar">?</div>
+        <span id="userLabel" class="user-label-text">—</span>
+      </div>
+      <button class="logout-btn" onclick="doLogout()">Sign out</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Tracker</div>
+        <div class="sidebar-item active" onclick="showPage('add')" id="nav-add">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          Add deliverable
+        </div>
+        <div class="sidebar-item" onclick="showPage('view')" id="nav-view">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          All entries
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Team</div>
+        <div class="sidebar-item" onclick="showPage('team')" id="nav-team">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          Team deliverables
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Export</div>
+        <div class="sidebar-item" onclick="showPage('export')" id="nav-export">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="12" x2="12" y2="18"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+          PDF (FWA format)
+        </div>
+        <div class="sidebar-item" onclick="showPage('teamexport')" id="nav-teamexport">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+          Team → Sheets
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+
+      <!-- ADD PAGE -->
+      <div class="page active" id="page-add">
+        <div class="page-header">
+          <div class="page-title">Add deliverable</div>
+          <div class="page-desc">Fill in the report details, log your tasks, then sign off at the bottom.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Report header</div>
+          <div class="form-grid">
+            <div class="field"><label>Name</label><input type="text" id="hName" placeholder="Full name" /></div>
+            <div class="field"><label>Office / Unit</label><input type="text" id="hOffice" placeholder="e.g. OVPDx" /></div>
+          </div>
+          <div class="form-grid full" style="margin-bottom:14px;">
+            <div class="field"><label>For the period of</label><input type="text" id="hPeriod" placeholder="e.g. March 17–21, 2025" /></div>
+          </div>
+          <div class="card-title" style="margin-top:4px;">Work arrangement (per day)</div>
+          <div class="day-grid">
+            <div class="day-cell"><label>Mon</label><select id="dMon"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>SURP</option><option>ITDC</option><option>Rest Day</option></select></div>
+            <div class="day-cell"><label>Tue</label><select id="dTue"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>SURP</option><option>ITDC</option><option>Rest Day</option></select></div>
+            <div class="day-cell"><label>Wed</label><select id="dWed"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>SURP</option><option>ITDC</option><option>Rest Day</option></select></div>
+            <div class="day-cell"><label>Thu</label><select id="dThu"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>SURP</option><option>ITDC</option><option>Rest Day</option></select></div>
+            <div class="day-cell"><label>Fri</label><select id="dFri"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>SURP</option><option>ITDC</option><option>Rest Day</option></select></div>
+            <div class="day-cell"><label>Sat</label><select id="dSat"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>SURP</option><option>ITDC</option><option>Rest Day</option></select></div>
+            <div class="day-cell"><label>Sun</label><select id="dSun"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>SURP</option><option>ITDC</option><option>Rest Day</option></select></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Add activity / task</div>
+          <div class="form-grid">
+            <div class="field"><label>Date (optional)</label><input type="text" id="fDate" placeholder="e.g. March 17" /></div>
+            <div class="field"><label>Project name</label><input type="text" id="fProject" placeholder="e.g. Dx Labs AI Workshop" /></div>
+          </div>
+          <div class="form-grid full" style="margin-bottom:12px;">
+            <div class="field"><label>Activity / Task</label><input type="text" id="fDesc" placeholder="Describe the activity or task..." /></div>
+          </div>
+          <div class="form-grid three" style="margin-bottom:12px;">
+            <div class="field"><label>Status</label>
+              <select id="fStatus">
+                <option value="ongoing">O – Ongoing/In-Process</option>
+                <option value="completed">C – Completed</option>
+                <option value="recurring">R – Recurring</option>
+                <option value="notinit">Not initiated</option>
+              </select>
+            </div>
+            <div class="field" style="grid-column:span 2;"><label>Remarks / mode of verification</label><input type="text" id="fNotes" placeholder="Link to output, mode of verification..." /></div>
+          </div>
+          <div class="field" style="margin-bottom:14px;">
+            <label>Verification photos — portrait images are auto-cropped to landscape (4:3)</label>
+            <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+              <input type="file" id="fileInput" accept="image/*" multiple onchange="onFileChange(event)" />
+              <div class="upload-zone-text">Click to upload or drag &amp; drop · <strong>PNG, JPG, WEBP</strong> · Multiple allowed · Auto-cropped to 4:3 landscape</div>
+            </div>
+            <div class="thumb-row" id="thumbRow"></div>
+          </div>
+          <button class="btn btn-primary" onclick="addEntry()">+ Add entry</button>
+        </div>
+
+        <div id="recent-list"></div>
+
+        <div class="card">
+          <div class="card-title">Signature block</div>
+          <div class="form-grid" style="margin-bottom:12px;">
+            <div class="field"><label>Submitted by (name)</label><input type="text" id="sigSubmitted" placeholder="e.g. Juan dela Cruz" /></div>
+            <div class="field"><label>Submitted by (position)</label><input type="text" id="sigSubmittedPos" placeholder="e.g. Administrative Aide" /></div>
+          </div>
+          <div class="form-grid" style="margin-bottom:12px;">
+            <div class="field"><label>Reviewed by (name)</label><input type="text" id="sigReviewed" placeholder="e.g. Maria Santos" /></div>
+            <div class="field"><label>Reviewed by (position)</label><input type="text" id="sigReviewedPos" placeholder="e.g. Project Development Officer" /></div>
+          </div>
+          <div class="sig-fixed-box">
+            <div class="sig-fixed-title">Approved by — fixed</div>
+            <div class="sig-fixed-name">Peter A. Sy</div>
+            <div class="sig-fixed-role">Vice President for Digital Transformation</div>
+            <div class="sig-fixed-note">This section is pre-filled and cannot be edited.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW PAGE -->
+      <div class="page" id="page-view">
+        <div class="page-header">
+          <div class="page-title">All entries</div>
+          <div class="page-desc" id="viewDesc">Entries for the current period.</div>
+        </div>
+        <div class="stats-row" id="stats"></div>
+        <div id="view-list"></div>
+      </div>
+
+      <!-- EXPORT PAGE -->
+      <div class="page" id="page-export">
+        <div class="page-header">
+          <div class="page-title">Export</div>
+          <div class="page-desc">Generate your official UP FWA Accomplishment Report PDF.</div>
+        </div>
+        <div class="card">
+          <div class="export-note">Generates the official UP FWA Accomplishment Report — work arrangement table, activity log with verification photos inside the Remarks column, and signature block with positions.</div>
+          <div class="preview-wrap" id="pdf-preview-table"><div class="empty-state">No entries yet for this period.</div></div>
+          <div class="btn-group">
+            <button class="btn btn-primary" onclick="exportPDF()">⬇ Download PDF</button>
+            <button class="btn" onclick="buildPDFPreview()">Refresh preview</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TEAM DELIVERABLES PAGE -->
+      <div class="page" id="page-team">
+        <div class="page-header">
+          <div class="page-title">Team deliverables</div>
+          <div class="page-desc">Log deliverables per team. Data is shared and saved per browser session.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Week / period</div>
+          <div class="form-grid full" style="margin-bottom:0;">
+            <div class="field"><label>For the period of</label><input type="text" id="tPeriod" placeholder="e.g. March 17–21, 2025" oninput="renderTeamTables()" /></div>
+          </div>
+        </div>
+
+        <div class="team-tabs" id="teamTabs"></div>
+        <div id="teamTableArea"></div>
+      </div>
+
+      <!-- TEAM EXPORT PAGE -->
+      <div class="page" id="page-teamexport">
+        <div class="page-header">
+          <div class="page-title">Team → Google Sheets</div>
+          <div class="page-desc">Export all team deliverables as tab-separated values. Open Google Sheets → paste with Ctrl+Shift+V.</div>
+        </div>
+        <div class="card">
+          <div class="export-note">The exported table matches the format in your team tracker spreadsheet — grouped by person name, with columns: Name, Project, Target Deliverables, Status, Assignees. Copy and paste with <strong>Ctrl+Shift+V</strong> (unformatted paste) in Google Sheets.</div>
+          <pre id="team-tsv"></pre>
+          <div class="btn-group">
+            <button class="btn btn-primary" onclick="copyTeamTSV()">Copy for Sheets</button>
+            <button class="btn" onclick="downloadTeamTSV()">⬇ Download .tsv</button>
+            <button class="btn" onclick="buildTeamTSV()">Refresh</button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">×</button>
+  <img id="lightboxImg" src="" alt="Verification photo" />
+</div>
+
+<script>
+// ── AUTH ──────────────────────────────────
+function getUsers(){return JSON.parse(localStorage.getItem('fwa_users')||'{}');}
+function saveUsers(u){localStorage.setItem('fwa_users',JSON.stringify(u));}
+function getCurrentUser(){return localStorage.getItem('fwa_current_user')||null;}
+function setCurrentUser(u){localStorage.setItem('fwa_current_user',u);}
+
+function switchLoginTab(tab){
+  ['login','register'].forEach(t=>{
+    document.getElementById('ltab-'+t).classList.toggle('active',t===tab);
+    document.getElementById('lpane-'+t).style.display=t===tab?'':'none';
+  });
+}
+
+function doLogin(){
+  const user=document.getElementById('loginUser').value.trim();
+  const pass=document.getElementById('loginPass').value;
+  const msg=document.getElementById('loginMsg');
+  if(!user||!pass){msg.className='lmsg err';msg.textContent='Please fill in all fields.';return;}
+  const users=getUsers();
+  if(!users[user]){msg.className='lmsg err';msg.textContent='Username not found.';return;}
+  if(users[user].password!==btoa(pass)){msg.className='lmsg err';msg.textContent='Incorrect password.';return;}
+  setCurrentUser(user);
+  launchApp(user,users[user].name);
+}
+
+function doRegister(){
+  const name=document.getElementById('regName').value.trim();
+  const user=document.getElementById('regUser').value.trim();
+  const pass=document.getElementById('regPass').value;
+  const pass2=document.getElementById('regPass2').value;
+  const msg=document.getElementById('registerMsg');
+  if(!name||!user||!pass||!pass2){msg.className='lmsg err';msg.textContent='Please fill in all fields.';return;}
+  if(pass!==pass2){msg.className='lmsg err';msg.textContent='Passwords do not match.';return;}
+  if(pass.length<4){msg.className='lmsg err';msg.textContent='Password must be at least 4 characters.';return;}
+  const users=getUsers();
+  if(users[user]){msg.className='lmsg err';msg.textContent='Username already taken.';return;}
+  users[user]={name,password:btoa(pass)};
+  saveUsers(users);
+  msg.className='lmsg ok';msg.textContent='Account created! Signing you in...';
+  setTimeout(()=>{setCurrentUser(user);launchApp(user,name);},800);
+}
+
+function doLogout(){
+  localStorage.removeItem('fwa_current_user');
+  document.getElementById('app').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  ['loginUser','loginPass'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('loginMsg').textContent='';
+  entries=[];pendingImages=[];
+}
+
+function launchApp(username,fullname){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('userLabel').textContent=fullname||username;
+  document.getElementById('userAvatar').textContent=(fullname||username).charAt(0).toUpperCase();
+  entries=JSON.parse(localStorage.getItem('fwa_entries_'+username)||'[]');
+  const users=getUsers();
+  if(users[username]&&users[username].name) document.getElementById('hName').value=users[username].name;
+  document.getElementById('hnav-add').classList.add('active');
+  renderRecent();
+}
+
+window.addEventListener('DOMContentLoaded',()=>{
+  const u=getCurrentUser();
+  if(u){const users=getUsers();if(users[u]){launchApp(u,users[u].name);return;}}
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('hPeriod').addEventListener('input',()=>{if(document.getElementById('page-view').classList.contains('active'))renderView();});
+});
+
+// ── DATA ──────────────────────────────────
+let entries=[],pendingImages=[];
+const SL={ongoing:'Ongoing / In-Process',completed:'Completed',recurring:'Recurring',notinit:'Not initiated'};
+const SC={ongoing:'O',completed:'C',recurring:'R',notinit:'N'};
+const STATUS_ORDER=['completed','ongoing','recurring','notinit'];
+
+function save(){const u=getCurrentUser();if(u)localStorage.setItem('fwa_entries_'+u,JSON.stringify(entries));}
+function getPeriod(){return document.getElementById('hPeriod').value.trim()||'(Period not set)';}
+function getHeader(){
+  return{
+    name:document.getElementById('hName').value.trim(),
+    office:document.getElementById('hOffice').value.trim(),
+    period:document.getElementById('hPeriod').value.trim(),
+    submitted:document.getElementById('sigSubmitted').value.trim(),
+    submittedPos:document.getElementById('sigSubmittedPos').value.trim(),
+    reviewed:document.getElementById('sigReviewed').value.trim(),
+    reviewedPos:document.getElementById('sigReviewedPos').value.trim(),
+    days:{Mon:document.getElementById('dMon').value,Tue:document.getElementById('dTue').value,Wed:document.getElementById('dWed').value,Thu:document.getElementById('dThu').value,Fri:document.getElementById('dFri').value,Sat:document.getElementById('dSat').value,Sun:document.getElementById('dSun').value}
+  };
+}
+
+// ── IMAGE PROCESSING (portrait → 4:3 landscape crop) ──
+function processImage(file){
+  return new Promise(resolve=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const img=new Image();
+      img.onload=()=>{
+        const W=img.width,H=img.height;
+        const TARGET=4/3;
+        let sx,sy,sw,sh;
+        // Always crop to 4:3 from center regardless of orientation
+        if(W/H>=TARGET){
+          // wider than 4:3 — crop sides
+          sh=H;sw=Math.round(H*TARGET);
+          sx=Math.round((W-sw)/2);sy=0;
+        } else {
+          // taller than 4:3 (portrait) — crop top/bottom
+          sw=W;sh=Math.round(W/TARGET);
+          sx=0;sy=Math.round((H-sh)/2);
+        }
+        const outW=Math.min(sw,1200),outH=Math.round(outW/TARGET);
+        const canvas=document.createElement('canvas');
+        canvas.width=outW;canvas.height=outH;
+        canvas.getContext('2d').drawImage(img,sx,sy,sw,sh,0,0,outW,outH);
+        resolve({dataUrl:canvas.toDataURL('image/jpeg',0.88),name:file.name});
+      };
+      img.src=ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function onDragOver(e){e.preventDefault();document.getElementById('uploadZone').classList.add('dragover');}
+function onDragLeave(e){document.getElementById('uploadZone').classList.remove('dragover');}
+function onDrop(e){e.preventDefault();document.getElementById('uploadZone').classList.remove('dragover');handleFiles(e.dataTransfer.files);}
+function onFileChange(e){handleFiles(e.target.files);e.target.value='';}
+async function handleFiles(files){
+  for(const file of Array.from(files)){
+    if(!file.type.startsWith('image/'))continue;
+    const p=await processImage(file);
+    pendingImages.push(p);renderThumbs();
+  }
+}
+function renderThumbs(){
+  document.getElementById('thumbRow').innerHTML=pendingImages.map((img,i)=>`
+    <div class="thumb">
+      <img src="${img.dataUrl}" onclick="openLightbox('${img.dataUrl}')" />
+      <button class="thumb-del" onclick="removePending(${i})">×</button>
+      <span class="thumb-badge">4:3</span>
+    </div>`).join('');
+}
+function removePending(i){pendingImages.splice(i,1);renderThumbs();}
+function openLightbox(src){document.getElementById('lightboxImg').src=src;document.getElementById('lightbox').classList.add('open');}
+function closeLightbox(){document.getElementById('lightbox').classList.remove('open');}
+
+// ── ENTRIES ──────────────────────────────
+function addEntry(){
+  const desc=document.getElementById('fDesc').value.trim(),project=document.getElementById('fProject').value.trim(),
+        status=document.getElementById('fStatus').value,notes=document.getElementById('fNotes').value.trim(),
+        date=document.getElementById('fDate').value.trim();
+  if(!desc){alert('Please describe the activity/task.');return;}
+  if(!project){alert('Please enter a project name.');return;}
+  entries.push({id:Date.now(),project,desc,status,notes,date,period:getPeriod(),images:pendingImages.map(i=>({dataUrl:i.dataUrl,name:i.name}))});
+  save();
+  ['fDesc','fNotes','fProject','fDate'].forEach(id=>document.getElementById(id).value='');
+  pendingImages=[];renderThumbs();renderRecent();
+}
+function deleteEntry(id){entries=entries.filter(e=>e.id!==id);save();renderRecent();renderView();}
+function badgeClass(s){return{ongoing:'badge-ongoing',completed:'badge-completed',recurring:'badge-recurring',notinit:'badge-notinit'}[s]||'badge-notinit';}
+
+function itemHTML(e){
+  const ic=(e.images||[]).length;
+  const ib=ic?`<span class="badge badge-photo">${ic} photo${ic>1?'s':''}</span>`:'';
+  const th=(e.images||[]).map(img=>`<img class="entry-img" src="${img.dataUrl}" onclick="openLightbox('${img.dataUrl}')" />`).join('');
+  return `<div class="entry-item">
+    <div class="entry-body">
+      <div class="entry-tags">
+        <span class="badge badge-project">${e.project}</span>
+        <span class="badge ${badgeClass(e.status)}">${SC[e.status]} – ${SL[e.status]}</span>
+        ${e.date?`<span class="badge badge-date">${e.date}</span>`:''}
+        ${ib}
+        <span style="font-size:11px;color:var(--text-faint);">${e.period}</span>
+      </div>
+      <div class="entry-desc">${e.desc}</div>
+      ${e.notes?`<div class="entry-notes">${e.notes}</div>`:''}
+      ${th?`<div class="entry-imgs">${th}</div>`:''}
+    </div>
+    <button class="entry-del" onclick="deleteEntry(${e.id})">×</button>
+  </div>`;
+}
+
+function getPeriodEntries(){return entries.filter(e=>e.period===getPeriod());}
+
+function renderRecent(){
+  const el=document.getElementById('recent-list'),recent=[...entries].reverse().slice(0,6);
+  el.innerHTML=recent.length
+    ?`<div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-faint);margin-bottom:8px;">Recent entries</div>`+recent.map(itemHTML).join('')
+    :'<div class="empty-state">No entries yet. Add one above.</div>';
+}
+
+function renderView(){
+  const we=getPeriodEntries(),sEl=document.getElementById('stats'),lEl=document.getElementById('view-list');
+  document.getElementById('viewDesc').textContent='Showing entries for: '+getPeriod();
+  sEl.innerHTML=`
+    <div class="stat-card"><div class="stat-val">${we.length}</div><div class="stat-lbl">Total</div></div>
+    <div class="stat-card"><div class="stat-val">${we.filter(e=>e.status==='completed').length}</div><div class="stat-lbl">Completed</div></div>
+    <div class="stat-card"><div class="stat-val">${we.filter(e=>e.status==='ongoing').length}</div><div class="stat-lbl">Ongoing</div></div>
+    <div class="stat-card"><div class="stat-val">${we.filter(e=>e.status==='recurring').length}</div><div class="stat-lbl">Recurring</div></div>
+    <div class="stat-card"><div class="stat-val">${we.filter(e=>e.status==='notinit').length}</div><div class="stat-lbl">Not initiated</div></div>`;
+  if(!we.length){lEl.innerHTML='<div class="empty-state">No entries for this period label.</div>';return;}
+  lEl.innerHTML=[...new Set(we.map(e=>e.project))].map(proj=>{
+    const pi=we.filter(e=>e.project===proj);
+    return `<div class="proj-group"><div class="proj-group-header">${proj} <span class="proj-count">${pi.length} task${pi.length>1?'s':''}</span></div>${pi.map(itemHTML).join('')}</div>`;
+  }).join('');
+}
+
+// ── PDF PREVIEW ───────────────────────────
+function buildPDFPreview(){
+  const we=getPeriodEntries(),h=getHeader(),el=document.getElementById('pdf-preview-table');
+  if(!we.length){el.innerHTML='<div class="empty-state">No entries for this period.</div>';return;}
+  let html=`<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;font-weight:500;">${h.name||'(Name)'} · ${h.office||'(Office)'} · ${h.period||'(Period)'}</div>`;
+  html+=`<table class="preview-table"><thead><tr>
+    <th style="width:70px;">Date</th><th>Activity / Task</th>
+    <th style="width:30px;text-align:center;">O</th><th style="width:30px;text-align:center;">C</th><th style="width:30px;text-align:center;">R</th>
+    <th>Remarks &amp; Photos</th>
+  </tr></thead><tbody>`;
+  we.forEach(e=>{
+    const imgs=(e.images||[]);
+    const th=imgs.map(img=>`<img src="${img.dataUrl}" style="width:60px;height:45px;object-fit:cover;border-radius:3px;margin:2px;cursor:pointer;" onclick="openLightbox('${img.dataUrl}')" />`).join('');
+    html+=`<tr>
+      <td>${e.date||''}</td>
+      <td>${e.project?'<span style="color:#888;font-size:10px;">['+e.project+']</span><br>':''}${e.desc}</td>
+      <td style="text-align:center;">${e.status==='ongoing'?'✓':''}</td>
+      <td style="text-align:center;">${e.status==='completed'?'✓':''}</td>
+      <td style="text-align:center;">${e.status==='recurring'?'✓':''}</td>
+      <td>${e.notes||''}${th?'<div style="margin-top:4px;">'+th+'</div>':''}</td>
+    </tr>`;
+  });
+  html+=`</tbody></table>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:16px;font-size:11px;">
+    <div><div style="color:var(--text-muted);margin-bottom:18px;">Submitted by:</div><div style="border-top:1px solid var(--text);padding-top:4px;font-weight:600;">${h.submitted||'___________________'}</div><div style="color:var(--text-muted);font-size:10px;">${h.submittedPos||''}</div></div>
+    <div><div style="color:var(--text-muted);margin-bottom:18px;">Reviewed by:</div><div style="border-top:1px solid var(--text);padding-top:4px;font-weight:600;">${h.reviewed||'___________________'}</div><div style="color:var(--text-muted);font-size:10px;">${h.reviewedPos||''}</div></div>
+    <div><div style="color:var(--text-muted);margin-bottom:18px;">Approved by:</div><div style="border-top:1px solid var(--text);padding-top:4px;font-weight:600;">Peter A. Sy</div><div style="color:var(--text-muted);">Vice President for Digital Transformation</div></div>
+  </div>`;
+  el.innerHTML=html;
+}
+
+// ── PDF EXPORT ────────────────────────────
+async function exportPDF(){
+  if(typeof window.jspdf==='undefined'){alert('PDF library loading, please try again.');return;}
+  const{jsPDF}=window.jspdf,we=getPeriodEntries(),h=getHeader();
+  if(!we.length){alert('No entries for this period.');return;}
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const pw=210,ml=15,mr=15,cW=pw-ml-mr;let y=18;
+
+  doc.setFont('helvetica','bold');doc.setFontSize(11);
+  doc.text('UNIVERSITY OF THE PHILIPPINES',pw/2,y,{align:'center'});y+=5;
+  doc.setFont('helvetica','normal');doc.setFontSize(9);
+  doc.text('Office of the Vice President for Digital Transformation',pw/2,y,{align:'center'});y+=10;
+  doc.setFontSize(10);
+  doc.text('Name',ml,y);doc.line(ml+10,y+.5,ml+70,y+.5);doc.text(h.name,ml+12,y);
+  doc.text('Office/Unit',ml+80,y);doc.line(ml+97,y+.5,ml+cW,y+.5);doc.text(h.office,ml+99,y);y+=10;
+  doc.setFont('helvetica','bold');doc.setFontSize(11);
+  doc.text('FLEXIBLE WORK ARRANGEMENT (FWA) ACCOMPLISHMENT REPORT',pw/2,y,{align:'center'});y+=5;
+  doc.setFont('helvetica','normal');doc.setFontSize(10);
+  const pl='For the Period of ';
+  doc.text(pl,pw/2-30,y);doc.line(pw/2-30+doc.getTextWidth(pl),y+.5,pw/2+35,y+.5);
+  doc.text(h.period,pw/2-30+doc.getTextWidth(pl)+2,y);y+=8;
+
+  const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],dW=cW/7;
+  doc.setFillColor(254,249,231);doc.rect(ml,y,cW,7,'F');
+  doc.setDrawColor(150,150,150);doc.rect(ml,y,cW,14);
+  doc.setFont('helvetica','bold');doc.setFontSize(9);doc.text('Work Arrangement*',pw/2,y+4,{align:'center'});
+  doc.setFont('helvetica','italic');doc.setFontSize(7.5);doc.text("(as indicated in the Office/Unit's Regular Weekly FWA)",pw/2,y+6.5,{align:'center'});
+  y+=7;
+  days.forEach((d,i)=>{
+    const x=ml+i*dW;doc.setDrawColor(150,150,150);doc.line(x,y,x,y+7);
+    doc.setFont('helvetica','bold');doc.setFontSize(8);doc.text(d,x+dW/2,y+3.5,{align:'center'});
+    doc.setFont('helvetica','normal');doc.setFontSize(7);doc.text(h.days[d]||'',x+dW/2,y+6.2,{align:'center'});
+  });
+  y+=10;
+
+  const COL={date:22,task:68,o:10,c:10,r:10,rem:60};
+  const IW=38,IH=28,IP=2;
+
+  async function loadImg(u){return new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=u;});}
+  const eid=[];
+  for(const e of we){const ld=[];for(const img of(e.images||[])){const el=await loadImg(img.dataUrl);if(el)ld.push({dataUrl:img.dataUrl});}eid.push(ld);}
+
+  const wks=[...new Set(we.map(e=>e.period))];
+  const tb=[],rm=[];
+  wks.forEach(wk=>{
+    const wi=we.filter(e=>e.period===wk);
+    tb.push([{content:`Week of ${wk}`,colSpan:6,styles:{fillColor:[254,230,150],textColor:[0,0,0],fontStyle:'bold',fontSize:8,cellPadding:3}}]);rm.push(-1);
+    wi.forEach(e=>{
+      tb.push([e.date||'',(e.project?'['+e.project+']\n':'')+e.desc,e.status==='ongoing'?'✓':'',e.status==='completed'?'✓':'',e.status==='recurring'?'✓':'',e.notes||'']);
+      rm.push(we.indexOf(e));
+    });
+  });
+
+  doc.autoTable({
+    startY:y,margin:{left:ml,right:mr},
+    head:[[
+      {content:'DATE\n(optional)',styles:{fillColor:[254,249,231],textColor:[0,0,0],fontStyle:'bold',halign:'center',fontSize:7}},
+      {content:'ACTIVITY/ TASK',styles:{fillColor:[254,249,231],textColor:[0,0,0],fontStyle:'bold',halign:'center',fontSize:7}},
+      {content:'O',styles:{fillColor:[254,249,231],textColor:[0,0,0],fontStyle:'bold',halign:'center',fontSize:7}},
+      {content:'C',styles:{fillColor:[254,249,231],textColor:[0,0,0],fontStyle:'bold',halign:'center',fontSize:7}},
+      {content:'R',styles:{fillColor:[254,249,231],textColor:[0,0,0],fontStyle:'bold',halign:'center',fontSize:7}},
+      {content:'REMARKS\n(mode of verification / link to output)',styles:{fillColor:[254,249,231],textColor:[0,0,0],fontStyle:'bold',halign:'center',fontSize:7}}
+    ]],
+    body:tb,
+    columnStyles:{0:{cellWidth:COL.date,fontSize:7,valign:'top'},1:{cellWidth:COL.task,fontSize:7,valign:'top'},2:{cellWidth:COL.o,halign:'center',fontSize:8,valign:'top'},3:{cellWidth:COL.c,halign:'center',fontSize:8,valign:'top'},4:{cellWidth:COL.r,halign:'center',fontSize:8,valign:'top'},5:{cellWidth:COL.rem,fontSize:7,valign:'top'}},
+    styles:{lineColor:[180,180,180],lineWidth:.3,cellPadding:2,overflow:'linebreak'},
+    headStyles:{lineColor:[180,180,180],lineWidth:.3},theme:'grid',
+    didDrawCell:function(data){
+      if(data.section!=='body'||data.column.index!==5)return;
+      const bi=data.row.index;if(bi<0||bi>=rm.length)return;
+      const ei=rm[bi];if(ei<0)return;
+      const imgs=eid[ei];if(!imgs||!imgs.length)return;
+      const cx=data.cell.x,cy=data.cell.y,cw=data.cell.width;
+      const tl=(data.cell.text&&data.cell.text.length)?data.cell.text.length:1;
+      let ix=cx+IP,iy=cy+tl*4+3;
+      imgs.forEach(img=>{
+        if(ix+IW>cx+cw-IP){ix=cx+IP;iy+=IH+IP;}
+        try{doc.addImage(img.dataUrl,'JPEG',ix,iy,IW,IH);}catch(e2){}
+        ix+=IW+IP;
+      });
+    },
+    didParseCell:function(data){
+      if(data.section!=='body')return;
+      const bi=data.row.index;if(bi<0||bi>=rm.length)return;
+      const ei=rm[bi];if(ei<0)return;
+      const imgs=eid[ei];if(!imgs||!imgs.length)return;
+      const ipr=Math.max(1,Math.floor(COL.rem/(IW+IP)));
+      const ir=Math.ceil(imgs.length/ipr);
+      data.cell.styles.minCellHeight=ir*(IH+IP)+16;
+    }
+  });
+
+  let fy=doc.lastAutoTable.finalY+5;
+  doc.setFontSize(7.5);doc.setFont('helvetica','italic');
+  doc.text('* Work from Home, Satellite Office or Another Fixed Place within the Philippines',ml,fy);
+  fy+=12;
+  if(fy+40>280){doc.addPage();fy=20;}
+  const colW2=cW/3;
+  [{label:'Submitted by:',name:h.submitted||'',pos:h.submittedPos||''},
+   {label:'Reviewed by:',name:h.reviewed||'',pos:h.reviewedPos||''},
+   {label:'Approved by:',name:'Peter A. Sy',pos:'Vice President for Digital Transformation'}
+  ].forEach((col,i)=>{
+    const x=ml+i*colW2;
+    doc.setFont('helvetica','normal');doc.setFontSize(9);doc.text(col.label,x,fy);
+    doc.line(x,fy+16,x+colW2-6,fy+16);
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.text(col.name,x,fy+21);
+    doc.setFont('helvetica','normal');doc.setFontSize(8);
+    if(col.pos)doc.text(col.pos,x,fy+26);
+  });
+
+  doc.save(`FWA_${(h.name||'Report').replace(/\s+/g,'_')}_${(h.period||'Period').replace(/[^a-z0-9]/gi,'_')}.pdf`);
+}
+
+// ── TEAM DELIVERABLES ────────────────────
+const TEAMS = ['Admin Team','Communications Team','Management Team','Project Team','Research Team'];
+const STATUSES = ['Completed','Ongoing Progress','Not Initiated'];
+let activeTeam = TEAMS[0];
+let teamData = {}; // { period: { teamName: [{id,project,deliverable,status,assignees}] } }
+
+function saveTeamData() { localStorage.setItem('fwa_team_data', JSON.stringify(teamData)); }
+function loadTeamData() { teamData = JSON.parse(localStorage.getItem('fwa_team_data') || '{}'); }
+
+function getTPeriod() { return document.getElementById('tPeriod').value.trim() || '(Period not set)'; }
+
+function ensureTeamPeriod(period, team) {
+  if (!teamData[period]) teamData[period] = {};
+  if (!teamData[period][team]) teamData[period][team] = [];
+}
+
+function addTeamRow(team) {
+  const period = getTPeriod();
+  ensureTeamPeriod(period, team);
+  teamData[period][team].push({ id: Date.now(), project:'', deliverable:'', status:'Ongoing Progress', assignees:'' });
+  saveTeamData();
+  renderTeamTables();
+}
+
+function deleteTeamRow(team, id) {
+  const period = getTPeriod();
+  if (!teamData[period] || !teamData[period][team]) return;
+  teamData[period][team] = teamData[period][team].filter(r => r.id !== id);
+  saveTeamData();
+  renderTeamTables();
+}
+
+function updateTeamCell(team, id, field, value) {
+  const period = getTPeriod();
+  if (!teamData[period] || !teamData[period][team]) return;
+  const row = teamData[period][team].find(r => r.id === id);
+  if (row) { row[field] = value; saveTeamData(); }
+}
+
+function renderTeamTabs() {
+  document.getElementById('teamTabs').innerHTML = TEAMS.map(t =>
+    `<button class="team-tab${t===activeTeam?' active':''}" onclick="switchTeam('${t}')">${t}</button>`
+  ).join('');
+}
+
+function switchTeam(team) { activeTeam = team; renderTeamTabs(); renderTeamTables(); }
+
+function statusClass(s) {
+  if (s==='Completed') return 's-completed';
+  if (s==='Ongoing Progress') return 's-ongoing';
+  return 's-notinit';
+}
+
+function renderTeamTables() {
+  const period = getTPeriod();
+  ensureTeamPeriod(period, activeTeam);
+  const rows = teamData[period][activeTeam] || [];
+
+  let html = `<div class="card" style="padding:0;overflow:hidden;">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-size:13px;font-weight:600;color:var(--text);">${activeTeam}</span>
+      <span style="font-size:12px;color:var(--text-muted);">${period} · ${rows.length} row${rows.length!==1?'s':''}</span>
+    </div>
+    <div class="team-table-wrap" style="border:none;border-radius:0;">
+      <table class="team-table">
+        <thead><tr>
+          <th style="width:160px;">Project</th>
+          <th>Target Deliverables</th>
+          <th style="width:150px;">Status</th>
+          <th style="width:150px;">Assignees</th>
+          <th style="width:36px;"></th>
+        </tr></thead>
+        <tbody>`;
+
+  rows.forEach(row => {
+    html += `<tr>
+      <td><input type="text" value="${escHtml(row.project)}" placeholder="Project name" onchange="updateTeamCell('${activeTeam}',${row.id},'project',this.value)" /></td>
+      <td><input type="text" value="${escHtml(row.deliverable)}" placeholder="Describe the deliverable..." onchange="updateTeamCell('${activeTeam}',${row.id},'deliverable',this.value)" /></td>
+      <td>
+        <select onchange="updateTeamCell('${activeTeam}',${row.id},'status',this.value)">
+          ${STATUSES.map(s=>`<option value="${s}"${row.status===s?' selected':''}>${s}</option>`).join('')}
+        </select>
+      </td>
+      <td><input type="text" value="${escHtml(row.assignees)}" placeholder="e.g. Bea, Kris" onchange="updateTeamCell('${activeTeam}',${row.id},'assignees',this.value)" /></td>
+      <td><button class="del-row-btn" onclick="deleteTeamRow('${activeTeam}',${row.id})">×</button></td>
+    </tr>`;
+  });
+
+  html += `</tbody></table></div>
+    <div style="padding:8px 12px;">
+      <button class="add-row-btn" onclick="addTeamRow('${activeTeam}')">+ Add row</button>
+    </div>
+  </div>`;
+
+  document.getElementById('teamTableArea').innerHTML = html;
+}
+
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function buildTeamTSV() {
+  const period = getTPeriod();
+  const lines = [];
+  // Header row
+  lines.push(['Name','Project','Target Deliverables','Status','Assignees'].join('\t'));
+
+  TEAMS.forEach(team => {
+    const rows = (teamData[period] && teamData[period][team]) ? teamData[period][team] : [];
+    if (!rows.length) return;
+    // Team name header row (bold marker)
+    lines.push([team,'','','',''].join('\t'));
+    rows.forEach(row => {
+      lines.push([
+        '',
+        row.project||'',
+        row.deliverable||'',
+        row.status||'',
+        row.assignees||''
+      ].map(c=>`"${String(c).replace(/"/g,'""')}"`).join('\t'));
+    });
+    lines.push(['','','','','']); // blank row between teams
+  });
+
+  document.getElementById('team-tsv').textContent = lines.join('\n');
+}
+
+function copyTeamTSV() {
+  buildTeamTSV();
+  navigator.clipboard.writeText(document.getElementById('team-tsv').textContent).then(() => {
+    const b = event.target, orig = b.textContent;
+    b.textContent = 'Copied!'; setTimeout(() => b.textContent = orig, 1800);
+  });
+}
+
+function downloadTeamTSV() {
+  buildTeamTSV();
+  const text = document.getElementById('team-tsv').textContent;
+  const period = getTPeriod();
+  const blob = new Blob([text], { type:'text/tab-separated-values' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `TeamDeliverables_${period.replace(/[^a-z0-9]/gi,'_')}.tsv`; a.click();
+}
+
+function showPage(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item').forEach(i=>i.classList.remove('active'));
+  document.querySelectorAll('.hnav-btn').forEach(i=>i.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  const n=document.getElementById('nav-'+page);if(n)n.classList.add('active');
+  const hn=document.getElementById('hnav-'+page);if(hn)hn.classList.add('active');
+  if(page==='view')renderView();
+  if(page==='export')buildPDFPreview();
+  if(page==='team'){loadTeamData();renderTeamTabs();renderTeamTables();}
+  if(page==='teamexport'){loadTeamData();buildTeamTSV();}
+}
+</script>
+</body>
+</html>
