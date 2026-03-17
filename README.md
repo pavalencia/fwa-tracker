@@ -312,7 +312,11 @@
             <div class="field"><label>Office / Unit</label><input type="text" id="hOffice" placeholder="e.g. OVPDx" /></div>
           </div>
           <div class="form-grid full" style="margin-bottom:14px;">
-            <div class="field"><label>For the period of</label><input type="text" id="hPeriod" placeholder="e.g. March 17–21, 2025" /></div>
+            <div class="field"><label>For the period of</label>
+              <select id="hPeriod" onchange="if(document.getElementById('page-view').classList.contains('active'))renderView()">
+                <option value="">Select week...</option>
+              </select>
+            </div>
           </div>
           <div class="card-title" style="margin-top:4px;">Work arrangement (per day)</div>
           <div class="day-grid">
@@ -413,7 +417,11 @@
         <div class="card">
           <div class="card-title">Week / period</div>
           <div class="form-grid full" style="margin-bottom:0;">
-            <div class="field"><label>For the period of</label><input type="text" id="tPeriod" placeholder="e.g. March 17–21, 2025" oninput="renderTeamTables()" /></div>
+            <div class="field"><label>For the period of</label>
+              <select id="tPeriod" onchange="renderTeamTables()">
+                <option value="">Select week...</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -463,7 +471,11 @@
         <div class="card">
           <div class="card-title">Export period</div>
           <div class="form-grid full" style="margin-bottom:0;">
-            <div class="field"><label>Period</label><input type="text" id="tPeriodExport" placeholder="e.g. March 17–21, 2025" /></div>
+            <div class="field"><label>Period</label>
+              <select id="tPeriodExport">
+                <option value="">Select week...</option>
+              </select>
+            </div>
           </div>
           <div style="margin-top:12px;font-size:12px;color:var(--text-muted);">Each team gets its own sheet tab. Within each sheet, person names appear as column headers side by side with their Project, Target Deliverables, Status, and Assignees listed below.</div>
         </div>
@@ -550,6 +562,7 @@ function launchApp(username,fullname){
   entries=JSON.parse(localStorage.getItem('fwa_entries_'+username)||'[]');
   const users=getUsers();
   if(users[username]&&users[username].name) document.getElementById('hName').value=users[username].name;
+  generateWeekOptions();
   document.getElementById('hnav-add').classList.add('active');
   renderRecent();
 }
@@ -558,10 +571,83 @@ window.addEventListener('DOMContentLoaded',()=>{
   const u=getCurrentUser();
   if(u){const users=getUsers();if(users[u]){launchApp(u,users[u].name);return;}}
   document.getElementById('loginScreen').style.display='flex';
-  document.getElementById('hPeriod').addEventListener('input',()=>{if(document.getElementById('page-view').classList.contains('active'))renderView();});
+  document.getElementById('hPeriod').addEventListener('change',()=>{if(document.getElementById('page-view').classList.contains('active'))renderView();});
 });
 
-// ── DATA ──────────────────────────────────
+// ── WEEK DROPDOWN ─────────────────────────
+function generateWeekOptions() {
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const options = [];
+
+  // Generate Mon–Fri weeks from Jan 2026 to Dec 2027
+  const start = new Date(2026, 0, 1); // Jan 1 2026
+  const end   = new Date(2027, 11, 31); // Dec 31 2027
+
+  // Find first Monday on or after start
+  let d = new Date(start);
+  const day = d.getDay();
+  if (day !== 1) d.setDate(d.getDate() + ((1 - day + 7) % 7));
+
+  while (d <= end) {
+    const mon = new Date(d);
+    const fri = new Date(d); fri.setDate(fri.getDate() + 4);
+
+    const monMonth = MONTHS[mon.getMonth()];
+    const friMonth = MONTHS[fri.getMonth()];
+    const monDay   = mon.getDate();
+    const friDay   = fri.getDate();
+    const year     = fri.getFullYear();
+
+    let label;
+    if (mon.getMonth() === fri.getMonth()) {
+      label = `${monMonth} ${monDay}–${friDay}, ${year}`;
+    } else {
+      label = `${monMonth} ${monDay} – ${friMonth} ${friDay}, ${year}`;
+    }
+    options.push(label);
+    d.setDate(d.getDate() + 7);
+  }
+
+  // Populate all three period selects
+  ['hPeriod','tPeriod','tPeriodExport'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const current = sel.value;
+    sel.innerHTML = '<option value="">Select week...</option>' +
+      options.map(o => `<option value="${o}"${o===current?' selected':''}>${o}</option>`).join('');
+  });
+
+  // Auto-select current week if available
+  autoSelectCurrentWeek();
+}
+
+function autoSelectCurrentWeek() {
+  const today = new Date();
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  // Find Monday of current week
+  const d = new Date(today);
+  const day = d.getDay();
+  const diff = (day === 0) ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  const mon = new Date(d);
+  const fri = new Date(d); fri.setDate(fri.getDate() + 4);
+  let label;
+  if (mon.getMonth() === fri.getMonth()) {
+    label = `${MONTHS[mon.getMonth()]} ${mon.getDate()}–${fri.getDate()}, ${fri.getFullYear()}`;
+  } else {
+    label = `${MONTHS[mon.getMonth()]} ${mon.getDate()} – ${MONTHS[fri.getMonth()]} ${fri.getDate()}, ${fri.getFullYear()}`;
+  }
+  ['hPeriod','tPeriod','tPeriodExport'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    // Only auto-select if not already set
+    if (!sel.value) {
+      for (const opt of sel.options) {
+        if (opt.value === label) { sel.value = label; break; }
+      }
+    }
+  });
+}
 let entries=[],pendingImages=[];
 const SL={ongoing:'Ongoing / In-Process',completed:'Completed',recurring:'Recurring',notinit:'Not initiated'};
 const SC={ongoing:'O',completed:'C',recurring:'R',notinit:'N'};
@@ -1170,8 +1256,7 @@ function showPage(page){
   if(page==='team'){loadTeamData();renderTeamTabs();updatePersonDropdown();renderTeamTables();}
   if(page==='teamexport'){
     loadTeamData();
-    // Sync period from team page if set
-    const tp = document.getElementById('tPeriod').value.trim();
+    const tp = document.getElementById('tPeriod').value;
     if (tp) document.getElementById('tPeriodExport').value = tp;
     previewExport();
   }
