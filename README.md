@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     :root {
       --bg:#f7f6f2;--surface:#fff;--surface2:#f0ede6;
@@ -291,7 +292,7 @@
         </div>
         <div class="sidebar-item" onclick="showPage('teamexport')" id="nav-teamexport">
           <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-          Team → Sheets
+          Team → Excel
         </div>
       </div>
     </aside>
@@ -440,7 +441,11 @@
                 <option value="Not Initiated">Not Initiated</option>
               </select>
             </div>
-            <div class="field"><label>Assignees</label><input type="text" id="tAssignees" placeholder="e.g. Paula Beatrice" /></div>
+            <div class="field"><label>Assignees</label>
+              <select id="tAssignees">
+                <option value="">Select assignee</option>
+              </select>
+            </div>
           </div>
           <button class="btn btn-primary" onclick="addTeamRow()">+ Add entry</button>
         </div>
@@ -452,30 +457,28 @@
       <!-- TEAM EXPORT PAGE -->
       <div class="page" id="page-teamexport">
         <div class="page-header">
-          <div class="page-title">Team → Google Sheets</div>
-          <div class="page-desc">Export all team deliverables summarized per person. Two ways to get it into Google Sheets.</div>
+          <div class="page-title">Team → Excel</div>
+          <div class="page-desc">Download team deliverables as an Excel file (.xlsx) — one sheet per team, each with person columns side by side.</div>
         </div>
         <div class="card">
-          <div class="card-title">Option 1 — Copy & paste</div>
-          <div class="export-note">Copy the tab-separated data below, open Google Sheets, click an empty cell, and paste with <strong>Ctrl+Shift+V</strong> (unformatted paste). Each column will land in its own cell.</div>
-          <pre id="team-tsv" style="max-height:260px;"></pre>
+          <div class="card-title">Export period</div>
+          <div class="form-grid full" style="margin-bottom:0;">
+            <div class="field"><label>Period</label><input type="text" id="tPeriodExport" placeholder="e.g. March 17–21, 2025" /></div>
+          </div>
+          <div style="margin-top:12px;font-size:12px;color:var(--text-muted);">Each team gets its own sheet tab. Within each sheet, person names appear as column headers side by side with their Project, Target Deliverables, Status, and Assignees listed below.</div>
+        </div>
+        <div class="card">
+          <div style="margin-bottom:14px;" id="exportPreviewArea">
+            <div class="empty-state" style="padding:1.5rem 0;">Click "Download Excel" to preview and export.</div>
+          </div>
           <div class="btn-group">
-            <button class="btn btn-primary" onclick="copyTeamTSV()">Copy for Sheets</button>
-            <button class="btn" onclick="downloadTeamTSV()">⬇ Download .tsv</button>
-            <button class="btn" onclick="buildTeamTSV()">Refresh</button>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-title">Option 2 — Open directly in Google Sheets</div>
-          <div class="export-note">Click the button below to download the .tsv file, then import it into Google Sheets via <strong>File → Import → Upload</strong>. Or use the link generator below to create a pre-filled Google Sheet from your data.</div>
-          <div style="margin-bottom:12px;">
-            <button class="btn btn-primary" onclick="openInSheets()">Open in Google Sheets ↗</button>
-          </div>
-          <div style="font-size:12px;color:var(--text-muted);background:var(--surface2);border-radius:var(--radius-sm);padding:10px 14px;" id="sheetsLinkBox">
-            Click "Open in Google Sheets" to generate your link.
+            <button class="btn btn-primary" onclick="exportExcel()">⬇ Download Excel (.xlsx)</button>
+            <button class="btn" onclick="previewExport()">Preview</button>
           </div>
         </div>
       </div>
+      <!-- hidden TSV element kept for compatibility -->
+      <pre id="team-tsv" style="display:none;"></pre>
 
     </main>
   </div>
@@ -863,10 +866,11 @@ function ensureTeamPeriod(period, team) {
 }
 
 function updatePersonDropdown() {
-  const sel = document.getElementById('tPerson');
   const members = TEAM_MEMBERS[activeTeam] || [];
-  sel.innerHTML = '<option value="">Select person</option>' +
-    members.map(m => `<option value="${m}">${m}</option>`).join('');
+  const opts = '<option value="">Select person</option>' + members.map(m => `<option value="${m}">${m}</option>`).join('');
+  document.getElementById('tPerson').innerHTML = opts;
+  const aOpts = '<option value="">Select assignee</option>' + members.map(m => `<option value="${m}">${m}</option>`).join('');
+  document.getElementById('tAssignees').innerHTML = aOpts;
 }
 
 function addTeamRow() {
@@ -1039,58 +1043,120 @@ function buildTeamTSV() {
   return tsv;
 }
 
-function copyTeamTSV() {
-  const tsv = buildTeamTSV();
-  navigator.clipboard.writeText(tsv).then(() => {
-    const b = event.target, orig = b.textContent;
-    b.textContent = 'Copied!'; setTimeout(() => b.textContent = orig, 1800);
+// ── EXCEL EXPORT — one sheet per team ────
+function getExportPeriod() {
+  const v = document.getElementById('tPeriodExport').value.trim();
+  return v || getTPeriod();
+}
+
+function buildTeamSheetData(team, period) {
+  const members = TEAM_MEMBERS[team] || [];
+  const teamRows = (teamData[period] && teamData[period][team]) ? teamData[period][team] : [];
+
+  // Build side-by-side: each member gets 4 cols, blank separator between
+  // Row 0: person names
+  // Row 1: sub-headers
+  // Row 2+: data
+
+  const maxRows = Math.max(...members.map(m => teamRows.filter(r => r.person === m).length), 0);
+
+  const sheetData = [];
+
+  // Row 1 — person names
+  const nameRow = [];
+  members.forEach((m, idx) => {
+    nameRow.push(m, '', '', '');
+    if (idx < members.length - 1) nameRow.push('');
   });
+  sheetData.push(nameRow);
+
+  // Row 2 — sub-headers
+  const subRow = [];
+  members.forEach((m, idx) => {
+    subRow.push('Project', 'Target Deliverables', 'Status', 'Assignees');
+    if (idx < members.length - 1) subRow.push('');
+  });
+  sheetData.push(subRow);
+
+  // Data rows
+  for (let i = 0; i < maxRows; i++) {
+    const row = [];
+    members.forEach((m, idx) => {
+      const mRows = teamRows.filter(r => r.person === m);
+      const r = mRows[i];
+      if (r) {
+        row.push(r.project||'', r.deliverable||'', r.status||'', r.assignees||'');
+      } else {
+        row.push('', '', '', '');
+      }
+      if (idx < members.length - 1) row.push('');
+    });
+    sheetData.push(row);
+  }
+
+  return sheetData;
 }
 
-function downloadTeamTSV() {
-  const tsv = buildTeamTSV();
-  const period = getTPeriod();
-  const blob = new Blob([tsv], { type: 'text/tab-separated-values' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `TeamDeliverables_${period.replace(/[^a-z0-9]/gi,'_')}.tsv`;
-  a.click();
-}
-
-function openInSheets() {
-  const tsv = buildTeamTSV();
-  const period = getTPeriod();
-
-  // Encode as CSV for Google Sheets import URL
-  // Convert TSV to CSV
-  const csv = tsv.split('\n').map(line =>
-    line.split('\t').map(cell => {
-      // cells are already quoted in our TSV, strip outer quotes first
-      const val = cell.replace(/^"|"$/g,'').replace(/""/g,'"');
-      return '"' + val.replace(/"/g,'""') + '"';
-    }).join(',')
-  ).join('\n');
-
-  // Create a data URI and open Google Sheets import
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-
-  // Show instructions + download link since Sheets can't open blob URLs directly
-  const sheetsBox = document.getElementById('sheetsLinkBox');
-  sheetsBox.innerHTML = `
-    <div style="margin-bottom:10px;font-size:12px;color:var(--text);font-weight:500;">How to open in Google Sheets:</div>
-    <ol style="font-size:12px;color:var(--text-muted);line-height:2;padding-left:18px;">
-      <li>Click <strong>Download CSV</strong> below to save the file</li>
-      <li>Go to <a href="https://sheets.new" target="_blank" style="color:var(--accent);">sheets.new</a> to open a new Google Sheet</li>
-      <li>Click <strong>File → Import → Upload</strong> and select the downloaded file</li>
-      <li>Choose <strong>"Replace spreadsheet"</strong> or <strong>"Insert new sheet"</strong> → click Import</li>
-    </ol>
-    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
-      <a href="${url}" download="TeamDeliverables_${period.replace(/[^a-z0-9]/gi,'_')}.csv" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;padding:7px 14px;background:var(--accent);color:#fff;border-radius:6px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">⬇ Download CSV</a>
-      <a href="https://sheets.new" target="_blank" style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;padding:7px 14px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">Open Google Sheets ↗</a>
+function previewExport() {
+  const period = getExportPeriod();
+  loadTeamData();
+  let html = '';
+  TEAMS.forEach(team => {
+    const members = TEAM_MEMBERS[team] || [];
+    const rows = (teamData[period] && teamData[period][team]) ? teamData[period][team] : [];
+    const total = rows.length;
+    const people = members.filter(m => rows.some(r => r.person === m));
+    html += `<div style="margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surface2);border-radius:var(--radius-sm);">
+      <div>
+        <span style="font-size:13px;font-weight:600;color:var(--text);">${team}</span>
+        <span style="font-size:11px;color:var(--text-muted);margin-left:8px;">${people.length} person${people.length!==1?'s':''} · ${total} entr${total!==1?'ies':'y'}</span>
+      </div>
+      <span style="font-size:11px;color:var(--accent);font-weight:500;">1 sheet tab</span>
     </div>`;
+  });
+  html += `<div style="font-size:12px;color:var(--text-muted);margin-top:8px;">Period: <strong>${period}</strong> · ${TEAMS.length} sheet tabs total</div>`;
+  document.getElementById('exportPreviewArea').innerHTML = html;
 }
 
+function exportExcel() {
+  if (typeof XLSX === 'undefined') { alert('Excel library loading, please try again in a moment.'); return; }
+  const period = getExportPeriod();
+  loadTeamData();
+
+  const wb = XLSX.utils.book_new();
+
+  TEAMS.forEach(team => {
+    const sheetData = buildTeamSheetData(team, period);
+    const ws = XLSX.utils.aoa_to_sheet(sheetData);
+
+    // Style: bold the first two header rows by setting cell styles
+    const members = TEAM_MEMBERS[team] || [];
+    const numCols = members.length * 4 + Math.max(0, members.length - 1);
+
+    // Set column widths
+    ws['!cols'] = [];
+    members.forEach((m, idx) => {
+      ws['!cols'].push({wch:20},{wch:36},{wch:18},{wch:20});
+      if (idx < members.length - 1) ws['!cols'].push({wch:3});
+    });
+
+    // Merge cells for person name headers (each name spans 4 cols)
+    if (!ws['!merges']) ws['!merges'] = [];
+    members.forEach((m, idx) => {
+      const startCol = idx * 5; // 4 data cols + 1 sep
+      ws['!merges'].push({
+        s: {r:0, c:startCol},
+        e: {r:0, c:startCol+3}
+      });
+    });
+
+    XLSX.utils.book_append_sheet(wb, ws, team.substring(0,31));
+  });
+
+  const filename = `TeamDeliverables_${period.replace(/[^a-z0-9]/gi,'_')}.xlsx`;
+  XLSX.writeFile(wb, filename);
+  previewExport();
+}
 
 function showPage(page){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -1102,7 +1168,13 @@ function showPage(page){
   if(page==='view')renderView();
   if(page==='export')buildPDFPreview();
   if(page==='team'){loadTeamData();renderTeamTabs();updatePersonDropdown();renderTeamTables();}
-  if(page==='teamexport'){loadTeamData();buildTeamTSV();}
+  if(page==='teamexport'){
+    loadTeamData();
+    // Sync period from team page if set
+    const tp = document.getElementById('tPeriod').value.trim();
+    if (tp) document.getElementById('tPeriodExport').value = tp;
+    previewExport();
+  }
 }
 </script>
 </body>
