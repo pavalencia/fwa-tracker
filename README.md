@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>OVPDx FWA Accomplishment Tracker</title>
+  <title>FWA Accomplishment Tracker</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -199,6 +200,18 @@
       .header-nav{gap:2px;}.hnav-btn{font-size:11px;padding:5px 8px;}
       .logout-btn{font-size:11px;padding:5px 8px;}
     }
+    /* MODAL */
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;align-items:center;justify-content:center;}
+    .modal-overlay.open{display:flex;}
+    .modal-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:2rem;width:100%;max-width:380px;box-shadow:0 8px 40px rgba(0,0,0,.18);animation:fadeIn .18s ease;}
+    .modal-title{font-size:15px;font-weight:600;margin-bottom:4px;}
+    .modal-desc{font-size:12px;color:var(--text-muted);margin-bottom:1.25rem;line-height:1.6;}
+    .modal-footer{display:flex;gap:8px;margin-top:1.25rem;justify-content:flex-end;}
+    /* Forgot password link */
+    .forgot-link{font-size:11px;color:var(--accent);cursor:pointer;text-align:right;display:block;margin-top:6px;text-decoration:underline;}
+    .forgot-link:hover{color:#234010;}
+    /* EmailJS setup notice in admin */
+    .emailjs-note{background:#fffbea;border:1px solid #f0d060;border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;color:#7a5a0e;line-height:1.65;margin-bottom:12px;}
   </style>
 </head>
 <body>
@@ -212,26 +225,36 @@
       </div>
       <div>
         <div style="font-size:15px;font-weight:600;letter-spacing:-.02em;">FWA Tracker</div>
-        <div style="font-size:11px;color:var(--text-muted);">OVPDx · UP System</div>
+        <div style="font-size:11px;color:var(--text-muted);" id="loginOrgSub">FWA Tracker</div>
       </div>
     </div>
     <div class="login-tabs">
       <button class="login-tab active" id="ltab-login" onclick="switchLoginTab('login')">Sign in</button>
       <button class="login-tab" id="ltab-register" onclick="switchLoginTab('register')">Create account</button>
+      <button class="login-tab" id="ltab-forgot" onclick="switchLoginTab('forgot')">Forgot password</button>
     </div>
     <div id="lpane-login">
       <div class="lfield"><label>Username</label><input type="text" id="loginUser" placeholder="Enter your username" /></div>
       <div class="lfield"><label>Password</label><input type="password" id="loginPass" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin()" /></div>
       <button class="lbtn" onclick="doLogin()">Sign in</button>
+      <span class="forgot-link" onclick="switchLoginTab('forgot')">Forgot your password?</span>
       <div class="lmsg" id="loginMsg"></div>
     </div>
     <div id="lpane-register" style="display:none;">
       <div class="lfield"><label>Full name</label><input type="text" id="regName" placeholder="e.g. Bea Valencia" /></div>
+      <div class="lfield"><label>UP Mail <span style="color:#c0392b;">*</span></label><input type="text" id="regEmail" placeholder="e.g. bea@up.edu.ph" autocomplete="email" /></div>
+      <div style="font-size:11px;color:var(--text-muted);margin:-8px 0 10px;line-height:1.5;">Your UP mail is used to sync and restore your data across devices. It must end in <strong>@up.edu.ph</strong>.</div>
       <div class="lfield"><label>Username</label><input type="text" id="regUser" placeholder="Choose a username" /></div>
       <div class="lfield"><label>Password</label><input type="password" id="regPass" placeholder="Choose a password (min 4 chars)" /></div>
       <div class="lfield"><label>Confirm password</label><input type="password" id="regPass2" placeholder="Repeat password" onkeydown="if(event.key==='Enter')doRegister()" /></div>
       <button class="lbtn" onclick="doRegister()">Create account</button>
       <div class="lmsg" id="registerMsg"></div>
+    </div>
+    <div id="lpane-forgot" style="display:none;">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;line-height:1.6;">Enter your registered UP mail and we'll send your username and a temporary password to that address.</div>
+      <div class="lfield"><label>UP Mail</label><input type="text" id="forgotEmail" placeholder="e.g. bea@up.edu.ph" onkeydown="if(event.key==='Enter')doForgotPassword()" /></div>
+      <button class="lbtn" onclick="doForgotPassword()">Send reset email</button>
+      <div class="lmsg" id="forgotMsg"></div>
     </div>
   </div>
 </div>
@@ -245,7 +268,7 @@
       </div>
       <div>
         <div class="logo-text">FWA Tracker</div>
-        <div class="logo-sub">OVPDx · UP System</div>
+        <div class="logo-sub" id="appOrgSub">FWA Tracker</div>
       </div>
     </div>
     <div class="header-right">
@@ -259,7 +282,9 @@
       <div class="user-pill">
         <div class="user-avatar" id="userAvatar">?</div>
         <span id="userLabel" class="user-label-text">—</span>
+        <span id="userEmailPill" style="font-size:10px;color:var(--text-faint);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" class="user-label-text"></span>
       </div>
+      <span id="syncBadge" style="font-size:11px;transition:opacity .5s;opacity:0;"></span>
       <button class="logout-btn" onclick="doLogout()">Sign out</button>
     </div>
   </header>
@@ -293,6 +318,13 @@
         <div class="sidebar-item" onclick="showPage('teamexport')" id="nav-teamexport">
           <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
           Team → Excel
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Admin</div>
+        <div class="sidebar-item" onclick="showPage('admin')" id="nav-admin">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
+          Settings
         </div>
       </div>
     </aside>
@@ -374,10 +406,10 @@
             <div class="field"><label>Reviewed by (position)</label><input type="text" id="sigReviewedPos" placeholder="e.g. Project Development Officer" /></div>
           </div>
           <div class="sig-fixed-box">
-            <div class="sig-fixed-title">Approved by — fixed</div>
-            <div class="sig-fixed-name">Peter A. Sy</div>
-            <div class="sig-fixed-role">Vice President for Digital Transformation</div>
-            <div class="sig-fixed-note">This section is pre-filled and cannot be edited.</div>
+            <div class="sig-fixed-title">Approved by — fixed (set in Admin config)</div>
+            <div class="sig-fixed-name" id="sigApprovedName">—</div>
+            <div class="sig-fixed-role" id="sigApprovedRole"></div>
+            <div class="sig-fixed-note">Editable by admin in Settings.</div>
           </div>
         </div>
       </div>
@@ -489,10 +521,83 @@
           </div>
         </div>
       </div>
+      <!-- ADMIN SETTINGS PAGE -->
+      <div class="page" id="page-admin">
+        <div class="page-header">
+          <div class="page-title">Settings</div>
+          <div class="page-desc">Configure your organization name, approver, and team members. This data is stored securely and never hardcoded.</div>
+        </div>
+
+        <!-- Org info -->
+        <div class="card">
+          <div class="card-title">Organization</div>
+          <div class="form-grid">
+            <div class="field"><label>Organization / Unit name</label><input type="text" id="cfgOrg" placeholder="e.g. OVPDx · UP System" /></div>
+            <div class="field"><label>PDF header line (university name)</label><input type="text" id="cfgUniv" placeholder="e.g. UNIVERSITY OF THE PHILIPPINES" /></div>
+          </div>
+          <div class="form-grid full">
+            <div class="field"><label>PDF header line 2 (office)</label><input type="text" id="cfgOfficeHeader" placeholder="e.g. Office of the Vice President for Digital Transformation" /></div>
+          </div>
+        </div>
+
+        <!-- Approver -->
+        <div class="card">
+          <div class="card-title">Fixed approver (Approved by)</div>
+          <div class="form-grid">
+            <div class="field"><label>Approver name</label><input type="text" id="cfgApproverName" placeholder="e.g. Juan dela Cruz" /></div>
+            <div class="field"><label>Approver position</label><input type="text" id="cfgApproverRole" placeholder="e.g. Vice President for Digital Transformation" /></div>
+          </div>
+        </div>
+
+        <!-- Teams -->
+        <div class="card">
+          <div class="card-title">Teams &amp; members</div>
+          <div class="export-note">Enter one team per line. Members are comma-separated after the team name, separated by a colon.<br>Format: <strong>Team Name: Member One, Member Two, Member Three</strong></div>
+          <div class="field">
+            <label>Teams config</label>
+            <textarea id="cfgTeams" rows="8" placeholder="Admin Team: John Doe, Jane Smith&#10;Project Team: Alice Reyes, Bob Cruz&#10;Research Team: Carol Tan"></textarea>
+          </div>
+        </div>
+
+        <!-- EmailJS -->
+        <div class="card">
+          <div class="card-title">Email (EmailJS) — for welcome &amp; password reset emails</div>
+          <div class="emailjs-note">
+            This app uses <strong>EmailJS</strong> to send emails without a backend. You need a free account at <a href="https://emailjs.com" target="_blank" style="color:var(--accent);">emailjs.com</a>.<br>
+            1. Create a free account → add an <strong>Email Service</strong> (Gmail recommended) → create an <strong>Email Template</strong>.<br>
+            2. In your template use variables: <code>{{to_email}}</code>, <code>{{to_name}}</code>, <code>{{username}}</code>, <code>{{password}}</code>, <code>{{subject}}</code>, <code>{{message}}</code>.<br>
+            3. Paste your <strong>Public Key</strong>, <strong>Service ID</strong>, and <strong>Template ID</strong> below.
+          </div>
+          <div class="form-grid three">
+            <div class="field"><label>EmailJS Public Key</label><input type="text" id="cfgEjsPublicKey" placeholder="e.g. aBcDeFgHiJ..." /></div>
+            <div class="field"><label>Service ID</label><input type="text" id="cfgEjsService" placeholder="e.g. service_xxxx" /></div>
+            <div class="field"><label>Template ID</label><input type="text" id="cfgEjsTemplate" placeholder="e.g. template_xxxx" /></div>
+          </div>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="saveAdminConfig()">💾 Save settings</button>
+          <button class="btn" onclick="loadAdminConfigToForm()">↺ Reset to saved</button>
+        </div>
+        <div id="adminMsg" style="font-size:12px;margin-top:10px;min-height:18px;"></div>
+      </div>
+
       <!-- hidden TSV element kept for compatibility -->
       <pre id="team-tsv" style="display:none;"></pre>
 
     </main>
+  </div>
+</div>
+
+<!-- Generic Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <div class="modal-title" id="modalTitle"></div>
+    <div class="modal-desc" id="modalDesc"></div>
+    <div id="modalBody"></div>
+    <div class="modal-footer" id="modalFooter">
+      <button class="btn btn-primary" onclick="closeModal()">OK</button>
+    </div>
   </div>
 </div>
 
@@ -509,14 +614,69 @@ function saveUsers(u){localStorage.setItem('fwa_users',JSON.stringify(u));}
 function getCurrentUser(){return localStorage.getItem('fwa_current_user')||null;}
 function setCurrentUser(u){localStorage.setItem('fwa_current_user',u);}
 
+function isValidUPMail(email){ return /^[^\s@]+@up\.edu\.ph$/i.test(email.trim()); }
+
+// Cloud storage keys — tied to email so data is portable across devices/browsers
+function emailKey(email, suffix){ return 'fwa_'+suffix+'__'+email.toLowerCase().trim(); }
+
 function switchLoginTab(tab){
-  ['login','register'].forEach(t=>{
+  ['login','register','forgot'].forEach(t=>{
     document.getElementById('ltab-'+t).classList.toggle('active',t===tab);
     document.getElementById('lpane-'+t).style.display=t===tab?'':'none';
   });
 }
 
-function doLogin(){
+// ── MODAL ─────────────────────────────────
+function showModal(title, desc, bodyHTML='', footerHTML=''){
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalDesc').textContent = desc;
+  document.getElementById('modalBody').innerHTML = bodyHTML;
+  document.getElementById('modalFooter').innerHTML = footerHTML||'<button class="btn btn-primary" onclick="closeModal()">OK</button>';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal(){ document.getElementById('modalOverlay').classList.remove('open'); }
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
+
+// ── EMAILJS ───────────────────────────────
+function getEjsConfig(){
+  return {
+    publicKey: APP_CONFIG.ejsPublicKey||'',
+    serviceId: APP_CONFIG.ejsService||'',
+    templateId: APP_CONFIG.ejsTemplate||''
+  };
+}
+
+async function sendEmail({toEmail, toName, subject, username, password, message}){
+  const cfg = getEjsConfig();
+  if(!cfg.publicKey||!cfg.serviceId||!cfg.templateId){
+    console.warn('EmailJS not configured — skipping email send.');
+    return { ok: false, reason: 'not_configured' };
+  }
+  try {
+    emailjs.init({ publicKey: cfg.publicKey });
+    await emailjs.send(cfg.serviceId, cfg.templateId, {
+      to_email: toEmail,
+      to_name: toName||toEmail,
+      subject: subject||'FWA Tracker',
+      username: username||'',
+      password: password||'',
+      message: message||''
+    });
+    return { ok: true };
+  } catch(err){
+    console.error('EmailJS error:', err);
+    return { ok: false, reason: err };
+  }
+}
+
+function genTempPassword(len=10){
+  const chars='ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#';
+  let p='';
+  for(let i=0;i<len;i++) p+=chars[Math.floor(Math.random()*chars.length)];
+  return p;
+}
+
+async function doLogin(){
   const user=document.getElementById('loginUser').value.trim();
   const pass=document.getElementById('loginPass').value;
   const msg=document.getElementById('loginMsg');
@@ -525,24 +685,48 @@ function doLogin(){
   if(!users[user]){msg.className='lmsg err';msg.textContent='Username not found.';return;}
   if(users[user].password!==btoa(pass)){msg.className='lmsg err';msg.textContent='Incorrect password.';return;}
   setCurrentUser(user);
-  launchApp(user,users[user].name);
+  msg.className='lmsg ok';msg.textContent='Signing in and restoring your data…';
+  await launchApp(user,users[user].name,users[user].email);
 }
 
-function doRegister(){
+async function doRegister(){
   const name=document.getElementById('regName').value.trim();
+  const email=document.getElementById('regEmail').value.trim().toLowerCase();
   const user=document.getElementById('regUser').value.trim();
   const pass=document.getElementById('regPass').value;
   const pass2=document.getElementById('regPass2').value;
   const msg=document.getElementById('registerMsg');
-  if(!name||!user||!pass||!pass2){msg.className='lmsg err';msg.textContent='Please fill in all fields.';return;}
+  if(!name||!email||!user||!pass||!pass2){msg.className='lmsg err';msg.textContent='Please fill in all fields.';return;}
+  if(!isValidUPMail(email)){msg.className='lmsg err';msg.textContent='Email must be a valid UP mail (e.g. bea@up.edu.ph).';return;}
   if(pass!==pass2){msg.className='lmsg err';msg.textContent='Passwords do not match.';return;}
   if(pass.length<4){msg.className='lmsg err';msg.textContent='Password must be at least 4 characters.';return;}
   const users=getUsers();
   if(users[user]){msg.className='lmsg err';msg.textContent='Username already taken.';return;}
-  users[user]={name,password:btoa(pass)};
+  const existingUser = Object.keys(users).find(u=>users[u].email===email);
+  if(existingUser){msg.className='lmsg err';msg.textContent='An account with this UP mail already exists.';return;}
+  users[user]={name, email, password:btoa(pass)};
   saveUsers(users);
-  msg.className='lmsg ok';msg.textContent='Account created! Signing you in...';
-  setTimeout(()=>{setCurrentUser(user);launchApp(user,name);},800);
+  msg.className='lmsg ok';msg.textContent='Account created! Sending welcome email…';
+
+  // Send welcome / credentials email
+  const emailResult = await sendEmail({
+    toEmail: email,
+    toName: name,
+    subject: 'FWA Tracker — Your account credentials',
+    username: user,
+    password: pass,
+    message: `Hi ${name},\n\nYour FWA Tracker account has been created.\n\nUsername: ${user}\nPassword: ${pass}\nUP Mail: ${email}\n\nPlease keep this email for your records. You can use these credentials to sign in and your data will be automatically restored via your UP mail.\n\nOVPDx FWA Tracker`
+  });
+
+  if(emailResult.ok){
+    msg.textContent='Account created! Credentials sent to your UP mail.';
+  } else if(emailResult.reason==='not_configured'){
+    msg.textContent='Account created! (Email not configured — set up EmailJS in Admin → Settings.)';
+  } else {
+    msg.textContent='Account created! (Email could not be sent — check EmailJS settings.)';
+  }
+
+  setTimeout(async()=>{setCurrentUser(user);await launchApp(user,name,email);},1200);
 }
 
 function doLogout(){
@@ -554,12 +738,72 @@ function doLogout(){
   entries=[];pendingImages=[];
 }
 
-function launchApp(username,fullname){
+async function doForgotPassword(){
+  const email = document.getElementById('forgotEmail').value.trim().toLowerCase();
+  const msg = document.getElementById('forgotMsg');
+  if(!email){ msg.className='lmsg err'; msg.textContent='Please enter your UP mail.'; return; }
+  if(!isValidUPMail(email)){ msg.className='lmsg err'; msg.textContent='Must be a valid UP mail (e.g. bea@up.edu.ph).'; return; }
+
+  const users = getUsers();
+  const username = Object.keys(users).find(u => users[u].email === email);
+  if(!username){
+    // Don't reveal whether the email exists — show same message for security
+    msg.className='lmsg ok';
+    msg.textContent='If that email is registered, a reset email has been sent.';
+    return;
+  }
+
+  msg.className='lmsg ok'; msg.textContent='Sending reset email…';
+
+  // Generate a new temporary password
+  const tempPass = genTempPassword();
+  users[username].password = btoa(tempPass);
+  saveUsers(users);
+
+  const result = await sendEmail({
+    toEmail: email,
+    toName: users[username].name||username,
+    subject: 'FWA Tracker — Password Reset',
+    username: username,
+    password: tempPass,
+    message: `Hi ${users[username].name||username},\n\nA password reset was requested for your FWA Tracker account.\n\nUsername: ${username}\nTemporary password: ${tempPass}\n\nPlease sign in with this temporary password and change it as soon as possible.\n\nIf you did not request this reset, please contact your admin.\n\nOVPDx FWA Tracker`
+  });
+
+  if(result.ok){
+    msg.className='lmsg ok';
+    msg.textContent='Reset email sent! Check your UP mail inbox.';
+  } else if(result.reason==='not_configured'){
+    // EmailJS not set up — show temp password in a modal as fallback
+    showModal(
+      'Password Reset',
+      'EmailJS is not configured, so the email could not be sent. Share this temporary password securely:',
+      `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 14px;font-size:13px;margin-bottom:4px;">
+        <div style="margin-bottom:6px;"><strong>Username:</strong> ${username}</div>
+        <div><strong>Temporary password:</strong> <span style="font-family:monospace;font-size:14px;color:var(--accent);">${tempPass}</span></div>
+       </div>
+       <div style="font-size:11px;color:var(--text-muted);margin-top:8px;">To enable email sending, add your EmailJS credentials in Admin → Settings.</div>`
+    );
+    msg.className='lmsg ok'; msg.textContent='Temporary password set. See the popup for credentials.';
+  } else {
+    msg.className='lmsg err'; msg.textContent='Could not send email. Check EmailJS settings in Admin → Settings.';
+  }
+}
+
+async function launchApp(username, fullname, email){
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('app').style.display='block';
   document.getElementById('userLabel').textContent=fullname||username;
   document.getElementById('userAvatar').textContent=(fullname||username).charAt(0).toUpperCase();
-  entries=JSON.parse(localStorage.getItem('fwa_entries_'+username)||'[]');
+  // Show email pill in header if available
+  const emailPill = document.getElementById('userEmailPill');
+  if(emailPill) emailPill.textContent = email||'';
+
+  await loadAppConfig();
+  loadAdminConfigToForm();
+
+  // Load entries — prefer email-keyed cloud storage for cross-device restore
+  entries = await loadEntriesByEmail(username, email);
+
   const users=getUsers();
   if(users[username]&&users[username].name) document.getElementById('hName').value=users[username].name;
   generateWeekOptions();
@@ -567,9 +811,9 @@ function launchApp(username,fullname){
   renderRecent();
 }
 
-window.addEventListener('DOMContentLoaded',()=>{
+window.addEventListener('DOMContentLoaded',async ()=>{
   const u=getCurrentUser();
-  if(u){const users=getUsers();if(users[u]){launchApp(u,users[u].name);return;}}
+  if(u){const users=getUsers();if(users[u]){await launchApp(u,users[u].name,users[u].email);return;}}
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('hPeriod').addEventListener('change',()=>{if(document.getElementById('page-view').classList.contains('active'))renderView();});
 });
@@ -653,7 +897,71 @@ const SL={ongoing:'Ongoing / In-Process',completed:'Completed',recurring:'Recurr
 const SC={ongoing:'O',completed:'C',recurring:'R',notinit:'N'};
 const STATUS_ORDER=['completed','ongoing','recurring','notinit'];
 
-function save(){const u=getCurrentUser();if(u)localStorage.setItem('fwa_entries_'+u,JSON.stringify(entries));}
+// ── CLOUD STORAGE (cross-device sync via window.storage) ──────────────
+async function save(){
+  const u=getCurrentUser();
+  if(!u) return;
+  const users=getUsers();
+  const email=(users[u]&&users[u].email)||null;
+  const json=JSON.stringify(entries);
+  // Save to username key (legacy fallback)
+  localStorage.setItem('fwa_entries_'+u, json);
+  try { await window.storage.set('fwa_entries_'+u, json); } catch(e) {}
+  // Also save to email key (primary cross-device key)
+  if(email){
+    const ekey=emailKey(email,'entries');
+    localStorage.setItem(ekey, json);
+    try { await window.storage.set(ekey, json); showSyncBadge(true); } catch(e) { showSyncBadge(false); }
+  }
+}
+
+async function loadEntriesByEmail(username, email) {
+  // 1. Try email-keyed cloud storage first (most authoritative — cross-device)
+  if(email){
+    const ekey = emailKey(email,'entries');
+    try {
+      const res = await window.storage.get(ekey);
+      if(res && res.value){ showSyncBadge(true); return JSON.parse(res.value); }
+    } catch(e){}
+    // 2. Try email-keyed localStorage
+    const local = localStorage.getItem(emailKey(email,'entries'));
+    if(local) return JSON.parse(local);
+  }
+  // 3. Fall back to username-keyed cloud
+  try {
+    const res = await window.storage.get('fwa_entries_'+username);
+    if(res && res.value) return JSON.parse(res.value);
+  } catch(e){}
+  // 4. Final fallback: username-keyed localStorage
+  return JSON.parse(localStorage.getItem('fwa_entries_'+username)||'[]');
+}
+
+// Keep old loadEntries as alias for backward compat
+async function loadEntries(username){ return loadEntriesByEmail(username, null); }
+
+async function saveTeamDataCloud() {
+  localStorage.setItem('fwa_team_data', JSON.stringify(teamData));
+  try { await window.storage.set('fwa_team_data', JSON.stringify(teamData)); } catch(e) {}
+}
+
+async function loadTeamDataCloud() {
+  try {
+    const res = await window.storage.get('fwa_team_data');
+    if (res && res.value) { teamData = JSON.parse(res.value); return; }
+  } catch(e) {}
+  teamData = JSON.parse(localStorage.getItem('fwa_team_data') || '{}');
+}
+
+// Show a small sync indicator
+function showSyncBadge(ok) {
+  let badge = document.getElementById('syncBadge');
+  if (!badge) return;
+  badge.textContent = ok ? '✓ Synced' : '⚠ Saved locally';
+  badge.style.color = ok ? 'var(--accent)' : '#b8860b';
+  badge.style.opacity = '1';
+  clearTimeout(badge._t);
+  badge._t = setTimeout(()=>{ badge.style.opacity='0'; }, 2500);
+}
 function getPeriod(){return document.getElementById('hPeriod').value.trim()||'(Period not set)';}
 function getHeader(){
   return{
@@ -724,18 +1032,19 @@ function openLightbox(src){document.getElementById('lightboxImg').src=src;docume
 function closeLightbox(){document.getElementById('lightbox').classList.remove('open');}
 
 // ── ENTRIES ──────────────────────────────
-function addEntry(){
+async function addEntry(){
   const desc=document.getElementById('fDesc').value.trim(),project=document.getElementById('fProject').value.trim(),
         status=document.getElementById('fStatus').value,notes=document.getElementById('fNotes').value.trim(),
         date=document.getElementById('fDate').value.trim();
   if(!desc){alert('Please describe the activity/task.');return;}
   if(!project){alert('Please enter a project name.');return;}
   entries.push({id:Date.now(),project,desc,status,notes,date,period:getPeriod(),images:pendingImages.map(i=>({dataUrl:i.dataUrl,name:i.name}))});
-  save();
+  await save();
+  showSyncBadge(true);
   ['fDesc','fNotes','fProject','fDate'].forEach(id=>document.getElementById(id).value='');
   pendingImages=[];renderThumbs();renderRecent();
 }
-function deleteEntry(id){entries=entries.filter(e=>e.id!==id);save();renderRecent();renderView();}
+async function deleteEntry(id){entries=entries.filter(e=>e.id!==id);await save();showSyncBadge(true);renderRecent();renderView();}
 function badgeClass(s){return{ongoing:'badge-ongoing',completed:'badge-completed',recurring:'badge-recurring',notinit:'badge-notinit'}[s]||'badge-notinit';}
 
 function itemHTML(e){
@@ -810,7 +1119,7 @@ function buildPDFPreview(){
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:16px;font-size:11px;">
     <div><div style="color:var(--text-muted);margin-bottom:18px;">Submitted by:</div><div style="border-top:1px solid var(--text);padding-top:4px;font-weight:600;">${h.submitted||'___________________'}</div><div style="color:var(--text-muted);font-size:10px;">${h.submittedPos||''}</div></div>
     <div><div style="color:var(--text-muted);margin-bottom:18px;">Reviewed by:</div><div style="border-top:1px solid var(--text);padding-top:4px;font-weight:600;">${h.reviewed||'___________________'}</div><div style="color:var(--text-muted);font-size:10px;">${h.reviewedPos||''}</div></div>
-    <div><div style="color:var(--text-muted);margin-bottom:18px;">Approved by:</div><div style="border-top:1px solid var(--text);padding-top:4px;font-weight:600;">Peter A. Sy</div><div style="color:var(--text-muted);">Vice President for Digital Transformation</div></div>
+    <div><div style="color:var(--text-muted);margin-bottom:18px;">Approved by:</div><div style="border-top:1px solid var(--text);padding-top:4px;font-weight:600;">${APP_CONFIG.approverName||'___________________'}</div><div style="color:var(--text-muted);font-size:10px;">${APP_CONFIG.approverRole||''}</div></div>
   </div>`;
   el.innerHTML=html;
 }
@@ -824,9 +1133,9 @@ async function exportPDF(){
   const pw=210,ml=15,mr=15,cW=pw-ml-mr;let y=18;
 
   doc.setFont('helvetica','bold');doc.setFontSize(11);
-  doc.text('UNIVERSITY OF THE PHILIPPINES',pw/2,y,{align:'center'});y+=5;
+  doc.text(APP_CONFIG.univ||'UNIVERSITY OF THE PHILIPPINES',pw/2,y,{align:'center'});y+=5;
   doc.setFont('helvetica','normal');doc.setFontSize(9);
-  doc.text('Office of the Vice President for Digital Transformation',pw/2,y,{align:'center'});y+=10;
+  doc.text(APP_CONFIG.officeHeader||'',pw/2,y,{align:'center'});y+=10;
   doc.setFontSize(10);
   doc.text('Name',ml,y);doc.line(ml+10,y+.5,ml+70,y+.5);doc.text(h.name,ml+12,y);
   doc.text('Office/Unit',ml+80,y);doc.line(ml+97,y+.5,ml+cW,y+.5);doc.text(h.office,ml+99,y);y+=10;
@@ -915,7 +1224,7 @@ async function exportPDF(){
   const colW2=cW/3;
   [{label:'Submitted by:',name:h.submitted||'',pos:h.submittedPos||''},
    {label:'Reviewed by:',name:h.reviewed||'',pos:h.reviewedPos||''},
-   {label:'Approved by:',name:'Peter A. Sy',pos:'Vice President for Digital Transformation'}
+   {label:'Approved by:',name:APP_CONFIG.approverName||'',pos:APP_CONFIG.approverRole||''}
   ].forEach((col,i)=>{
     const x=ml+i*colW2;
     doc.setFont('helvetica','normal');doc.setFontSize(9);doc.text(col.label,x,fy);
@@ -928,22 +1237,110 @@ async function exportPDF(){
   doc.save(`FWA_${(h.name||'Report').replace(/\s+/g,'_')}_${(h.period||'Period').replace(/[^a-z0-9]/gi,'_')}.pdf`);
 }
 
-// ── TEAM DELIVERABLES ────────────────────
-const TEAMS = ['Admin Team','Communications Team','Project Team','Research Team','Management Team'];
-const TEAM_MEMBERS = {
-  'Admin Team': ['John Mark Paya','Paula Beatrize Valencia','Rozhelle Yu'],
-  'Communications Team': ['Marianne Laron','Eileen Rudi'],
-  'Project Team': ['John Paul Cristobal','Duane Burdeos','Keith Andrei Layson'],
-  'Research Team': ['Katheryn Hidalgo','Veronica Consolacion'],
-  'Management Team': ['Marisha Beloro','Kristofferson Dela Cruz','Regine Pustadan']
+// ── APP CONFIG (loaded from storage, never hardcoded) ─────────────────
+let APP_CONFIG = {
+  org: '',
+  univ: '',
+  officeHeader: '',
+  approverName: '',
+  approverRole: '',
+  teamsRaw: '',
+  ejsPublicKey: '',
+  ejsService: '',
+  ejsTemplate: ''
 };
+let TEAMS = [];
+let TEAM_MEMBERS = {};
 const STATUSES = ['Completed','Ongoing Progress','Not Initiated'];
+
+async function loadAppConfig() {
+  try {
+    const res = await window.storage.get('fwa_app_config');
+    if (res && res.value) APP_CONFIG = JSON.parse(res.value);
+  } catch(e) {
+    const local = localStorage.getItem('fwa_app_config');
+    if (local) APP_CONFIG = JSON.parse(local);
+  }
+  applyConfig();
+}
+
+async function saveAdminConfig() {
+  APP_CONFIG.org           = document.getElementById('cfgOrg').value.trim();
+  APP_CONFIG.univ          = document.getElementById('cfgUniv').value.trim();
+  APP_CONFIG.officeHeader  = document.getElementById('cfgOfficeHeader').value.trim();
+  APP_CONFIG.approverName  = document.getElementById('cfgApproverName').value.trim();
+  APP_CONFIG.approverRole  = document.getElementById('cfgApproverRole').value.trim();
+  APP_CONFIG.teamsRaw      = document.getElementById('cfgTeams').value.trim();
+  APP_CONFIG.ejsPublicKey  = document.getElementById('cfgEjsPublicKey').value.trim();
+  APP_CONFIG.ejsService    = document.getElementById('cfgEjsService').value.trim();
+  APP_CONFIG.ejsTemplate   = document.getElementById('cfgEjsTemplate').value.trim();
+  const json = JSON.stringify(APP_CONFIG);
+  localStorage.setItem('fwa_app_config', json);
+  try { await window.storage.set('fwa_app_config', json); } catch(e) {}
+  applyConfig();
+  const msg = document.getElementById('adminMsg');
+  msg.style.color = 'var(--accent)';
+  msg.textContent = '✓ Settings saved and applied.';
+  showSyncBadge(true);
+  setTimeout(()=>{ msg.textContent=''; }, 3000);
+}
+
+function loadAdminConfigToForm() {
+  document.getElementById('cfgOrg').value           = APP_CONFIG.org || '';
+  document.getElementById('cfgUniv').value          = APP_CONFIG.univ || '';
+  document.getElementById('cfgOfficeHeader').value  = APP_CONFIG.officeHeader || '';
+  document.getElementById('cfgApproverName').value  = APP_CONFIG.approverName || '';
+  document.getElementById('cfgApproverRole').value  = APP_CONFIG.approverRole || '';
+  document.getElementById('cfgTeams').value         = APP_CONFIG.teamsRaw || '';
+  document.getElementById('cfgEjsPublicKey').value  = APP_CONFIG.ejsPublicKey || '';
+  document.getElementById('cfgEjsService').value    = APP_CONFIG.ejsService || '';
+  document.getElementById('cfgEjsTemplate').value   = APP_CONFIG.ejsTemplate || '';
+}
+
+function parseTeamsConfig(raw) {
+  const teams = [];
+  const members = {};
+  (raw||'').split('\n').forEach(line => {
+    line = line.trim();
+    if (!line) return;
+    const colonIdx = line.indexOf(':');
+    if (colonIdx < 0) { teams.push(line); members[line] = []; return; }
+    const teamName = line.slice(0, colonIdx).trim();
+    const memberList = line.slice(colonIdx + 1).split(',').map(m => m.trim()).filter(Boolean);
+    teams.push(teamName);
+    members[teamName] = memberList;
+  });
+  return { teams, members };
+}
+
+function applyConfig() {
+  // Update org labels
+  const orgText = APP_CONFIG.org || 'FWA Tracker';
+  const loginSub = document.getElementById('loginOrgSub');
+  const appSub   = document.getElementById('appOrgSub');
+  if (loginSub) loginSub.textContent = orgText;
+  if (appSub)   appSub.textContent   = orgText;
+
+  // Update approver block
+  const an = document.getElementById('sigApprovedName');
+  const ar = document.getElementById('sigApprovedRole');
+  if (an) an.textContent = APP_CONFIG.approverName || '(Not set)';
+  if (ar) ar.textContent = APP_CONFIG.approverRole || '';
+
+  // Parse teams
+  const parsed = parseTeamsConfig(APP_CONFIG.teamsRaw);
+  TEAMS = parsed.teams;
+  TEAM_MEMBERS = parsed.members;
+}
 let activeTeam = TEAMS[0];
 // teamData: { period: { teamName: [{id, person, project, deliverable, status, assignees}] } }
 let teamData = {};
 
-function saveTeamData() { localStorage.setItem('fwa_team_data', JSON.stringify(teamData)); }
-function loadTeamData() { teamData = JSON.parse(localStorage.getItem('fwa_team_data') || '{}'); }
+function saveTeamData() { saveTeamDataCloud(); }
+function loadTeamData() {
+  // sync load from localStorage as immediate fallback; cloud loaded separately
+  teamData = JSON.parse(localStorage.getItem('fwa_team_data') || '{}');
+}
 function getTPeriod() { return document.getElementById('tPeriod').value.trim() || '(Period not set)'; }
 
 function ensureTeamPeriod(period, team) {
@@ -959,7 +1356,7 @@ function updatePersonDropdown() {
   document.getElementById('tAssignees').innerHTML = aOpts;
 }
 
-function addTeamRow() {
+async function addTeamRow() {
   const period = getTPeriod();
   const person = document.getElementById('tPerson').value.trim();
   const project = document.getElementById('tProject').value.trim();
@@ -970,17 +1367,22 @@ function addTeamRow() {
   if (!deliverable) { alert('Please describe the deliverable.'); return; }
   ensureTeamPeriod(period, activeTeam);
   teamData[period][activeTeam].push({ id: Date.now(), person, project, deliverable, status, assignees });
-  saveTeamData();
-  ['tProject','tDeliverable','tAssignees'].forEach(id => document.getElementById(id).value = '');
+  await saveTeamDataCloud();
+  showSyncBadge(true);
+  ['tProject','tDeliverable'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('tStatus').value = 'Ongoing Progress';
+  document.getElementById('tAssignees').value = '';
+  renderTeamTabs();
   renderTeamTables();
 }
 
-function deleteTeamRow(team, id) {
+async function deleteTeamRow(team, id) {
   const period = getTPeriod();
   if (!teamData[period] || !teamData[period][team]) return;
   teamData[period][team] = teamData[period][team].filter(r => r.id !== id);
-  saveTeamData();
+  await saveTeamDataCloud();
+  showSyncBadge(true);
+  renderTeamTabs();
   renderTeamTables();
 }
 
@@ -1030,16 +1432,16 @@ function renderTeamTables() {
           <thead><tr>
             <th style="width:140px;">Project</th>
             <th>Target Deliverable</th>
-            <th style="width:130px;">Status</th>
+            <th style="width:160px;">Status</th>
             <th style="width:130px;">Assignees</th>
             <th style="width:32px;"></th>
           </tr></thead>
           <tbody>`;
     pRows.forEach(row => {
-      html += `<tr>
+      html += `<tr id="trow-${row.id}">
         <td style="font-size:12px;">${escHtml(row.project)||'<span style="color:var(--text-faint);">—</span>'}</td>
         <td style="font-size:12px;">${escHtml(row.deliverable)}</td>
-        <td>${statusBadge(row.status)}</td>
+        <td id="tstat-${row.id}">${statusBadgeWithEdit(row.status, row.id)}</td>
         <td style="font-size:12px;">${escHtml(row.assignees)||'<span style="color:var(--text-faint);">—</span>'}</td>
         <td><button class="del-row-btn" onclick="deleteTeamRow('${activeTeam}',${row.id})">×</button></td>
       </tr>`;
@@ -1060,6 +1462,53 @@ function renderTeamTables() {
   </div>` + html;
 
   document.getElementById('teamTableArea').innerHTML = html;
+}
+
+function statusBadgeWithEdit(s, rowId) {
+  return `<div style="display:flex;align-items:center;gap:6px;">
+    ${statusBadge(s)}
+    <button onclick="toggleStatusEdit(${rowId})" title="Edit status" style="background:none;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:10px;color:var(--text-muted);cursor:pointer;white-space:nowrap;transition:all .15s;" onmouseover="this.style.background='var(--accent-light)';this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.background='none';this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">✏ Edit</button>
+  </div>`;
+}
+
+function toggleStatusEdit(rowId) {
+  const cell = document.getElementById('tstat-' + rowId);
+  if (!cell) return;
+  // Find current status
+  const period = getTPeriod();
+  let rowRef = null;
+  for (const t of Object.keys(teamData[period]||{})) {
+    const found = (teamData[period][t]||[]).find(r=>r.id===rowId);
+    if (found) { rowRef = found; break; }
+  }
+  if (!rowRef) return;
+
+  cell.innerHTML = `<div style="display:flex;align-items:center;gap:6px;">
+    <select id="sedit-${rowId}" style="font-family:'DM Sans',sans-serif;font-size:12px;padding:4px 8px;border:1px solid var(--accent);border-radius:6px;background:var(--surface);color:var(--text);outline:none;box-shadow:0 0 0 2px rgba(45,80,22,.1);">
+      ${STATUSES.map(s=>`<option value="${s}"${s===rowRef.status?' selected':''}>${s}</option>`).join('')}
+    </select>
+    <button onclick="confirmStatusEdit(${rowId})" style="background:var(--accent);color:#fff;border:none;border-radius:4px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;">Save</button>
+    <button onclick="renderTeamTables()" style="background:none;border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-size:11px;cursor:pointer;color:var(--text-muted);">Cancel</button>
+  </div>`;
+  document.getElementById('sedit-'+rowId).focus();
+}
+
+async function confirmStatusEdit(rowId) {
+  const sel = document.getElementById('sedit-'+rowId);
+  if (!sel) return;
+  const newStatus = sel.value;
+  const period = getTPeriod();
+  let updated = false;
+  for (const t of Object.keys(teamData[period]||{})) {
+    const row = (teamData[period][t]||[]).find(r=>r.id===rowId);
+    if (row) { row.status = newStatus; updated = true; break; }
+  }
+  if (updated) {
+    await saveTeamDataCloud();
+    showSyncBadge(true);
+  }
+  renderTeamTabs();
+  renderTeamTables();
 }
 
 function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -1244,7 +1693,7 @@ function exportExcel() {
   previewExport();
 }
 
-function showPage(page){
+async function showPage(page){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.sidebar-item').forEach(i=>i.classList.remove('active'));
   document.querySelectorAll('.hnav-btn').forEach(i=>i.classList.remove('active'));
@@ -1253,13 +1702,17 @@ function showPage(page){
   const hn=document.getElementById('hnav-'+page);if(hn)hn.classList.add('active');
   if(page==='view')renderView();
   if(page==='export')buildPDFPreview();
-  if(page==='team'){loadTeamData();renderTeamTabs();updatePersonDropdown();renderTeamTables();}
+  if(page==='team'){
+    await loadTeamDataCloud(); // always reload from cloud when opening team page
+    renderTeamTabs();updatePersonDropdown();renderTeamTables();
+  }
   if(page==='teamexport'){
-    loadTeamData();
+    await loadTeamDataCloud();
     const tp = document.getElementById('tPeriod').value;
     if (tp) document.getElementById('tPeriodExport').value = tp;
     previewExport();
   }
+  if(page==='admin'){ loadAdminConfigToForm(); }
 }
 </script>
 </body>
