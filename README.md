@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -929,7 +928,21 @@ async function doRegister(){
   saveUsers(users);
   msg.className='lmsg ok';msg.textContent='Account created! Sending welcome email…';
 
-  // Send welcome / credentials email
+  // Always show credentials in a modal so user always has a copy
+  showModal(
+    '🎉 Account created!',
+    'Please save your credentials below. A copy will also be sent to your email if EmailJS is configured.',
+    `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;font-size:13px;line-height:2;">
+      <div><span style="color:var(--text-muted);width:90px;display:inline-block;">Full name</span> <strong>${escHtmlEntry(name)}</strong></div>
+      <div><span style="color:var(--text-muted);width:90px;display:inline-block;">Username</span> <strong>${escHtmlEntry(user)}</strong></div>
+      <div><span style="color:var(--text-muted);width:90px;display:inline-block;">Password</span> <strong style="font-family:monospace;font-size:14px;color:var(--accent);">${escHtmlEntry(pass)}</strong></div>
+      <div><span style="color:var(--text-muted);width:90px;display:inline-block;">Email</span> <strong>${escHtmlEntry(email)}</strong></div>
+    </div>
+    <div style="font-size:11px;color:var(--text-faint);margin-top:10px;">⚠ Screenshot or copy these credentials before closing.</div>`,
+    `<button class="btn btn-primary" onclick="closeModal()">Got it, I've saved them</button>`
+  );
+
+  // Also attempt to send via EmailJS (bonus — works if configured)
   const emailResult = await sendEmail({
     toEmail: email,
     toName: name,
@@ -940,11 +953,11 @@ async function doRegister(){
   });
 
   if(emailResult.ok){
-    msg.textContent='Account created! Credentials sent to your email.';
+    msg.textContent='Account created! Credentials also sent to your email.';
   } else if(emailResult.reason==='not_configured'){
-    msg.textContent='Account created! (Email not configured — set up EmailJS in Admin → Settings.)';
+    msg.textContent='Account created! (Configure EmailJS in Admin → Settings to also send by email.)';
   } else {
-    msg.textContent='Account created! (Email could not be sent — check EmailJS settings.)';
+    msg.textContent='Account created! (Email delivery failed — check EmailJS settings.)';
   }
 
   setTimeout(async()=>{setCurrentUser(user);await launchApp(user,name,email);},1200);
@@ -1589,7 +1602,7 @@ function buildPDFPreview(){
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:16px;font-size:11px;">
     <div><div style="color:var(--text-muted);margin-bottom:18px;">Submitted by:</div><div style="border-top:1px solid var(--text);padding-top:4px;font-weight:600;">${h.submitted||'___________________'}</div><div style="color:var(--text-muted);font-size:10px;">${h.submittedPos||''}</div></div>
     <div><div style="color:var(--text-muted);margin-bottom:18px;">Reviewed by:</div><div style="border-top:1px solid var(--text);padding-top:4px;font-weight:600;">${h.reviewed||'___________________'}</div><div style="color:var(--text-muted);font-size:10px;">${h.reviewedPos||''}</div></div>
-    <div><div style="color:var(--text-muted);margin-bottom:18px;">Approved by:</div><div style="border-top:1px solid var(--text);padding-top:4px;font-weight:600;">${APP_CONFIG.approverName||'___________________'}</div><div style="color:var(--text-muted);font-size:10px;">${APP_CONFIG.approverRole||''}</div></div>
+    <div><div style="color:var(--text-muted);margin-bottom:18px;">Approved by:</div><div style="border-top:1px solid var(--text);padding-top:4px;font-weight:600;">${APP_CONFIG.approverName||'Peter A. Sy'}</div><div style="color:var(--text-muted);font-size:10px;">${APP_CONFIG.approverRole||'Vice President for Digital Transformation'}</div></div>
   </div>`;
   el.innerHTML=html;
 }
@@ -1694,7 +1707,7 @@ async function exportPDF(){
   const colW2=cW/3;
   [{label:'Submitted by:',name:h.submitted||'',pos:h.submittedPos||''},
    {label:'Reviewed by:',name:h.reviewed||'',pos:h.reviewedPos||''},
-   {label:'Approved by:',name:APP_CONFIG.approverName||'',pos:APP_CONFIG.approverRole||''}
+   {label:'Approved by:',name:APP_CONFIG.approverName||'Peter A. Sy',pos:APP_CONFIG.approverRole||'Vice President for Digital Transformation'}
   ].forEach((col,i)=>{
     const x=ml+i*colW2;
     doc.setFont('helvetica','normal');doc.setFontSize(9);doc.text(col.label,x,fy);
@@ -1712,8 +1725,8 @@ let APP_CONFIG = {
   org: '',
   univ: '',
   officeHeader: '',
-  approverName: '',
-  approverRole: '',
+  approverName: 'Peter A. Sy',
+  approverRole: 'Vice President for Digital Transformation',
   teamsRaw: '',
   ejsPublicKey: '',
   ejsService: '',
@@ -1755,13 +1768,19 @@ async function saveAdminConfig() {
   setTimeout(()=>{ msg.textContent=''; }, 3000);
 }
 
+const DEFAULT_TEAMS_RAW = `Admin Team: John Mark Paya, Paula Beatrize Valencia, Rozhelle Yu
+Communications Team: Marianne Laron, Eileen Rudi
+Project Team: John Paul Cristobal, Duane Burdeos, Keith Andrei Layson
+Research Team: Katheryn Hidalgo, Veronica Consolacion
+Management Team: Marisha Beloro, Kristofferson Dela Cruz, Regine Pustadan`;
+
 function loadAdminConfigToForm() {
   document.getElementById('cfgOrg').value           = APP_CONFIG.org || '';
   document.getElementById('cfgUniv').value          = APP_CONFIG.univ || '';
   document.getElementById('cfgOfficeHeader').value  = APP_CONFIG.officeHeader || '';
-  document.getElementById('cfgApproverName').value  = APP_CONFIG.approverName || '';
-  document.getElementById('cfgApproverRole').value  = APP_CONFIG.approverRole || '';
-  document.getElementById('cfgTeams').value         = APP_CONFIG.teamsRaw || '';
+  document.getElementById('cfgApproverName').value  = APP_CONFIG.approverName || 'Peter A. Sy';
+  document.getElementById('cfgApproverRole').value  = APP_CONFIG.approverRole || 'Vice President for Digital Transformation';
+  document.getElementById('cfgTeams').value         = APP_CONFIG.teamsRaw || DEFAULT_TEAMS_RAW;
   document.getElementById('cfgEjsPublicKey').value  = APP_CONFIG.ejsPublicKey || '';
   document.getElementById('cfgEjsService').value    = APP_CONFIG.ejsService || '';
   document.getElementById('cfgEjsTemplate').value   = APP_CONFIG.ejsTemplate || '';
@@ -1794,15 +1813,32 @@ function applyConfig() {
   // Update approver block
   const an = document.getElementById('sigApprovedName');
   const ar = document.getElementById('sigApprovedRole');
-  if (an) an.textContent = APP_CONFIG.approverName || '(Not set)';
-  if (ar) ar.textContent = APP_CONFIG.approverRole || '';
+  if (an) an.textContent = APP_CONFIG.approverName || 'Peter A. Sy';
+  if (ar) ar.textContent = APP_CONFIG.approverRole || 'Vice President for Digital Transformation';
 
-  // Parse teams
+  // Parse teams — fall back to built-in defaults if not yet configured
   const parsed = parseTeamsConfig(APP_CONFIG.teamsRaw);
-  TEAMS = parsed.teams;
-  TEAM_MEMBERS = parsed.members;
+  if (parsed.teams.length > 0) {
+    TEAMS = parsed.teams;
+    TEAM_MEMBERS = parsed.members;
+  } else {
+    // Default teams so the page works before admin configures anything
+    TEAMS = ['Admin Team','Communications Team','Project Team','Research Team','Management Team'];
+    TEAM_MEMBERS = {
+      'Admin Team': [],
+      'Communications Team': [],
+      'Project Team': [],
+      'Research Team': [],
+      'Management Team': []
+    };
+  }
+
+  // Always keep activeTeam valid — reset if current value is no longer in TEAMS
+  if (!activeTeam || !TEAMS.includes(activeTeam)) {
+    activeTeam = TEAMS[0];
+  }
 }
-let activeTeam = TEAMS[0];
+let activeTeam = null;
 // teamData: { period: { teamName: [{id, person, project, deliverable, status, assignees}] } }
 let teamData = {};
 
@@ -1859,6 +1895,13 @@ async function deleteTeamRow(team, id) {
 }
 
 function renderTeamTabs() {
+  if (!TEAMS.length) {
+    document.getElementById('teamTabs').innerHTML = `<div style="font-size:12px;color:var(--text-muted);padding:8px 0;">No teams configured yet. Go to <strong>Admin → Settings</strong> to add your teams and members.</div>`;
+    document.getElementById('teamAddTitle').textContent = 'Add entry';
+    return;
+  }
+  // Ensure activeTeam is always valid
+  if (!activeTeam || !TEAMS.includes(activeTeam)) activeTeam = TEAMS[0];
   document.getElementById('teamTabs').innerHTML = TEAMS.map(t => {
     const period = getTPeriod();
     const count = (teamData[period] && teamData[period][t]) ? teamData[period][t].length : 0;
