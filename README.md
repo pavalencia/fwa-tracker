@@ -203,7 +203,7 @@
     /* MODAL */
     .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;align-items:center;justify-content:center;}
     .modal-overlay.open{display:flex;}
-    .modal-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:2rem;width:100%;max-width:380px;box-shadow:0 8px 40px rgba(0,0,0,.18);animation:fadeIn .18s ease;}
+    .modal-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:2rem;width:100%;max-width:420px;box-shadow:0 8px 40px rgba(0,0,0,.18);animation:fadeIn .18s ease;max-height:90vh;overflow-y:auto;}
     .modal-title{font-size:15px;font-weight:600;margin-bottom:4px;}
     .modal-desc{font-size:12px;color:var(--text-muted);margin-bottom:1.25rem;line-height:1.6;}
     .modal-footer{display:flex;gap:8px;margin-top:1.25rem;justify-content:flex-end;}
@@ -212,6 +212,26 @@
     .forgot-link:hover{color:#234010;}
     /* EmailJS setup notice in admin */
     .emailjs-note{background:#fffbea;border:1px solid #f0d060;border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;color:#7a5a0e;line-height:1.65;margin-bottom:12px;}
+    /* UNDO TOAST */
+    .undo-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#1a1816;color:#fff;font-size:13px;padding:10px 18px;border-radius:99px;display:flex;align-items:center;gap:12px;z-index:9999;transition:transform .25s ease;box-shadow:0 4px 20px rgba(0,0,0,.25);}
+    .undo-toast.show{transform:translateX(-50%) translateY(0);}
+    .undo-btn{background:var(--accent-light);color:var(--accent);border:none;border-radius:99px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;}
+    /* DASHBOARD */
+    .dash-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:1.5rem;}
+    .dash-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;box-shadow:var(--shadow);}
+    .dash-card-title{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text-faint);margin-bottom:1rem;padding-bottom:8px;border-bottom:1px solid var(--border);}
+    .dash-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+    .dash-bar-label{font-size:12px;color:var(--text-muted);width:90px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .dash-bar-track{flex:1;height:8px;background:var(--surface2);border-radius:99px;overflow:hidden;}
+    .dash-bar-fill{height:100%;border-radius:99px;background:var(--accent);transition:width .4s ease;}
+    .dash-bar-count{font-size:11px;color:var(--text-muted);width:28px;text-align:right;flex-shrink:0;}
+    .dash-week-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;}
+    .dash-week-row:last-child{border-bottom:none;}
+    /* OVERDUE badge */
+    .badge-overdue{background:#fde8e8;color:#c0392b;}
+    /* EDIT entry button */
+    .entry-edit{background:none;border:none;color:var(--text-faint);font-size:13px;cursor:pointer;padding:0 4px;line-height:1;}
+    .entry-edit:hover{color:var(--accent);}
   </style>
 </head>
 <body>
@@ -273,6 +293,7 @@
     </div>
     <div class="header-right">
       <div class="header-nav" id="headerNav">
+        <button class="hnav-btn" onclick="showPage('dashboard')" id="hnav-dashboard">Dashboard</button>
         <button class="hnav-btn" onclick="showPage('add')" id="hnav-add">Add</button>
         <button class="hnav-btn" onclick="showPage('view')" id="hnav-view">Entries</button>
         <button class="hnav-btn" onclick="showPage('team')" id="hnav-team">Team</button>
@@ -293,6 +314,10 @@
     <aside class="sidebar">
       <div class="sidebar-section">
         <div class="sidebar-label">Tracker</div>
+        <div class="sidebar-item" onclick="showPage('dashboard')" id="nav-dashboard">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+          Dashboard
+        </div>
         <div class="sidebar-item active" onclick="showPage('add')" id="nav-add">
           <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
           Add deliverable
@@ -322,6 +347,10 @@
       </div>
       <div class="sidebar-section">
         <div class="sidebar-label">Admin</div>
+        <div class="sidebar-item" onclick="showPage('profile')" id="nav-profile">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          My Profile
+        </div>
         <div class="sidebar-item" onclick="showPage('admin')" id="nav-admin">
           <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
           Settings
@@ -481,6 +510,11 @@
                 <option value="Not Initiated">Not Initiated</option>
               </select>
             </div>
+            <div class="field"><label>Due date (optional)</label>
+              <input type="date" id="tDueDate" />
+            </div>
+          </div>
+          <div class="form-grid" style="margin-bottom:12px;">
             <div class="field"><label>Assignees</label>
               <select id="tAssignees">
                 <option value="">Select assignee</option>
@@ -582,10 +616,96 @@
         <div id="adminMsg" style="font-size:12px;margin-top:10px;min-height:18px;"></div>
       </div>
 
+      <!-- DASHBOARD PAGE -->
+      <div class="page" id="page-dashboard">
+        <div class="page-header">
+          <div class="page-title">Dashboard</div>
+          <div class="page-desc">Overview of your activity across all weeks.</div>
+        </div>
+        <div class="stats-row" id="dash-totals"></div>
+        <div class="dash-grid">
+          <div class="dash-card">
+            <div class="dash-card-title">Entries by project</div>
+            <div id="dash-by-project"><div class="empty-state" style="padding:1rem 0;">No data yet.</div></div>
+          </div>
+          <div class="dash-card">
+            <div class="dash-card-title">Status breakdown</div>
+            <div id="dash-by-status"></div>
+          </div>
+        </div>
+        <div class="dash-card" style="margin-bottom:1rem;">
+          <div class="dash-card-title">Weekly activity (last 8 weeks)</div>
+          <div id="dash-by-week"></div>
+        </div>
+      </div>
+
+      <!-- PROFILE PAGE -->
+      <div class="page" id="page-profile">
+        <div class="page-header">
+          <div class="page-title">My Profile</div>
+          <div class="page-desc">Update your display name and change your password.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Account info</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">Logged in as: <strong id="profileUsername"></strong> &nbsp;·&nbsp; <span id="profileEmail"></span></div>
+          <div class="form-grid full" style="margin-bottom:12px;">
+            <div class="field"><label>Display name</label><input type="text" id="profileName" placeholder="Your full name" /></div>
+          </div>
+          <button class="btn btn-primary" onclick="saveProfileName()">Save name</button>
+          <div id="profileNameMsg" style="font-size:12px;margin-top:8px;min-height:16px;"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Change password</div>
+          <div class="form-grid full" style="margin-bottom:12px;">
+            <div class="field"><label>Current password</label><input type="password" id="profileOldPass" placeholder="Enter current password" /></div>
+          </div>
+          <div class="form-grid" style="margin-bottom:12px;">
+            <div class="field"><label>New password</label><input type="password" id="profileNewPass" placeholder="Min 4 characters" /></div>
+            <div class="field"><label>Confirm new password</label><input type="password" id="profileNewPass2" placeholder="Repeat new password" /></div>
+          </div>
+          <button class="btn btn-primary" onclick="saveProfilePassword()">Change password</button>
+          <div id="profilePassMsg" style="font-size:12px;margin-top:8px;min-height:16px;"></div>
+        </div>
+      </div>
+
       <!-- hidden TSV element kept for compatibility -->
       <pre id="team-tsv" style="display:none;"></pre>
 
     </main>
+  </div>
+</div>
+
+<!-- Undo Toast -->
+<div class="undo-toast" id="undoToast">
+  <span id="undoMsg">Entry deleted.</span>
+  <button class="undo-btn" onclick="undoDelete()">Undo</button>
+</div>
+
+<!-- Edit Entry Modal -->
+<div class="modal-overlay" id="editEntryModal">
+  <div class="modal-box">
+    <div class="modal-title">Edit entry</div>
+    <input type="hidden" id="editEntryId" />
+    <div class="form-grid" style="margin-bottom:10px;">
+      <div class="field"><label>Date</label><input type="text" id="editDate" placeholder="e.g. March 17" /></div>
+      <div class="field"><label>Project</label><input type="text" id="editProject" /></div>
+    </div>
+    <div class="field" style="margin-bottom:10px;"><label>Activity / Task</label><input type="text" id="editDesc" /></div>
+    <div class="form-grid" style="margin-bottom:10px;">
+      <div class="field"><label>Status</label>
+        <select id="editStatus">
+          <option value="ongoing">O – Ongoing/In-Process</option>
+          <option value="completed">C – Completed</option>
+          <option value="recurring">R – Recurring</option>
+          <option value="notinit">Not initiated</option>
+        </select>
+      </div>
+      <div class="field"><label>Remarks</label><input type="text" id="editNotes" placeholder="Link, verification..." /></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeEditModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEditEntry()">Save changes</button>
+    </div>
   </div>
 </div>
 
@@ -1044,7 +1164,65 @@ async function addEntry(){
   ['fDesc','fNotes','fProject','fDate'].forEach(id=>document.getElementById(id).value='');
   pendingImages=[];renderThumbs();renderRecent();
 }
-async function deleteEntry(id){entries=entries.filter(e=>e.id!==id);await save();showSyncBadge(true);renderRecent();renderView();}
+async function deleteEntry(id){
+  const deleted = entries.find(e=>e.id===id);
+  entries=entries.filter(e=>e.id!==id);
+  await save();
+  showSyncBadge(true);
+  renderRecent();
+  renderView();
+  if(deleted) showUndoToast(deleted);
+}
+
+// ── UNDO DELETE ───────────────────────────
+let _undoEntry = null, _undoTimer = null;
+function showUndoToast(entry){
+  _undoEntry = entry;
+  clearTimeout(_undoTimer);
+  const toast = document.getElementById('undoToast');
+  toast.classList.add('show');
+  _undoTimer = setTimeout(()=>{ toast.classList.remove('show'); _undoEntry=null; }, 5000);
+}
+async function undoDelete(){
+  if(!_undoEntry) return;
+  entries.push(_undoEntry);
+  entries.sort((a,b)=>a.id-b.id);
+  _undoEntry = null;
+  clearTimeout(_undoTimer);
+  document.getElementById('undoToast').classList.remove('show');
+  await save();
+  renderRecent(); renderView();
+}
+
+// ── EDIT ENTRY ────────────────────────────
+function openEditModal(id){
+  const e = entries.find(x=>x.id===id);
+  if(!e) return;
+  document.getElementById('editEntryId').value = id;
+  document.getElementById('editDate').value    = e.date||'';
+  document.getElementById('editProject').value = e.project||'';
+  document.getElementById('editDesc').value    = e.desc||'';
+  document.getElementById('editStatus').value  = e.status||'ongoing';
+  document.getElementById('editNotes').value   = e.notes||'';
+  document.getElementById('editEntryModal').classList.add('open');
+}
+function closeEditModal(){ document.getElementById('editEntryModal').classList.remove('open'); }
+async function saveEditEntry(){
+  const id = parseInt(document.getElementById('editEntryId').value);
+  const idx = entries.findIndex(x=>x.id===id);
+  if(idx<0) return;
+  entries[idx] = {
+    ...entries[idx],
+    date:    document.getElementById('editDate').value.trim(),
+    project: document.getElementById('editProject').value.trim(),
+    desc:    document.getElementById('editDesc').value.trim(),
+    status:  document.getElementById('editStatus').value,
+    notes:   document.getElementById('editNotes').value.trim()
+  };
+  await save(); showSyncBadge(true);
+  closeEditModal(); renderRecent(); renderView();
+}
+
 function badgeClass(s){return{ongoing:'badge-ongoing',completed:'badge-completed',recurring:'badge-recurring',notinit:'badge-notinit'}[s]||'badge-notinit';}
 
 function itemHTML(e){
@@ -1054,19 +1232,23 @@ function itemHTML(e){
   return `<div class="entry-item">
     <div class="entry-body">
       <div class="entry-tags">
-        <span class="badge badge-project">${e.project}</span>
+        <span class="badge badge-project">${escHtmlEntry(e.project)}</span>
         <span class="badge ${badgeClass(e.status)}">${SC[e.status]} – ${SL[e.status]}</span>
         ${e.date?`<span class="badge badge-date">${e.date}</span>`:''}
         ${ib}
         <span style="font-size:11px;color:var(--text-faint);">${e.period}</span>
       </div>
-      <div class="entry-desc">${e.desc}</div>
-      ${e.notes?`<div class="entry-notes">${e.notes}</div>`:''}
+      <div class="entry-desc">${escHtmlEntry(e.desc)}</div>
+      ${e.notes?`<div class="entry-notes">${escHtmlEntry(e.notes)}</div>`:''}
       ${th?`<div class="entry-imgs">${th}</div>`:''}
     </div>
-    <button class="entry-del" onclick="deleteEntry(${e.id})">×</button>
+    <div style="display:flex;gap:4px;flex-shrink:0;">
+      <button class="entry-edit" onclick="openEditModal(${e.id})" title="Edit">✏</button>
+      <button class="entry-del" onclick="deleteEntry(${e.id})" title="Delete">×</button>
+    </div>
   </div>`;
 }
+function escHtmlEntry(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function getPeriodEntries(){return entries.filter(e=>e.period===getPeriod());}
 
@@ -1363,15 +1545,17 @@ async function addTeamRow() {
   const deliverable = document.getElementById('tDeliverable').value.trim();
   const status = document.getElementById('tStatus').value;
   const assignees = document.getElementById('tAssignees').value.trim();
+  const dueDate = document.getElementById('tDueDate').value;
   if (!person) { alert('Please select a person.'); return; }
   if (!deliverable) { alert('Please describe the deliverable.'); return; }
   ensureTeamPeriod(period, activeTeam);
-  teamData[period][activeTeam].push({ id: Date.now(), person, project, deliverable, status, assignees });
+  teamData[period][activeTeam].push({ id: Date.now(), person, project, deliverable, status, assignees, dueDate });
   await saveTeamDataCloud();
   showSyncBadge(true);
   ['tProject','tDeliverable'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('tStatus').value = 'Ongoing Progress';
   document.getElementById('tAssignees').value = '';
+  document.getElementById('tDueDate').value = '';
   renderTeamTabs();
   renderTeamTables();
 }
@@ -1430,18 +1614,26 @@ function renderTeamTables() {
       <div class="team-table-wrap" style="border:none;border-radius:0;">
         <table class="team-table">
           <thead><tr>
-            <th style="width:140px;">Project</th>
+            <th style="width:130px;">Project</th>
             <th>Target Deliverable</th>
             <th style="width:160px;">Status</th>
-            <th style="width:130px;">Assignees</th>
+            <th style="width:100px;">Due Date</th>
+            <th style="width:120px;">Assignees</th>
             <th style="width:32px;"></th>
           </tr></thead>
           <tbody>`;
     pRows.forEach(row => {
+      const today = new Date(); today.setHours(0,0,0,0);
+      const due = row.dueDate ? new Date(row.dueDate) : null;
+      const isOverdue = due && due < today && row.status !== 'Completed';
+      const dueTxt = row.dueDate
+        ? `<span class="badge ${isOverdue?'badge-overdue':'badge-date'}">${isOverdue?'⚠ ':''}${row.dueDate}</span>`
+        : '<span style="color:var(--text-faint);">—</span>';
       html += `<tr id="trow-${row.id}">
         <td style="font-size:12px;">${escHtml(row.project)||'<span style="color:var(--text-faint);">—</span>'}</td>
         <td style="font-size:12px;">${escHtml(row.deliverable)}</td>
         <td id="tstat-${row.id}">${statusBadgeWithEdit(row.status, row.id)}</td>
+        <td>${dueTxt}</td>
         <td style="font-size:12px;">${escHtml(row.assignees)||'<span style="color:var(--text-faint);">—</span>'}</td>
         <td><button class="del-row-btn" onclick="deleteTeamRow('${activeTeam}',${row.id})">×</button></td>
       </tr>`;
@@ -1700,10 +1892,11 @@ async function showPage(page){
   document.getElementById('page-'+page).classList.add('active');
   const n=document.getElementById('nav-'+page);if(n)n.classList.add('active');
   const hn=document.getElementById('hnav-'+page);if(hn)hn.classList.add('active');
+  if(page==='dashboard') renderDashboard();
   if(page==='view')renderView();
   if(page==='export')buildPDFPreview();
   if(page==='team'){
-    await loadTeamDataCloud(); // always reload from cloud when opening team page
+    await loadTeamDataCloud();
     renderTeamTabs();updatePersonDropdown();renderTeamTables();
   }
   if(page==='teamexport'){
@@ -1713,6 +1906,116 @@ async function showPage(page){
     previewExport();
   }
   if(page==='admin'){ loadAdminConfigToForm(); }
+  if(page==='profile'){ loadProfilePage(); }
+}
+
+// ── DASHBOARD ─────────────────────────────
+function renderDashboard(){
+  const all = entries;
+  const total = all.length;
+  const done  = all.filter(e=>e.status==='completed').length;
+  const ongoing = all.filter(e=>e.status==='ongoing').length;
+  const recurring = all.filter(e=>e.status==='recurring').length;
+  const notinit = all.filter(e=>e.status==='notinit').length;
+
+  document.getElementById('dash-totals').innerHTML=`
+    <div class="stat-card"><div class="stat-val">${total}</div><div class="stat-lbl">All-time entries</div></div>
+    <div class="stat-card"><div class="stat-val">${done}</div><div class="stat-lbl">Completed</div></div>
+    <div class="stat-card"><div class="stat-val">${ongoing}</div><div class="stat-lbl">Ongoing</div></div>
+    <div class="stat-card"><div class="stat-val">${recurring}</div><div class="stat-lbl">Recurring</div></div>
+    <div class="stat-card"><div class="stat-val">${notinit}</div><div class="stat-lbl">Not initiated</div></div>`;
+
+  // By project
+  const projectMap = {};
+  all.forEach(e=>{ projectMap[e.project]=(projectMap[e.project]||0)+1; });
+  const projects = Object.entries(projectMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const maxP = projects[0]?projects[0][1]:1;
+  document.getElementById('dash-by-project').innerHTML = projects.length
+    ? projects.map(([p,c])=>`
+        <div class="dash-bar-row">
+          <div class="dash-bar-label" title="${escHtmlEntry(p)}">${escHtmlEntry(p)}</div>
+          <div class="dash-bar-track"><div class="dash-bar-fill" style="width:${Math.round(c/maxP*100)}%"></div></div>
+          <div class="dash-bar-count">${c}</div>
+        </div>`).join('')
+    : '<div class="empty-state" style="padding:1rem 0;">No data yet.</div>';
+
+  // By status
+  const statuses = [
+    {key:'completed',label:'Completed',count:done,color:'#4caf50'},
+    {key:'ongoing',label:'Ongoing',count:ongoing,color:'#f0a500'},
+    {key:'recurring',label:'Recurring',count:recurring,color:'#1565c0'},
+    {key:'notinit',label:'Not initiated',count:notinit,color:'#a09a92'},
+  ];
+  const maxS = Math.max(...statuses.map(s=>s.count),1);
+  document.getElementById('dash-by-status').innerHTML = statuses.map(s=>`
+    <div class="dash-bar-row">
+      <div class="dash-bar-label">${s.label}</div>
+      <div class="dash-bar-track"><div class="dash-bar-fill" style="width:${Math.round(s.count/maxS*100)}%;background:${s.color}"></div></div>
+      <div class="dash-bar-count">${s.count}</div>
+    </div>`).join('');
+
+  // By week — last 8 unique periods with entries
+  const weekMap = {};
+  all.forEach(e=>{ if(e.period) weekMap[e.period]=(weekMap[e.period]||0)+1; });
+  const weeks = Object.entries(weekMap).slice(-8);
+  const maxW = Math.max(...weeks.map(w=>w[1]),1);
+  document.getElementById('dash-by-week').innerHTML = weeks.length
+    ? weeks.map(([w,c])=>`
+        <div class="dash-week-row">
+          <span style="color:var(--text-muted);flex:1;">${w}</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:120px;height:6px;background:var(--surface2);border-radius:99px;overflow:hidden;">
+              <div style="height:100%;width:${Math.round(c/maxW*100)}%;background:var(--accent);border-radius:99px;"></div>
+            </div>
+            <span style="font-size:12px;color:var(--text-muted);width:24px;text-align:right;">${c}</span>
+          </div>
+        </div>`).join('')
+    : '<div class="empty-state" style="padding:1rem 0;">No entries yet.</div>';
+}
+
+// ── PROFILE PAGE ──────────────────────────
+function loadProfilePage(){
+  const u = getCurrentUser();
+  const users = getUsers();
+  if(!u||!users[u]) return;
+  document.getElementById('profileUsername').textContent = u;
+  document.getElementById('profileEmail').textContent = users[u].email||'(no email)';
+  document.getElementById('profileName').value = users[u].name||'';
+  document.getElementById('profileNameMsg').textContent='';
+  document.getElementById('profilePassMsg').textContent='';
+  ['profileOldPass','profileNewPass','profileNewPass2'].forEach(id=>document.getElementById(id).value='');
+}
+
+function saveProfileName(){
+  const u = getCurrentUser();
+  const users = getUsers();
+  const name = document.getElementById('profileName').value.trim();
+  const msg = document.getElementById('profileNameMsg');
+  if(!name){ msg.style.color='#c0392b'; msg.textContent='Name cannot be empty.'; return; }
+  users[u].name = name;
+  saveUsers(users);
+  document.getElementById('userLabel').textContent = name;
+  document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
+  msg.style.color='var(--accent)'; msg.textContent='✓ Name updated.';
+  setTimeout(()=>msg.textContent='',3000);
+}
+
+function saveProfilePassword(){
+  const u = getCurrentUser();
+  const users = getUsers();
+  const oldPass = document.getElementById('profileOldPass').value;
+  const newPass = document.getElementById('profileNewPass').value;
+  const newPass2 = document.getElementById('profileNewPass2').value;
+  const msg = document.getElementById('profilePassMsg');
+  if(!oldPass||!newPass||!newPass2){ msg.style.color='#c0392b'; msg.textContent='Please fill in all fields.'; return; }
+  if(users[u].password!==btoa(oldPass)){ msg.style.color='#c0392b'; msg.textContent='Current password is incorrect.'; return; }
+  if(newPass!==newPass2){ msg.style.color='#c0392b'; msg.textContent='New passwords do not match.'; return; }
+  if(newPass.length<4){ msg.style.color='#c0392b'; msg.textContent='Password must be at least 4 characters.'; return; }
+  users[u].password = btoa(newPass);
+  saveUsers(users);
+  ['profileOldPass','profileNewPass','profileNewPass2'].forEach(id=>document.getElementById(id).value='');
+  msg.style.color='var(--accent)'; msg.textContent='✓ Password changed successfully.';
+  setTimeout(()=>msg.textContent='',3000);
 }
 </script>
 </body>
