@@ -232,6 +232,41 @@
     /* EDIT entry button */
     .entry-edit{background:none;border:none;color:var(--text-faint);font-size:13px;cursor:pointer;padding:0 4px;line-height:1;}
     .entry-edit:hover{color:var(--accent);}
+    /* ACKNOWLEDGEMENTS / REACTIONS */
+    .react-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
+    .react-btn{font-family:'DM Sans',sans-serif;font-size:12px;padding:3px 9px;border-radius:99px;border:1px solid var(--border);background:var(--surface);cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all .15s;color:var(--text-muted);}
+    .react-btn:hover{background:var(--accent-light);border-color:var(--accent);color:var(--accent);}
+    .react-btn.reacted{background:var(--accent-light);border-color:var(--accent);color:var(--accent);font-weight:600;}
+    .react-count{font-size:11px;font-weight:600;}
+    .react-add{font-size:12px;padding:3px 9px;border-radius:99px;border:1px dashed var(--border-strong);background:transparent;cursor:pointer;color:var(--text-faint);transition:all .15s;}
+    .react-add:hover{background:var(--accent-light);border-color:var(--accent);color:var(--accent);}
+    .react-picker{display:none;position:absolute;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:8px;box-shadow:var(--shadow);z-index:200;flex-wrap:wrap;gap:4px;width:200px;}
+    .react-picker.open{display:flex;}
+    .react-picker-btn{font-size:18px;cursor:pointer;padding:4px;border-radius:6px;border:none;background:none;transition:background .1s;}
+    .react-picker-btn:hover{background:var(--surface2);}
+    .react-wrap{position:relative;}
+    /* KUDOS WALL */
+    .kudos-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:10px;box-shadow:var(--shadow);animation:fadeIn .2s ease;}
+    .kudos-header{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+    .kudos-avatar{width:32px;height:32px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;}
+    .kudos-meta{font-size:11px;color:var(--text-faint);}
+    .kudos-task{font-size:13px;color:var(--text);margin-bottom:6px;}
+    .kudos-reactions{display:flex;gap:6px;flex-wrap:wrap;}
+    .kudos-pill{font-size:12px;padding:2px 10px;border-radius:99px;background:var(--accent-light);color:var(--accent);border:1px solid #c5dba8;font-weight:500;}
+    /* APPRECIATION SUMMARY (replaces leaderboard) */
+    .appr-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
+    .appr-row:last-child{border-bottom:none;}
+    .appr-avatar{width:34px;height:34px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0;}
+    .appr-info{flex:1;}
+    .appr-name{font-size:13px;font-weight:600;color:var(--text);}
+    .appr-sub{font-size:11px;color:var(--text-muted);}
+    .appr-emojis{font-size:16px;letter-spacing:2px;}
+    /* Kudos nav tab */
+    .kudos-tabs{display:flex;gap:6px;margin-bottom:1.25rem;border-bottom:1px solid var(--border);}
+    .kudos-tab{font-family:'DM Sans',sans-serif;font-size:13px;padding:8px 16px;border:none;background:none;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;}
+    .kudos-tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:500;}
+    /* entry-item needs relative for picker */
+    .entry-item{position:relative;}
   </style>
 </head>
 <body>
@@ -262,8 +297,8 @@
     </div>
     <div id="lpane-register" style="display:none;">
       <div class="lfield"><label>Full name</label><input type="text" id="regName" placeholder="e.g. Bea Valencia" /></div>
-      <div class="lfield"><label>UP Mail <span style="color:#c0392b;">*</span></label><input type="text" id="regEmail" placeholder="e.g. bea@up.edu.ph" autocomplete="email" /></div>
-      <div style="font-size:11px;color:var(--text-muted);margin:-8px 0 10px;line-height:1.5;">Your UP mail is used to sync and restore your data across devices. It must end in <strong>@up.edu.ph</strong>.</div>
+      <div class="lfield"><label>Email address <span style="color:#c0392b;">*</span></label><input type="text" id="regEmail" placeholder="e.g. bea@email.com" autocomplete="email" /></div>
+      <div style="font-size:11px;color:var(--text-muted);margin:-8px 0 10px;line-height:1.5;">Your email is used to sync and restore your data across devices and to send you a copy of your credentials.</div>
       <div class="lfield"><label>Username</label><input type="text" id="regUser" placeholder="Choose a username" /></div>
       <div class="lfield"><label>Password</label><input type="password" id="regPass" placeholder="Choose a password (min 4 chars)" /></div>
       <div class="lfield"><label>Confirm password</label><input type="password" id="regPass2" placeholder="Repeat password" onkeydown="if(event.key==='Enter')doRegister()" /></div>
@@ -271,8 +306,8 @@
       <div class="lmsg" id="registerMsg"></div>
     </div>
     <div id="lpane-forgot" style="display:none;">
-      <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;line-height:1.6;">Enter your registered UP mail and we'll send your username and a temporary password to that address.</div>
-      <div class="lfield"><label>UP Mail</label><input type="text" id="forgotEmail" placeholder="e.g. bea@up.edu.ph" onkeydown="if(event.key==='Enter')doForgotPassword()" /></div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;line-height:1.6;">Enter your registered email address and we'll send your username and a temporary password to that address.</div>
+      <div class="lfield"><label>Email address</label><input type="text" id="forgotEmail" placeholder="e.g. bea@email.com" onkeydown="if(event.key==='Enter')doForgotPassword()" /></div>
       <button class="lbtn" onclick="doForgotPassword()">Send reset email</button>
       <div class="lmsg" id="forgotMsg"></div>
     </div>
@@ -296,6 +331,7 @@
         <button class="hnav-btn" onclick="showPage('dashboard')" id="hnav-dashboard">Dashboard</button>
         <button class="hnav-btn" onclick="showPage('add')" id="hnav-add">Add</button>
         <button class="hnav-btn" onclick="showPage('view')" id="hnav-view">Entries</button>
+        <button class="hnav-btn" onclick="showPage('kudos')" id="hnav-kudos">🏅 Kudos</button>
         <button class="hnav-btn" onclick="showPage('team')" id="hnav-team">Team</button>
         <button class="hnav-btn" onclick="showPage('export')" id="hnav-export">PDF</button>
         <button class="hnav-btn" onclick="showPage('teamexport')" id="hnav-teamexport">Sheets</button>
@@ -321,6 +357,10 @@
         <div class="sidebar-item active" onclick="showPage('add')" id="nav-add">
           <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
           Add deliverable
+        </div>
+        <div class="sidebar-item" onclick="showPage('kudos')" id="nav-kudos">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          Kudos Wall
         </div>
         <div class="sidebar-item" onclick="showPage('view')" id="nav-view">
           <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
@@ -639,6 +679,43 @@
         </div>
       </div>
 
+      <!-- KUDOS WALL PAGE -->
+      <div class="page" id="page-kudos">
+        <div class="page-header">
+          <div class="page-title">Kudos Wall</div>
+          <div class="page-desc">Celebrate your team's efforts — react to entries and see who's been recognized the most.</div>
+        </div>
+        <div class="kudos-tabs">
+          <button class="kudos-tab active" id="ktab-wall" onclick="switchKudosTab('wall')">🏅 Recognition Wall</button>
+          <button class="kudos-tab" id="ktab-appreciation" onclick="switchKudosTab('appreciation')">💛 Team Appreciation</button>
+        </div>
+        <!-- Wall -->
+        <div id="kudos-wall-pane">
+          <div class="card" style="margin-bottom:1rem;">
+            <div class="card-title">Filter by week</div>
+            <div class="field" style="max-width:320px;">
+              <select id="kudosPeriod" onchange="renderKudosWall()">
+                <option value="">All weeks</option>
+              </select>
+            </div>
+          </div>
+          <div id="kudos-wall-list"></div>
+        </div>
+        <!-- Team Appreciation summary — no ranking, just a warm overview -->
+        <div id="kudos-appreciation-pane" style="display:none;">
+          <div class="card" style="margin-bottom:1rem;">
+            <div class="card-title">Everyone's been appreciated ✨</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:1rem;line-height:1.65;">A snapshot of the reactions each person has received across all their entries. This is not a ranking — every effort counts.</div>
+            <div id="kudos-appr-list"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Most-used reactions across the team</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:1rem;">How the team has been showing appreciation.</div>
+            <div id="kudos-emoji-breakdown"></div>
+          </div>
+        </div>
+      </div>
+
       <!-- PROFILE PAGE -->
       <div class="page" id="page-profile">
         <div class="page-header">
@@ -672,6 +749,30 @@
       <pre id="team-tsv" style="display:none;"></pre>
 
     </main>
+  </div>
+</div>
+
+<!-- Emoji Picker Modal -->
+<div class="modal-overlay" id="emojiPickerModal">
+  <div class="modal-box" style="max-width:320px;">
+    <div class="modal-title">React to this entry</div>
+    <div class="modal-desc" id="emojiPickerDesc"></div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:1rem;">
+      <button class="react-picker-btn" style="font-size:22px;" onclick="pickEmoji('👏')">👏</button>
+      <button class="react-picker-btn" style="font-size:22px;" onclick="pickEmoji('🔥')">🔥</button>
+      <button class="react-picker-btn" style="font-size:22px;" onclick="pickEmoji('💪')">💪</button>
+      <button class="react-picker-btn" style="font-size:22px;" onclick="pickEmoji('⭐')">⭐</button>
+      <button class="react-picker-btn" style="font-size:22px;" onclick="pickEmoji('🎉')">🎉</button>
+      <button class="react-picker-btn" style="font-size:22px;" onclick="pickEmoji('❤️')">❤️</button>
+      <button class="react-picker-btn" style="font-size:22px;" onclick="pickEmoji('🙌')">🙌</button>
+      <button class="react-picker-btn" style="font-size:22px;" onclick="pickEmoji('💡')">💡</button>
+      <button class="react-picker-btn" style="font-size:22px;" onclick="pickEmoji('🚀')">🚀</button>
+      <button class="react-picker-btn" style="font-size:22px;" onclick="pickEmoji('✅')">✅</button>
+    </div>
+    <div style="font-size:11px;color:var(--text-faint);margin-bottom:12px;">Click again to remove your reaction.</div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeEmojiPicker()">Cancel</button>
+    </div>
   </div>
 </div>
 
@@ -734,7 +835,7 @@ function saveUsers(u){localStorage.setItem('fwa_users',JSON.stringify(u));}
 function getCurrentUser(){return localStorage.getItem('fwa_current_user')||null;}
 function setCurrentUser(u){localStorage.setItem('fwa_current_user',u);}
 
-function isValidUPMail(email){ return /^[^\s@]+@up\.edu\.ph$/i.test(email.trim()); }
+function isValidEmail(email){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()); }
 
 // Cloud storage keys — tied to email so data is portable across devices/browsers
 function emailKey(email, suffix){ return 'fwa_'+suffix+'__'+email.toLowerCase().trim(); }
@@ -817,13 +918,13 @@ async function doRegister(){
   const pass2=document.getElementById('regPass2').value;
   const msg=document.getElementById('registerMsg');
   if(!name||!email||!user||!pass||!pass2){msg.className='lmsg err';msg.textContent='Please fill in all fields.';return;}
-  if(!isValidUPMail(email)){msg.className='lmsg err';msg.textContent='Email must be a valid UP mail (e.g. bea@up.edu.ph).';return;}
+  if(!isValidEmail(email)){msg.className='lmsg err';msg.textContent='Please enter a valid email address.';return;}
   if(pass!==pass2){msg.className='lmsg err';msg.textContent='Passwords do not match.';return;}
   if(pass.length<4){msg.className='lmsg err';msg.textContent='Password must be at least 4 characters.';return;}
   const users=getUsers();
   if(users[user]){msg.className='lmsg err';msg.textContent='Username already taken.';return;}
   const existingUser = Object.keys(users).find(u=>users[u].email===email);
-  if(existingUser){msg.className='lmsg err';msg.textContent='An account with this UP mail already exists.';return;}
+  if(existingUser){msg.className='lmsg err';msg.textContent='An account with this email already exists.';return;}
   users[user]={name, email, password:btoa(pass)};
   saveUsers(users);
   msg.className='lmsg ok';msg.textContent='Account created! Sending welcome email…';
@@ -835,11 +936,11 @@ async function doRegister(){
     subject: 'FWA Tracker — Your account credentials',
     username: user,
     password: pass,
-    message: `Hi ${name},\n\nYour FWA Tracker account has been created.\n\nUsername: ${user}\nPassword: ${pass}\nUP Mail: ${email}\n\nPlease keep this email for your records. You can use these credentials to sign in and your data will be automatically restored via your UP mail.\n\nOVPDx FWA Tracker`
+    message: `Hi ${name},\n\nYour FWA Tracker account has been created.\n\nUsername: ${user}\nPassword: ${pass}\nEmail: ${email}\n\nPlease keep this email for your records. You can use these credentials to sign in and your data will be automatically restored via your email.\n\nFWA Tracker`
   });
 
   if(emailResult.ok){
-    msg.textContent='Account created! Credentials sent to your UP mail.';
+    msg.textContent='Account created! Credentials sent to your email.';
   } else if(emailResult.reason==='not_configured'){
     msg.textContent='Account created! (Email not configured — set up EmailJS in Admin → Settings.)';
   } else {
@@ -861,8 +962,8 @@ function doLogout(){
 async function doForgotPassword(){
   const email = document.getElementById('forgotEmail').value.trim().toLowerCase();
   const msg = document.getElementById('forgotMsg');
-  if(!email){ msg.className='lmsg err'; msg.textContent='Please enter your UP mail.'; return; }
-  if(!isValidUPMail(email)){ msg.className='lmsg err'; msg.textContent='Must be a valid UP mail (e.g. bea@up.edu.ph).'; return; }
+  if(!email){ msg.className='lmsg err'; msg.textContent='Please enter your email address.'; return; }
+  if(!isValidEmail(email)){ msg.className='lmsg err'; msg.textContent='Please enter a valid email address.'; return; }
 
   const users = getUsers();
   const username = Object.keys(users).find(u => users[u].email === email);
@@ -891,7 +992,7 @@ async function doForgotPassword(){
 
   if(result.ok){
     msg.className='lmsg ok';
-    msg.textContent='Reset email sent! Check your UP mail inbox.';
+    msg.textContent='Reset email sent! Check your inbox.';
   } else if(result.reason==='not_configured'){
     // EmailJS not set up — show temp password in a modal as fallback
     showModal(
@@ -923,6 +1024,7 @@ async function launchApp(username, fullname, email){
 
   // Load entries — prefer email-keyed cloud storage for cross-device restore
   entries = await loadEntriesByEmail(username, email);
+  await loadReactions();
 
   const users=getUsers();
   if(users[username]&&users[username].name) document.getElementById('hName').value=users[username].name;
@@ -972,8 +1074,8 @@ function generateWeekOptions() {
     d.setDate(d.getDate() + 7);
   }
 
-  // Populate all three period selects
-  ['hPeriod','tPeriod','tPeriodExport'].forEach(id => {
+  // Populate all period selects
+  ['hPeriod','tPeriod','tPeriodExport','kudosPeriod'].forEach(id => {
     const sel = document.getElementById(id);
     if (!sel) return;
     const current = sel.value;
@@ -1001,7 +1103,7 @@ function autoSelectCurrentWeek() {
   } else {
     label = `${MONTHS[mon.getMonth()]} ${mon.getDate()} – ${MONTHS[fri.getMonth()]} ${fri.getDate()}, ${fri.getFullYear()}`;
   }
-  ['hPeriod','tPeriod','tPeriodExport'].forEach(id => {
+  ['hPeriod','tPeriod','tPeriodExport','kudosPeriod'].forEach(id => {
     const sel = document.getElementById(id);
     if (!sel) return;
     // Only auto-select if not already set
@@ -1158,7 +1260,7 @@ async function addEntry(){
         date=document.getElementById('fDate').value.trim();
   if(!desc){alert('Please describe the activity/task.');return;}
   if(!project){alert('Please enter a project name.');return;}
-  entries.push({id:Date.now(),project,desc,status,notes,date,period:getPeriod(),images:pendingImages.map(i=>({dataUrl:i.dataUrl,name:i.name}))});
+  entries.push({id:Date.now(),project,desc,status,notes,date,period:getPeriod(),owner:getCurrentUser(),images:pendingImages.map(i=>({dataUrl:i.dataUrl,name:i.name}))});
   await save();
   showSyncBadge(true);
   ['fDesc','fNotes','fProject','fDate'].forEach(id=>document.getElementById(id).value='');
@@ -1229,6 +1331,7 @@ function itemHTML(e){
   const ic=(e.images||[]).length;
   const ib=ic?`<span class="badge badge-photo">${ic} photo${ic>1?'s':''}</span>`:'';
   const th=(e.images||[]).map(img=>`<img class="entry-img" src="${img.dataUrl}" onclick="openLightbox('${img.dataUrl}')" />`).join('');
+  const reactRow = reactionRowHTML(e.id).replace('<div class="react-row"','<div class="react-row" id="react-row-'+e.id+'"');
   return `<div class="entry-item">
     <div class="entry-body">
       <div class="entry-tags">
@@ -1241,6 +1344,7 @@ function itemHTML(e){
       <div class="entry-desc">${escHtmlEntry(e.desc)}</div>
       ${e.notes?`<div class="entry-notes">${escHtmlEntry(e.notes)}</div>`:''}
       ${th?`<div class="entry-imgs">${th}</div>`:''}
+      ${reactRow}
     </div>
     <div style="display:flex;gap:4px;flex-shrink:0;">
       <button class="entry-edit" onclick="openEditModal(${e.id})" title="Edit">✏</button>
@@ -1249,6 +1353,190 @@ function itemHTML(e){
   </div>`;
 }
 function escHtmlEntry(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── ACKNOWLEDGEMENTS / REACTIONS ──────────
+// reactions stored globally, keyed by entryId
+// structure: { [entryId]: { [emoji]: [ usernames... ] } }
+let reactions = {};
+let _emojiTargetId = null;
+
+async function loadReactions(){
+  try {
+    const res = await window.storage.get('fwa_reactions');
+    if(res && res.value) reactions = JSON.parse(res.value);
+  } catch(e){
+    reactions = JSON.parse(localStorage.getItem('fwa_reactions')||'{}');
+  }
+}
+async function saveReactions(){
+  const json = JSON.stringify(reactions);
+  localStorage.setItem('fwa_reactions', json);
+  try { await window.storage.set('fwa_reactions', json); } catch(e){}
+}
+
+function getReactionsForEntry(entryId){
+  return reactions[entryId] || {};
+}
+
+function reactionRowHTML(entryId){
+  const me = getCurrentUser();
+  const r = getReactionsForEntry(entryId);
+  const emojis = Object.keys(r).filter(em => r[em] && r[em].length > 0);
+  const pills = emojis.map(em => {
+    const users = r[em];
+    const iMine = users.includes(me);
+    const names = users.join(', ');
+    return `<button class="react-btn${iMine?' reacted':''}" onclick="toggleReaction(${entryId},'${em}')" title="${escHtmlEntry(names)}">${em} <span class="react-count">${users.length}</span></button>`;
+  }).join('');
+  return `<div class="react-row">
+    ${pills}
+    <button class="react-add" onclick="openEmojiPicker(${entryId})" title="Add reaction">+ React</button>
+  </div>`;
+}
+
+function openEmojiPicker(entryId){
+  _emojiTargetId = entryId;
+  const entry = entries.find(e=>e.id===entryId);
+  document.getElementById('emojiPickerDesc').textContent = entry ? `"${entry.desc.slice(0,60)}${entry.desc.length>60?'…':''}"` : '';
+  document.getElementById('emojiPickerModal').classList.add('open');
+}
+function closeEmojiPicker(){ document.getElementById('emojiPickerModal').classList.remove('open'); _emojiTargetId=null; }
+
+async function pickEmoji(emoji){
+  if(_emojiTargetId===null) return;
+  await toggleReaction(_emojiTargetId, emoji);
+  closeEmojiPicker();
+}
+
+async function toggleReaction(entryId, emoji){
+  const me = getCurrentUser();
+  if(!me) return;
+  if(!reactions[entryId]) reactions[entryId] = {};
+  if(!reactions[entryId][emoji]) reactions[entryId][emoji] = [];
+  const idx = reactions[entryId][emoji].indexOf(me);
+  if(idx>=0){
+    reactions[entryId][emoji].splice(idx,1);
+    if(!reactions[entryId][emoji].length) delete reactions[entryId][emoji];
+  } else {
+    reactions[entryId][emoji].push(me);
+  }
+  await saveReactions();
+  // Refresh just the reaction row in place if visible
+  const rowEl = document.getElementById('react-row-'+entryId);
+  if(rowEl) rowEl.outerHTML = reactionRowHTML(entryId).replace('<div class="react-row"','<div class="react-row" id="react-row-'+entryId+'"');
+  // Also update kudos wall if open
+  const kudosPage = document.getElementById('page-kudos');
+  if(kudosPage && kudosPage.classList.contains('active')) renderKudosWall();
+}
+
+// ── KUDOS WALL ────────────────────────────
+function switchKudosTab(tab){
+  document.getElementById('kudos-wall-pane').style.display          = tab==='wall'?'':'none';
+  document.getElementById('kudos-appreciation-pane').style.display  = tab==='appreciation'?'':'none';
+  document.getElementById('ktab-wall').classList.toggle('active', tab==='wall');
+  document.getElementById('ktab-appreciation').classList.toggle('active', tab==='appreciation');
+  if(tab==='appreciation') renderKudosAppreciation();
+  else renderKudosWall();
+}
+
+function renderKudosWall(){
+  const sel = document.getElementById('kudosPeriod');
+  const filterPeriod = sel ? sel.value : '';
+  // Only entries that have at least one reaction, OR all entries if no filter
+  let pool = filterPeriod ? entries.filter(e=>e.period===filterPeriod) : [...entries];
+  // Sort: most reacted first
+  pool = pool.sort((a,b)=>{
+    const ra = Object.values(reactions[a.id]||{}).reduce((s,u)=>s+u.length,0);
+    const rb = Object.values(reactions[b.id]||{}).reduce((s,u)=>s+u.length,0);
+    return rb-ra;
+  });
+  const list = document.getElementById('kudos-wall-list');
+  if(!pool.length){ list.innerHTML='<div class="empty-state">No entries for this period.</div>'; return; }
+  list.innerHTML = pool.map(e=>{
+    const r = reactions[e.id]||{};
+    const totalReacts = Object.values(r).reduce((s,u)=>s+u.length,0);
+    const pills = Object.keys(r).filter(em=>r[em].length>0).map(em=>`<span class="kudos-pill">${em} ${r[em].length}</span>`).join('');
+    const me = getCurrentUser();
+    const iMine = Object.values(r).some(u=>u.includes(me));
+    return `<div class="kudos-card">
+      <div class="kudos-header">
+        <div class="kudos-avatar">${(e.project||'?').charAt(0).toUpperCase()}</div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);">${escHtmlEntry(e.project)}</div>
+          <div class="kudos-meta">${e.period}${e.date?' · '+e.date:''} ${totalReacts>0?'· '+totalReacts+' reaction'+(totalReacts>1?'s':''):''}</div>
+        </div>
+      </div>
+      <div class="kudos-task">${escHtmlEntry(e.desc)}</div>
+      ${pills?`<div class="kudos-reactions">${pills}</div>`:'<div style="font-size:11px;color:var(--text-faint);">No reactions yet — be the first!</div>'}
+      <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;" id="react-row-${e.id}">
+        ${Object.keys(r).filter(em=>r[em].length>0).map(em=>{
+          const users=r[em]; const iM=users.includes(me);
+          return `<button class="react-btn${iM?' reacted':''}" onclick="toggleReaction(${e.id},'${em}')" title="${users.join(', ')}">${em} <span class="react-count">${users.length}</span></button>`;
+        }).join('')}
+        <button class="react-add" onclick="openEmojiPicker(${e.id})">+ React</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderKudosAppreciation(){
+  // Gather all reactions per person — no ranking, just a warm summary
+  const personMap = {}; // username → { totalReacts, emojiCounts: {emoji: count} }
+  entries.forEach(e => {
+    const owner = e.owner || getCurrentUser();
+    const r = reactions[e.id] || {};
+    Object.entries(r).forEach(([em, users]) => {
+      if(!users.length) return;
+      if(!personMap[owner]) personMap[owner] = { totalReacts: 0, emojiCounts: {} };
+      personMap[owner].totalReacts += users.length;
+      personMap[owner].emojiCounts[em] = (personMap[owner].emojiCounts[em]||0) + users.length;
+    });
+  });
+
+  const people = Object.entries(personMap);
+  // Shuffle so no implied order — appreciation is not a competition
+  for(let i = people.length-1; i>0; i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [people[i],people[j]] = [people[j],people[i]];
+  }
+
+  const apprList = document.getElementById('kudos-appr-list');
+  if(!people.length){
+    apprList.innerHTML='<div class="empty-state" style="padding:1rem 0;">No reactions yet — head to the Recognition Wall and appreciate someone\'s work! 🌟</div>';
+  } else {
+    const users = getUsers();
+    apprList.innerHTML = people.map(([u, data])=>{
+      const displayName = (users[u]&&users[u].name)||u;
+      const topEmojis = Object.entries(data.emojiCounts).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([em])=>em).join(' ');
+      return `<div class="appr-row">
+        <div class="appr-avatar">${displayName.charAt(0).toUpperCase()}</div>
+        <div class="appr-info">
+          <div class="appr-name">${escHtmlEntry(displayName)}</div>
+          <div class="appr-sub">${data.totalReacts} reaction${data.totalReacts!==1?'s':''} received across their entries</div>
+        </div>
+        <div class="appr-emojis">${topEmojis}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Emoji breakdown — team-wide
+  const emojiMap = {};
+  entries.forEach(e => {
+    const r = reactions[e.id]||{};
+    Object.entries(r).forEach(([em,users])=>{ if(users.length) emojiMap[em]=(emojiMap[em]||0)+users.length; });
+  });
+  const emojiRanked = Object.entries(emojiMap).sort((a,b)=>b[1]-a[1]);
+  const maxE = emojiRanked[0]?emojiRanked[0][1]:1;
+  const breakdown = document.getElementById('kudos-emoji-breakdown');
+  breakdown.innerHTML = emojiRanked.length
+    ? emojiRanked.map(([em,c])=>`
+        <div class="dash-bar-row">
+          <div class="dash-bar-label" style="width:44px;font-size:18px;">${em}</div>
+          <div class="dash-bar-track"><div class="dash-bar-fill" style="width:${Math.round(c/maxE*100)}%"></div></div>
+          <div class="dash-bar-count">${c}</div>
+        </div>`).join('')
+    : '<div class="empty-state" style="padding:1rem 0;">No reactions yet.</div>';
+}
 
 function getPeriodEntries(){return entries.filter(e=>e.period===getPeriod());}
 
@@ -1893,6 +2181,7 @@ async function showPage(page){
   const n=document.getElementById('nav-'+page);if(n)n.classList.add('active');
   const hn=document.getElementById('hnav-'+page);if(hn)hn.classList.add('active');
   if(page==='dashboard') renderDashboard();
+  if(page==='kudos'){ await loadReactions(); switchKudosTab('wall'); }
   if(page==='view')renderView();
   if(page==='export')buildPDFPreview();
   if(page==='team'){
