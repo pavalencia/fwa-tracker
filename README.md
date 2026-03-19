@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -823,28 +822,107 @@
 
 <script>
 // ── JSONBIN CONFIG ────────────────────────
-// Free cloud storage via JSONBin.io — works from ANY device/browser, no setup wizard.
-// HOW TO SET UP (2 minutes):
-//   1. Go to https://jsonbin.io → Sign up free
-//   2. Go to API Keys → Create Access Key → copy it
-//   3. Paste your key below as JSONBIN_API_KEY
-//   4. The bins (storage slots) are created automatically on first save
+// Free cloud storage via JSONBin.io — works from ANY device/browser.
 const JSONBIN_API_KEY = '$2a$10$zovgdA6JP/5.Gt2rd6XdDeOhoROJoePurbzTxPEVE3Fd2p5Ei1Ryi';
 const JSONBIN_BASE    = 'https://api.jsonbin.io/v3';
 
-// Bin IDs are stored in localStorage after first creation
-function getBinId(name){ return localStorage.getItem('fwa_bin_'+name)||null; }
-function setBinId(name, id){ localStorage.setItem('fwa_bin_'+name, id); }
+// We use ONE fixed "index" bin whose ID is hardcoded below.
+// This index bin stores the IDs of all other bins (users, entries, team, reactions).
+// Any device can look up the index bin → find the real bin IDs → read/write data.
+// FIRST RUN: index bin is created automatically and its ID is saved in localStorage.
+// SUBSEQUENT DEVICES: they read the index bin ID from the index bin itself (bootstrapped via search).
+
+const INDEX_BIN_NAME = 'fwa-tracker-index';
+let _binIndex = null; // cache: { 'fwa-users': '...id...', 'fwa-team-data': '...id...', ... }
 
 function isJBReady(){ return JSONBIN_API_KEY && JSONBIN_API_KEY !== 'YOUR_JSONBIN_API_KEY'; }
 
+// Fetch the full index from JSONBin (searches by name to bootstrap on new devices)
+async function loadBinIndex(){
+  if(_binIndex) return _binIndex;
+  // Try localStorage cache first
+  const cached = localStorage.getItem('fwa_bin_index');
+  if(cached){
+    try {
+      const parsed = JSON.parse(cached);
+      if(parsed && parsed._indexId){
+        // Refresh from JSONBin to get latest IDs
+        const r = await fetch(`${JSONBIN_BASE}/b/${parsed._indexId}/latest`,{
+          headers:{'X-Master-Key':JSONBIN_API_KEY}
+        });
+        if(r.ok){
+          const j = await r.json();
+          _binIndex = j.record;
+          localStorage.setItem('fwa_bin_index', JSON.stringify(_binIndex));
+          return _binIndex;
+        }
+      }
+    } catch(e){}
+  }
+  // Search JSONBin for the index bin by name (works on any new device)
+  try {
+    const r = await fetch(`${JSONBIN_BASE}/b?page=1`,{
+      headers:{'X-Master-Key':JSONBIN_API_KEY}
+    });
+    if(r.ok){
+      const j = await r.json();
+      const bins = Array.isArray(j) ? j : (j.result||[]);
+      const found = bins.find(b=>(b.record?.name||b.name||'')===INDEX_BIN_NAME);
+      if(found){
+        const indexId = found.id || found._id;
+        const r2 = await fetch(`${JSONBIN_BASE}/b/${indexId}/latest`,{
+          headers:{'X-Master-Key':JSONBIN_API_KEY}
+        });
+        if(r2.ok){
+          const j2 = await r2.json();
+          _binIndex = j2.record;
+          _binIndex._indexId = indexId;
+          localStorage.setItem('fwa_bin_index', JSON.stringify(_binIndex));
+          return _binIndex;
+        }
+      }
+    }
+  } catch(e){}
+  return null;
+}
+
+async function saveBinIndex(){
+  if(!_binIndex) return;
+  const indexId = _binIndex._indexId;
+  if(!indexId){
+    // Create the index bin for the first time
+    try {
+      const r = await fetch(`${JSONBIN_BASE}/b`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_API_KEY,'X-Bin-Name':INDEX_BIN_NAME,'X-Bin-Private':'false'},
+        body: JSON.stringify(_binIndex)
+      });
+      if(r.ok){
+        const j = await r.json();
+        _binIndex._indexId = j.metadata.id;
+        localStorage.setItem('fwa_bin_index', JSON.stringify(_binIndex));
+      }
+    } catch(e){}
+  } else {
+    try {
+      await fetch(`${JSONBIN_BASE}/b/${indexId}`,{
+        method:'PUT',
+        headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_API_KEY},
+        body: JSON.stringify(_binIndex)
+      });
+      localStorage.setItem('fwa_bin_index', JSON.stringify(_binIndex));
+    } catch(e){}
+  }
+}
+
 async function jbGet(name){
   if(!isJBReady()) return null;
-  const id = getBinId(name);
+  const index = await loadBinIndex();
+  const id = index && index[name];
   if(!id) return null;
   try {
     const r = await fetch(`${JSONBIN_BASE}/b/${id}/latest`,{
-      headers:{'X-Master-Key': JSONBIN_API_KEY}
+      headers:{'X-Master-Key':JSONBIN_API_KEY}
     });
     if(!r.ok) return null;
     const j = await r.json();
@@ -854,10 +932,11 @@ async function jbGet(name){
 
 async function jbSet(name, data){
   if(!isJBReady()) return false;
-  const id = getBinId(name);
+  if(!_binIndex) await loadBinIndex();
+  if(!_binIndex) _binIndex = {};
+  const id = _binIndex[name];
   try {
     if(id){
-      // Update existing bin
       const r = await fetch(`${JSONBIN_BASE}/b/${id}`,{
         method:'PUT',
         headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_API_KEY},
@@ -865,7 +944,7 @@ async function jbSet(name, data){
       });
       return r.ok;
     } else {
-      // Create new bin
+      // Create new bin and register it in the index
       const r = await fetch(`${JSONBIN_BASE}/b`,{
         method:'POST',
         headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_API_KEY,'X-Bin-Name':name,'X-Bin-Private':'false'},
@@ -873,7 +952,8 @@ async function jbSet(name, data){
       });
       if(!r.ok) return false;
       const j = await r.json();
-      setBinId(name, j.metadata.id);
+      _binIndex[name] = j.metadata.id;
+      await saveBinIndex(); // update index so other devices can find this bin
       return true;
     }
   } catch(e){ return false; }
