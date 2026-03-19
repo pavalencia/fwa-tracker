@@ -409,8 +409,27 @@
         <div class="card">
           <div class="card-title">Report header</div>
           <div class="form-grid">
-            <div class="field"><label>Name</label><input type="text" id="hName" placeholder="Full name" /></div>
-            <div class="field"><label>Office / Unit</label><input type="text" id="hOffice" placeholder="e.g. OVPDx" /></div>
+            <div class="field"><label>Name</label>
+              <select id="hName">
+                <option value="">Select your name...</option>
+                <option>Marisha D. Beloro</option>
+                <option>Duane Albert J. Burdeos</option>
+                <option>Veronica Marie B. Consolacion</option>
+                <option>John Paul S. Cristobal</option>
+                <option>Kristofferson Dela Cruz</option>
+                <option>Katheryn H. Hidalgo</option>
+                <option>Marianne Yzabelle P. Laron</option>
+                <option>Keith Andrei A. Layson</option>
+                <option>John Mark S. Paya</option>
+                <option>Regine C. Pustadan</option>
+                <option>Eileen Claire J. Rudi</option>
+                <option>Paula Beatrize A. Valencia</option>
+                <option>Rozhelle Sophia L. Yu</option>
+              </select>
+            </div>
+            <div class="field"><label>Office / Unit</label>
+              <input type="text" id="hOffice" value="Office of the Vice President for Digital Transformation" readonly style="background:var(--surface2);color:var(--text-muted);cursor:default;" />
+            </div>
           </div>
           <div class="form-grid full" style="margin-bottom:14px;">
             <div class="field"><label>For the period of</label>
@@ -1006,7 +1025,15 @@ async function launchApp(username, fullname, email){
   await loadReactions();
 
   const users=getUsers();
-  if(users[username]&&users[username].name) document.getElementById('hName').value=users[username].name;
+  if(users[username]&&users[username].name){
+    const sel = document.getElementById('hName');
+    if(sel){
+      // Try to match full name in dropdown, otherwise select closest or leave blank
+      for(const opt of sel.options){
+        if(opt.value === users[username].name){ sel.value = users[username].name; break; }
+      }
+    }
+  }
   generateWeekOptions();
   document.getElementById('hnav-add').classList.add('active');
   renderRecent();
@@ -1169,7 +1196,7 @@ function getPeriod(){return document.getElementById('hPeriod').value.trim()||'(P
 function getHeader(){
   return{
     name:document.getElementById('hName').value.trim(),
-    office:document.getElementById('hOffice').value.trim(),
+    office:'Office of the Vice President for Digital Transformation',
     period:document.getElementById('hPeriod').value.trim(),
     submitted:document.getElementById('sigSubmitted').value.trim(),
     submittedPos:document.getElementById('sigSubmittedPos').value.trim(),
