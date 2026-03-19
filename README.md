@@ -1065,11 +1065,20 @@ async function launchApp(username, fullname, email){
   document.getElementById('userLabel').textContent=fullname||username;
   document.getElementById('userAvatar').textContent=(fullname||username).charAt(0).toUpperCase();
 
+  // Show loading state
+  showSyncBadge(true);
+  const badge = document.getElementById('syncBadge');
+  if(badge){ badge.textContent='⏳ Restoring data…'; badge.style.color='var(--text-muted)'; badge.style.opacity='1'; }
+
   await loadAppConfig();
 
-  // Load entries — prefer email-keyed cloud storage for cross-device restore
-  entries = await loadEntriesByEmail(username, email);
-  await loadReactions();
+  // Load ALL data in parallel for speed
+  const [loadedEntries] = await Promise.all([
+    loadEntriesByEmail(username, email),
+    loadTeamDataCloud(),
+    loadReactions()
+  ]);
+  entries = loadedEntries;
 
   const users=getUsers();
   if(users[username]&&users[username].name){
@@ -1079,7 +1088,6 @@ async function launchApp(username, fullname, email){
         if(opt.value === users[username].name){ sel.value = users[username].name; break; }
       }
     }
-    // Also pre-select Submitted by name to match
     const sigSel = document.getElementById('sigSubmitted');
     if(sigSel){
       for(const opt of sigSel.options){
@@ -1091,6 +1099,7 @@ async function launchApp(username, fullname, email){
   document.getElementById('hnav-add').classList.add('active');
   renderRecent();
   initMotive();
+  showSyncBadge(true);
 }
 
 window.addEventListener('DOMContentLoaded',async ()=>{
@@ -1191,33 +1200,49 @@ async function save(){
 }
 
 async function loadEntriesByEmail(username, email) {
+  // 1. Always try GAS first — this is the authoritative source across all devices/days
   if(isGASReady()){
-    const val = await dbGet('entries_'+username, []);
-    if(Array.isArray(val)){ showSyncBadge(true); return val; }
+    const val = await dbGet('entries_'+username, null);
+    if(Array.isArray(val)){
+      // Sync back to localStorage so offline works too
+      localStorage.setItem('fwa_entries_'+username, JSON.stringify(val));
+      showSyncBadge(true);
+      return val;
+    }
   }
+  // 2. window.storage fallback (Claude.ai env)
   try {
     const res = await window.storage.get('fwa_entries_'+username);
     if(res && res.value) return JSON.parse(res.value);
   } catch(e){}
+  // 3. localStorage last resort (same device, same browser)
   return JSON.parse(localStorage.getItem('fwa_entries_'+username)||'[]');
 }
 async function loadEntries(username){ return loadEntriesByEmail(username, null); }
 
 async function saveTeamDataCloud() {
   localStorage.setItem('fwa_team_data', JSON.stringify(teamData));
-  await dbSet('teamData', teamData);
+  const ok = await dbSet('teamData', teamData);
+  if(ok) showSyncBadge(true);
   try { await window.storage.set('fwa_team_data', JSON.stringify(teamData)); } catch(e){}
 }
 
 async function loadTeamDataCloud() {
+  // 1. Always try GAS first — authoritative source
   if(isGASReady()){
-    const val = await dbGet('teamData', {});
-    if(val && typeof val === 'object'){ teamData = val; return; }
+    const val = await dbGet('teamData', null);
+    if(val && typeof val === 'object' && !Array.isArray(val)){
+      teamData = val;
+      localStorage.setItem('fwa_team_data', JSON.stringify(teamData));
+      return;
+    }
   }
+  // 2. window.storage fallback
   try {
     const res = await window.storage.get('fwa_team_data');
     if(res && res.value){ teamData = JSON.parse(res.value); return; }
   } catch(e){}
+  // 3. localStorage last resort
   teamData = JSON.parse(localStorage.getItem('fwa_team_data') || '{}');
 }
 
@@ -1409,8 +1434,12 @@ let _emojiTargetId = null;
 
 async function loadReactions(){
   if(isGASReady()){
-    const val = await dbGet('reactions', {});
-    if(val && typeof val === 'object'){ reactions = val; return; }
+    const val = await dbGet('reactions', null);
+    if(val && typeof val === 'object'){
+      reactions = val;
+      localStorage.setItem('fwa_reactions', JSON.stringify(reactions));
+      return;
+    }
   }
   try {
     const res = await window.storage.get('fwa_reactions');
@@ -2214,10 +2243,24 @@ async function showPage(page){
   document.getElementById('page-'+page).classList.add('active');
   const n=document.getElementById('nav-'+page);if(n)n.classList.add('active');
   const hn=document.getElementById('hnav-'+page);if(hn)hn.classList.add('active');
-  if(page==='dashboard') renderDashboard();
+  if(page==='dashboard'){
+    // Refresh entries from cloud before rendering dashboard
+    const u=getCurrentUser();
+    if(u){ entries = await loadEntriesByEmail(u, null); }
+    renderDashboard();
+  }
   if(page==='kudos'){ await loadReactions(); switchKudosTab('wall'); }
-  if(page==='view')renderView();
-  if(page==='export')buildPDFPreview();
+  if(page==='view'){
+    // Refresh entries from cloud before rendering view
+    const u=getCurrentUser();
+    if(u){ entries = await loadEntriesByEmail(u, null); }
+    renderView();
+  }
+  if(page==='export'){
+    const u=getCurrentUser();
+    if(u){ entries = await loadEntriesByEmail(u, null); }
+    buildPDFPreview();
+  }
   if(page==='team'){
     await loadTeamDataCloud();
     renderTeamTabs();updatePersonDropdown();renderTeamTables();
