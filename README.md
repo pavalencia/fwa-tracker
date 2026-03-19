@@ -296,7 +296,6 @@
     </div>
     <div id="lpane-register" style="display:none;">
       <div class="lfield"><label>Full name</label><input type="text" id="regName" placeholder="e.g. Bea Valencia" /></div>
-      <div class="lfield"><label>Email address <span style="color:#c0392b;">*</span></label><input type="text" id="regEmail" placeholder="e.g. bea@email.com" autocomplete="email" /></div>
       <div class="lfield"><label>Username</label><input type="text" id="regUser" placeholder="Choose a username" /></div>
       <div class="lfield"><label>Password</label><input type="password" id="regPass" placeholder="Choose a password (min 4 chars)" /></div>
       <div class="lfield"><label>Confirm password</label><input type="password" id="regPass2" placeholder="Repeat password" onkeydown="if(event.key==='Enter')doRegister()" /></div>
@@ -304,9 +303,9 @@
       <div class="lmsg" id="registerMsg"></div>
     </div>
     <div id="lpane-forgot" style="display:none;">
-      <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;line-height:1.6;">Enter your registered email address and we'll send your username and a temporary password to that address.</div>
-      <div class="lfield"><label>Email address</label><input type="text" id="forgotEmail" placeholder="e.g. bea@email.com" onkeydown="if(event.key==='Enter')doForgotPassword()" /></div>
-      <button class="lbtn" onclick="doForgotPassword()">Send reset email</button>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;line-height:1.6;">Enter your username and a temporary password will be shown on screen.</div>
+      <div class="lfield"><label>Username</label><input type="text" id="forgotUser" placeholder="Enter your username" onkeydown="if(event.key==='Enter')doForgotPassword()" /></div>
+      <button class="lbtn" onclick="doForgotPassword()">Reset password</button>
       <div class="lmsg" id="forgotMsg"></div>
     </div>
   </div>
@@ -337,7 +336,6 @@
       <div class="user-pill">
         <div class="user-avatar" id="userAvatar">?</div>
         <span id="userLabel" class="user-label-text">—</span>
-        <span id="userEmailPill" style="font-size:10px;color:var(--text-faint);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" class="user-label-text"></span>
       </div>
       <span id="syncBadge" style="font-size:11px;transition:opacity .5s;opacity:0;"></span>
       <button class="logout-btn" onclick="doLogout()">Sign out</button>
@@ -716,7 +714,7 @@
         </div>
         <div class="card">
           <div class="card-title">Account info</div>
-          <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">Logged in as: <strong id="profileUsername"></strong> &nbsp;·&nbsp; <span id="profileEmail"></span></div>
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">Logged in as: <strong id="profileUsername"></strong></div>
           <div class="form-grid full" style="margin-bottom:12px;">
             <div class="field"><label>Display name</label><input type="text" id="profileName" placeholder="Your full name" /></div>
           </div>
@@ -822,142 +820,133 @@
 
 <script>
 // ── JSONBIN CONFIG ────────────────────────
-// Free cloud storage via JSONBin.io — works from ANY device/browser.
+// Fully automatic cross-device sync — no manual setup needed.
+// All devices share the same API key and find bins by name automatically.
 const JSONBIN_API_KEY = '$2a$10$zovgdA6JP/5.Gt2rd6XdDeOhoROJoePurbzTxPEVE3Fd2p5Ei1Ryi';
 const JSONBIN_BASE    = 'https://api.jsonbin.io/v3';
 
-// We use ONE fixed "index" bin whose ID is hardcoded below.
-// This index bin stores the IDs of all other bins (users, entries, team, reactions).
-// Any device can look up the index bin → find the real bin IDs → read/write data.
-// FIRST RUN: index bin is created automatically and its ID is saved in localStorage.
-// SUBSEQUENT DEVICES: they read the index bin ID from the index bin itself (bootstrapped via search).
+function isJBReady(){ return !!JSONBIN_API_KEY && JSONBIN_API_KEY !== 'YOUR_JSONBIN_API_KEY'; }
 
-const INDEX_BIN_NAME = 'fwa-tracker-index';
-let _binIndex = null; // cache: { 'fwa-users': '...id...', 'fwa-team-data': '...id...', ... }
+// Cache bin name → ID in localStorage so we don't need to search every time
+function getBinId(name){ return localStorage.getItem('jb_id_'+name)||''; }
+function setBinId(name,id){ localStorage.setItem('jb_id_'+name, id); }
 
-function isJBReady(){ return JSONBIN_API_KEY && JSONBIN_API_KEY !== 'YOUR_JSONBIN_API_KEY'; }
-
-// Fetch the full index from JSONBin (searches by name to bootstrap on new devices)
-async function loadBinIndex(){
-  if(_binIndex) return _binIndex;
-  // Try localStorage cache first
-  const cached = localStorage.getItem('fwa_bin_index');
-  if(cached){
-    try {
-      const parsed = JSON.parse(cached);
-      if(parsed && parsed._indexId){
-        // Refresh from JSONBin to get latest IDs
-        const r = await fetch(`${JSONBIN_BASE}/b/${parsed._indexId}/latest`,{
-          headers:{'X-Master-Key':JSONBIN_API_KEY}
-        });
-        if(r.ok){
-          const j = await r.json();
-          _binIndex = j.record;
-          localStorage.setItem('fwa_bin_index', JSON.stringify(_binIndex));
-          return _binIndex;
-        }
-      }
-    } catch(e){}
-  }
-  // Search JSONBin for the index bin by name (works on any new device)
+// Find a bin by its name using the /b endpoint (works because all devices share the key)
+async function findBinByName(name){
+  const cached = getBinId(name);
+  if(cached) return cached;
   try {
-    const r = await fetch(`${JSONBIN_BASE}/b?page=1`,{
+    // List all bins and find the one with matching name
+    const r = await fetch(`${JSONBIN_BASE}/b`,{
       headers:{'X-Master-Key':JSONBIN_API_KEY}
     });
-    if(r.ok){
-      const j = await r.json();
-      const bins = Array.isArray(j) ? j : (j.result||[]);
-      const found = bins.find(b=>(b.record?.name||b.name||'')===INDEX_BIN_NAME);
-      if(found){
-        const indexId = found.id || found._id;
-        const r2 = await fetch(`${JSONBIN_BASE}/b/${indexId}/latest`,{
-          headers:{'X-Master-Key':JSONBIN_API_KEY}
-        });
-        if(r2.ok){
-          const j2 = await r2.json();
-          _binIndex = j2.record;
-          _binIndex._indexId = indexId;
-          localStorage.setItem('fwa_bin_index', JSON.stringify(_binIndex));
-          return _binIndex;
-        }
-      }
+    if(!r.ok) return '';
+    const list = await r.json();
+    const bins = Array.isArray(list) ? list : (list.result || list.record || []);
+    for(const b of bins){
+      const bName = b.snippetMeta?.name || b.name || b.record?.name || '';
+      const bId = b.id || b._id || b.snippetMeta?.id || '';
+      if(bName === name && bId){ setBinId(name, bId); return bId; }
     }
   } catch(e){}
-  return null;
+  return '';
 }
 
-async function saveBinIndex(){
-  if(!_binIndex) return;
-  const indexId = _binIndex._indexId;
-  if(!indexId){
-    // Create the index bin for the first time
-    try {
-      const r = await fetch(`${JSONBIN_BASE}/b`,{
-        method:'POST',
-        headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_API_KEY,'X-Bin-Name':INDEX_BIN_NAME,'X-Bin-Private':'false'},
-        body: JSON.stringify(_binIndex)
-      });
-      if(r.ok){
-        const j = await r.json();
-        _binIndex._indexId = j.metadata.id;
-        localStorage.setItem('fwa_bin_index', JSON.stringify(_binIndex));
-      }
-    } catch(e){}
-  } else {
-    try {
-      await fetch(`${JSONBIN_BASE}/b/${indexId}`,{
-        method:'PUT',
-        headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_API_KEY},
-        body: JSON.stringify(_binIndex)
-      });
-      localStorage.setItem('fwa_bin_index', JSON.stringify(_binIndex));
-    } catch(e){}
-  }
-}
-
-async function jbGet(name){
-  if(!isJBReady()) return null;
-  const index = await loadBinIndex();
-  const id = index && index[name];
+// Read a bin by ID
+async function jbRead(id){
   if(!id) return null;
   try {
     const r = await fetch(`${JSONBIN_BASE}/b/${id}/latest`,{
-      headers:{'X-Master-Key':JSONBIN_API_KEY}
+      headers:{'X-Master-Key':JSONBIN_API_KEY,'X-Bin-Meta':'false'}
     });
     if(!r.ok) return null;
-    const j = await r.json();
-    return j.record ?? null;
+    return await r.json();
   } catch(e){ return null; }
 }
 
-async function jbSet(name, data){
-  if(!isJBReady()) return false;
-  if(!_binIndex) await loadBinIndex();
-  if(!_binIndex) _binIndex = {};
-  const id = _binIndex[name];
+// Write to an existing bin
+async function jbWrite(id, data){
+  if(!id) return false;
   try {
-    if(id){
-      const r = await fetch(`${JSONBIN_BASE}/b/${id}`,{
-        method:'PUT',
-        headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_API_KEY},
-        body: JSON.stringify(data)
-      });
-      return r.ok;
-    } else {
-      // Create new bin and register it in the index
-      const r = await fetch(`${JSONBIN_BASE}/b`,{
-        method:'POST',
-        headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_API_KEY,'X-Bin-Name':name,'X-Bin-Private':'false'},
-        body: JSON.stringify(data)
-      });
-      if(!r.ok) return false;
-      const j = await r.json();
-      _binIndex[name] = j.metadata.id;
-      await saveBinIndex(); // update index so other devices can find this bin
-      return true;
-    }
+    const r = await fetch(`${JSONBIN_BASE}/b/${id}`,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_API_KEY},
+      body: JSON.stringify(data)
+    });
+    return r.ok;
   } catch(e){ return false; }
 }
+
+// Create a new bin (public so any device can read without auth if needed)
+async function jbCreate(name, data){
+  try {
+    const r = await fetch(`${JSONBIN_BASE}/b`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_API_KEY,
+               'X-Bin-Name':name,'X-Bin-Private':'false'},
+      body: JSON.stringify(data)
+    });
+    if(!r.ok) return '';
+    const j = await r.json();
+    const id = j.metadata?.id || j.id || '';
+    if(id) setBinId(name, id);
+    return id;
+  } catch(e){ return ''; }
+}
+
+// Get or create a bin by name — fully automatic
+async function jbGetOrCreate(name, defaultData={}){
+  let id = await findBinByName(name);
+  if(!id) id = await jbCreate(name, defaultData);
+  return id;
+}
+
+// High-level: read named bin (find or create automatically)
+async function jbGet(name, defaultData={}){
+  if(!isJBReady()) return null;
+  const id = await jbGetOrCreate(name, defaultData);
+  if(!id) return null;
+  return await jbRead(id);
+}
+
+// High-level: write named bin (find or create automatically)
+async function jbSet(name, data){
+  if(!isJBReady()) return false;
+  let id = await findBinByName(name);
+  if(!id) id = await jbCreate(name, data);
+  else await jbWrite(id, data);
+  return !!id;
+}
+
+// ── AUTH ──────────────────────────────────
+function getUsers(){ return JSON.parse(localStorage.getItem('fwa_users')||'{}'); }
+async function saveUsers(u){
+  localStorage.setItem('fwa_users', JSON.stringify(u));
+  const ok = await jbSet('fwa-tracker-users', u);
+  if(ok) showSyncBadge(true);
+  try { window.storage.set('fwa_users', JSON.stringify(u)); } catch(e){}
+}
+async function loadUsersFromCloud(){
+  if(!isJBReady()) return;
+  const cloud = await jbGet('fwa-tracker-users', {});
+  if(cloud && typeof cloud === 'object' && !Array.isArray(cloud)){
+    const merged = Object.assign({}, getUsers(), cloud);
+    localStorage.setItem('fwa_users', JSON.stringify(merged));
+    showSyncBadge(true);
+  }
+  try {
+    if(typeof window.storage !== 'undefined'){
+      const res = await window.storage.get('fwa_users');
+      if(res && res.value){
+        const c = JSON.parse(res.value);
+        const merged = Object.assign({}, getUsers(), c);
+        localStorage.setItem('fwa_users', JSON.stringify(merged));
+      }
+    }
+  } catch(e){}
+}
+function getCurrentUser(){ return localStorage.getItem('fwa_current_user')||null; }
+function setCurrentUser(u){ localStorage.setItem('fwa_current_user',u); }
 
 // ── AUTH ──────────────────────────────────
 function getUsers(){ return JSON.parse(localStorage.getItem('fwa_users')||'{}'); }
@@ -1068,61 +1057,37 @@ async function doLogin(){
   if(users[user].password!==btoa(pass)){msg.className='lmsg err';msg.textContent='Incorrect password.';return;}
   setCurrentUser(user);
   msg.className='lmsg ok';msg.textContent='Signing in and restoring your data…';
-  await launchApp(user,users[user].name,users[user].email);
+  await launchApp(user,users[user].name,null);
 }
 
 async function doRegister(){
   const name=document.getElementById('regName').value.trim();
-  const email=document.getElementById('regEmail').value.trim().toLowerCase();
   const user=document.getElementById('regUser').value.trim();
   const pass=document.getElementById('regPass').value;
   const pass2=document.getElementById('regPass2').value;
   const msg=document.getElementById('registerMsg');
-  if(!name||!email||!user||!pass||!pass2){msg.className='lmsg err';msg.textContent='Please fill in all fields.';return;}
-  if(!isValidEmail(email)){msg.className='lmsg err';msg.textContent='Please enter a valid email address.';return;}
+  if(!name||!user||!pass||!pass2){msg.className='lmsg err';msg.textContent='Please fill in all fields.';return;}
   if(pass!==pass2){msg.className='lmsg err';msg.textContent='Passwords do not match.';return;}
   if(pass.length<4){msg.className='lmsg err';msg.textContent='Password must be at least 4 characters.';return;}
   const users=getUsers();
   if(users[user]){msg.className='lmsg err';msg.textContent='Username already taken.';return;}
-  const existingUser = Object.keys(users).find(u=>users[u].email===email);
-  if(existingUser){msg.className='lmsg err';msg.textContent='An account with this email already exists.';return;}
-  users[user]={name, email, password:btoa(pass)};
+  users[user]={name, password:btoa(pass)};
   saveUsers(users);
-  msg.className='lmsg ok';msg.textContent='Account created! Sending welcome email…';
+  msg.className='lmsg ok';msg.textContent='Account created!';
 
-  // Always show credentials in a modal so user always has a copy
   showModal(
     '🎉 Account created!',
-    'Please save your credentials below. A copy will also be sent to your email if EmailJS is configured.',
+    'Please save your credentials below.',
     `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;font-size:13px;line-height:2;">
       <div><span style="color:var(--text-muted);width:90px;display:inline-block;">Full name</span> <strong>${escHtmlEntry(name)}</strong></div>
       <div><span style="color:var(--text-muted);width:90px;display:inline-block;">Username</span> <strong>${escHtmlEntry(user)}</strong></div>
       <div><span style="color:var(--text-muted);width:90px;display:inline-block;">Password</span> <strong style="font-family:monospace;font-size:14px;color:var(--accent);">${escHtmlEntry(pass)}</strong></div>
-      <div><span style="color:var(--text-muted);width:90px;display:inline-block;">Email</span> <strong>${escHtmlEntry(email)}</strong></div>
     </div>
     <div style="font-size:11px;color:var(--text-faint);margin-top:10px;">⚠ Screenshot or copy these credentials before closing.</div>`,
     `<button class="btn btn-primary" onclick="closeModal()">Got it, I've saved them</button>`
   );
 
-  // Also attempt to send via EmailJS (bonus — works if configured)
-  const emailResult = await sendEmail({
-    toEmail: email,
-    toName: name,
-    subject: 'FWA Tracker — Your account credentials',
-    username: user,
-    password: pass,
-    message: `Hi ${name},\n\nYour FWA Tracker account has been created.\n\nUsername: ${user}\nPassword: ${pass}\nEmail: ${email}\n\nPlease keep this email for your records. You can use these credentials to sign in and your data will be automatically restored via your email.\n\nFWA Tracker`
-  });
-
-  if(emailResult.ok){
-    msg.textContent='Account created! Credentials also sent to your email.';
-  } else if(emailResult.reason==='not_configured'){
-    msg.textContent='Account created! (To enable email sending, configure EmailJS credentials in the source code.)';
-  } else {
-    msg.textContent='Account created! (Email delivery failed — check EmailJS settings.)';
-  }
-
-  setTimeout(async()=>{setCurrentUser(user);await launchApp(user,name,email);},1200);
+  setTimeout(async()=>{setCurrentUser(user);await launchApp(user,name,null);},1200);
 }
 
 function doLogout(){
@@ -1135,29 +1100,18 @@ function doLogout(){
 }
 
 async function doForgotPassword(){
-  const email = document.getElementById('forgotEmail').value.trim().toLowerCase();
+  const username = document.getElementById('forgotUser').value.trim();
   const msg = document.getElementById('forgotMsg');
-  if(!email){ msg.className='lmsg err'; msg.textContent='Please enter your email address.'; return; }
-  if(!isValidEmail(email)){ msg.className='lmsg err'; msg.textContent='Please enter a valid email address.'; return; }
+  if(!username){ msg.className='lmsg err'; msg.textContent='Please enter your username.'; return; }
   msg.className='lmsg ok'; msg.textContent='Looking up account…';
-  await loadUsersFromCloud(); // ensure we have the latest accounts
+  await loadUsersFromCloud();
   const users = getUsers();
-  const username = Object.keys(users).find(u => users[u].email === email);
-  if(!username){
-    // Don't reveal whether the email exists — show same message for security
-    msg.className='lmsg ok';
-    msg.textContent='If that email is registered, a reset email has been sent.';
-    return;
-  }
+  if(!users[username]){ msg.className='lmsg err'; msg.textContent='Username not found.'; return; }
 
-  msg.className='lmsg ok'; msg.textContent='Generating temporary password…';
-
-  // Generate a new temporary password
   const tempPass = genTempPassword();
   users[username].password = btoa(tempPass);
   saveUsers(users);
 
-  // Always show credentials in modal — reliable regardless of email config
   showModal(
     '🔑 Password Reset',
     'Your temporary credentials are ready. Screenshot or copy them before closing.',
@@ -1168,19 +1122,7 @@ async function doForgotPassword(){
     <div style="font-size:11px;color:var(--text-faint);margin-top:10px;">⚠ Sign in immediately and change your password in My Profile.</div>`,
     `<button class="btn btn-primary" onclick="closeModal()">Got it, I've saved them</button>`
   );
-
-  msg.className='lmsg ok'; msg.textContent='Temporary password ready. Check the popup.';
-
-  // Also attempt to send via EmailJS if configured
-  const result = await sendEmail({
-    toEmail: email,
-    toName: users[username].name||username,
-    subject: 'FWA Tracker — Password Reset',
-    username: username,
-    password: tempPass,
-    message: `Hi ${users[username].name||username},\n\nA password reset was requested for your FWA Tracker account.\n\nUsername: ${username}\nTemporary password: ${tempPass}\n\nPlease sign in with this temporary password and change it immediately in My Profile.\n\nFWA Tracker`
-  });
-  if(result.ok) msg.textContent='Temporary password ready — also sent to your email.';
+  msg.className='lmsg ok'; msg.textContent='Temporary password ready. See the popup.';
 }
 
 async function launchApp(username, fullname, email){
@@ -1188,9 +1130,6 @@ async function launchApp(username, fullname, email){
   document.getElementById('app').style.display='block';
   document.getElementById('userLabel').textContent=fullname||username;
   document.getElementById('userAvatar').textContent=(fullname||username).charAt(0).toUpperCase();
-  // Show email pill in header if available
-  const emailPill = document.getElementById('userEmailPill');
-  if(emailPill) emailPill.textContent = email||'';
 
   await loadAppConfig();
 
@@ -1223,7 +1162,7 @@ async function launchApp(username, fullname, email){
 window.addEventListener('DOMContentLoaded',async ()=>{
   await loadUsersFromCloud();
   const u=getCurrentUser();
-  if(u){const users=getUsers();if(users[u]){await launchApp(u,users[u].name,users[u].email);return;}}
+  if(u){const users=getUsers();if(users[u]){await launchApp(u,users[u].name,null);return;}}
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('hPeriod').addEventListener('change',()=>{if(document.getElementById('page-view').classList.contains('active'))renderView();});
 });
@@ -1307,65 +1246,45 @@ const SL={ongoing:'Ongoing / In-Process',completed:'Completed',recurring:'Recurr
 const SC={ongoing:'O',completed:'C',recurring:'R',notinit:'N'};
 const STATUS_ORDER=['completed','ongoing','recurring','notinit'];
 
-// ── CLOUD STORAGE (JSONBin-backed, works on any device) ──────────────
+// ── CLOUD STORAGE (JSONBin-backed, fully automatic) ───────────────────
 async function save(){
   const u=getCurrentUser();
   if(!u) return;
-  const users=getUsers();
-  const email=(users[u]&&users[u].email)||null;
-  const binName = email ? 'fwa-entries-'+email.replace(/[^a-z0-9]/gi,'-') : 'fwa-entries-u-'+u;
+  const binName = 'fwa-entries-u-'+u;
   localStorage.setItem('fwa_entries_'+u, JSON.stringify(entries));
   const ok = await jbSet(binName, entries);
-  try {
-    const ekey = email ? emailKey(email,'entries') : 'fwa_entries_'+u;
-    await window.storage.set(ekey, JSON.stringify(entries));
-  } catch(e){}
+  try { await window.storage.set('fwa_entries_'+u, JSON.stringify(entries)); } catch(e){}
   showSyncBadge(ok);
 }
 
 async function loadEntriesByEmail(username, email) {
-  // 1. JSONBin (any device)
   if(isJBReady()){
-    const binName = email
-      ? 'fwa-entries-'+email.replace(/[^a-z0-9]/gi,'-')
-      : 'fwa-entries-u-'+username;
-    const val = await jbGet(binName);
+    const val = await jbGet('fwa-entries-u-'+username, []);
     if(Array.isArray(val)){ showSyncBadge(true); return val; }
   }
-  // 2. window.storage (Claude.ai)
-  if(email){
-    try {
-      const res = await window.storage.get(emailKey(email,'entries'));
-      if(res && res.value) return JSON.parse(res.value);
-    } catch(e){}
-  }
-  // 3. localStorage fallback
-  if(email){
-    const local = localStorage.getItem(emailKey(email,'entries'));
-    if(local) return JSON.parse(local);
-  }
+  try {
+    const res = await window.storage.get('fwa_entries_'+username);
+    if(res && res.value) return JSON.parse(res.value);
+  } catch(e){}
   return JSON.parse(localStorage.getItem('fwa_entries_'+username)||'[]');
 }
 async function loadEntries(username){ return loadEntriesByEmail(username, null); }
 
 async function saveTeamDataCloud() {
   localStorage.setItem('fwa_team_data', JSON.stringify(teamData));
-  await jbSet('fwa-team-data', teamData);
+  await jbSet('fwa-tracker-team', teamData);
   try { await window.storage.set('fwa_team_data', JSON.stringify(teamData)); } catch(e){}
 }
 
 async function loadTeamDataCloud() {
-  // 1. JSONBin
   if(isJBReady()){
-    const val = await jbGet('fwa-team-data');
+    const val = await jbGet('fwa-tracker-team', {});
     if(val && typeof val === 'object'){ teamData = val; return; }
   }
-  // 2. window.storage
   try {
     const res = await window.storage.get('fwa_team_data');
     if(res && res.value){ teamData = JSON.parse(res.value); return; }
   } catch(e){}
-  // 3. localStorage
   teamData = JSON.parse(localStorage.getItem('fwa_team_data') || '{}');
 }
 
@@ -1557,7 +1476,7 @@ let _emojiTargetId = null;
 
 async function loadReactions(){
   if(isJBReady()){
-    const val = await jbGet('fwa-reactions');
+    const val = await jbGet('fwa-tracker-reactions', {});
     if(val && typeof val === 'object'){ reactions = val; return; }
   }
   try {
@@ -1569,7 +1488,7 @@ async function loadReactions(){
 async function saveReactions(){
   const json = JSON.stringify(reactions);
   localStorage.setItem('fwa_reactions', json);
-  await jbSet('fwa-reactions', reactions);
+  await jbSet('fwa-tracker-reactions', reactions);
   try { await window.storage.set('fwa_reactions', json); } catch(e){}
 }
 
@@ -2449,7 +2368,6 @@ function loadProfilePage(){
   const users = getUsers();
   if(!u||!users[u]) return;
   document.getElementById('profileUsername').textContent = u;
-  document.getElementById('profileEmail').textContent = users[u].email||'(no email)';
   document.getElementById('profileName').value = users[u].name||'';
   document.getElementById('profileNameMsg').textContent='';
   document.getElementById('profilePassMsg').textContent='';
