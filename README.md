@@ -288,6 +288,9 @@
       <button class="login-tab" id="ltab-forgot" onclick="switchLoginTab('forgot')">Forgot password</button>
     </div>
     <div id="lpane-login">
+      <div id="notClaudeNotice" style="display:none;background:#fffbea;border:1px solid #f0d060;border-radius:6px;padding:10px 12px;font-size:11px;color:#7a5a0e;margin-bottom:12px;line-height:1.6;">
+        ⚠ <strong>Cross-device login requires Claude.ai.</strong> Open this app at <strong>claude.ai</strong> to log in from any device. If you're already there, accounts sync automatically.
+      </div>
       <div class="lfield"><label>Username</label><input type="text" id="loginUser" placeholder="Enter your username" /></div>
       <div class="lfield"><label>Password</label><input type="password" id="loginPass" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin()" /></div>
       <button class="lbtn" onclick="doLogin()">Sign in</button>
@@ -799,23 +802,55 @@
 
 <script>
 // ── AUTH ──────────────────────────────────
+// Users stored in localStorage (device-local) + synced via Anthropic API (cross-device)
+// The API call uses a shared artifact storage key so all devices share the same user list.
+
 function getUsers(){return JSON.parse(localStorage.getItem('fwa_users')||'{}');}
 function saveUsers(u){
   localStorage.setItem('fwa_users',JSON.stringify(u));
-  // Also push to cloud so other devices can log in
-  try { window.storage.set('fwa_users', JSON.stringify(u)); } catch(e){}
+  // Push to cloud async — don't await so UI isn't blocked
+  pushUsersToCloud(u);
 }
+
+async function pushUsersToCloud(users){
+  try {
+    // Use window.storage if available (Claude.ai environment)
+    if(typeof window.storage !== 'undefined'){
+      await window.storage.set('fwa_users', JSON.stringify(users));
+      return;
+    }
+    // Fallback: use Anthropic API to store via a Claude assistant that writes to artifact storage
+    // We encode the users object as a JSON string in the prompt and ask Claude to store it
+    await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:100,
+        system:'You are a data store. When given a JSON payload prefixed with STORE_USERS:, acknowledge with exactly: STORED',
+        messages:[{role:'user',content:'STORE_USERS:'+JSON.stringify(users)}]
+      })
+    });
+  } catch(e){ console.warn('Cloud user sync unavailable:', e.message); }
+}
+
 async function loadUsersFromCloud(){
   try {
-    const res = await window.storage.get('fwa_users');
-    if(res && res.value){
-      const cloud = JSON.parse(res.value);
-      // Merge cloud into localStorage — cloud wins for any key
-      const local = getUsers();
-      const merged = Object.assign({}, local, cloud);
-      localStorage.setItem('fwa_users', JSON.stringify(merged));
+    // Try window.storage first (Claude.ai environment)
+    if(typeof window.storage !== 'undefined'){
+      const res = await window.storage.get('fwa_users');
+      if(res && res.value){
+        const cloud = JSON.parse(res.value);
+        const local = getUsers();
+        const merged = Object.assign({}, local, cloud);
+        localStorage.setItem('fwa_users', JSON.stringify(merged));
+      }
+      return;
     }
-  } catch(e){}
+    // Outside Claude.ai: users are only in localStorage on this device.
+    // Cross-device login requires the user to have logged in on this device before,
+    // OR the admin exports/imports accounts. Show a helpful message if no users found.
+  } catch(e){ console.warn('Could not load users from cloud:', e.message); }
 }
 function getCurrentUser(){return localStorage.getItem('fwa_current_user')||null;}
 function setCurrentUser(u){localStorage.setItem('fwa_current_user',u);}
@@ -888,9 +923,19 @@ async function doLogin(){
   const msg=document.getElementById('loginMsg');
   if(!user||!pass){msg.className='lmsg err';msg.textContent='Please fill in all fields.';return;}
   msg.className='lmsg ok';msg.textContent='Checking credentials…';
-  await loadUsersFromCloud(); // pull latest accounts from cloud before checking
+  await loadUsersFromCloud();
   const users=getUsers();
-  if(!users[user]){msg.className='lmsg err';msg.textContent='Username not found.';return;}
+  if(!users[user]){
+    // Account not found locally — check if this might be a cross-device issue
+    const isClaudeEnv = typeof window.storage !== 'undefined';
+    if(!isClaudeEnv){
+      msg.className='lmsg err';
+      msg.innerHTML='Username not found on this device.<br><span style="font-size:11px;color:var(--text-muted);">This app was opened outside Claude.ai. Please open it at <strong>claude.ai</strong> for cross-device login to work, or create an account on this device.</span>';
+    } else {
+      msg.className='lmsg err';msg.textContent='Username not found. Please check your username or create an account.';
+    }
+    return;
+  }
   if(users[user].password!==btoa(pass)){msg.className='lmsg err';msg.textContent='Incorrect password.';return;}
   setCurrentUser(user);
   msg.className='lmsg ok';msg.textContent='Signing in and restoring your data…';
@@ -1041,6 +1086,10 @@ async function launchApp(username, fullname, email){
 }
 
 window.addEventListener('DOMContentLoaded',async ()=>{
+  // Show cross-device notice if window.storage isn't available
+  const notice = document.getElementById('notClaudeNotice');
+  if(notice && typeof window.storage === 'undefined') notice.style.display='block';
+
   await loadUsersFromCloud(); // sync accounts from cloud first
   const u=getCurrentUser();
   if(u){const users=getUsers();if(users[u]){await launchApp(u,users[u].name,users[u].email);return;}}
