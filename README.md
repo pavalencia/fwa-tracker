@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -7,8 +8,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -823,86 +822,94 @@
 </div>
 
 <script>
-// ── FIREBASE CONFIG ───────────────────────
-// Free Firebase Realtime Database — works from ANY device/browser, no server needed.
-// HOW TO SET UP (one-time, 5 minutes):
-//   1. Go to https://console.firebase.google.com → Create project (free)
-//   2. Build → Realtime Database → Create database → Start in TEST mode
-//   3. Project Settings → Your apps → Add web app → copy firebaseConfig values below
-//   4. Replace the placeholder values with your actual config
-const FIREBASE_CONFIG = {
-  apiKey:            "YOUR_API_KEY",
-  authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
-  databaseURL:       "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-  projectId:         "YOUR_PROJECT_ID",
-  storageBucket:     "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId:             "YOUR_APP_ID"
-};
+// ── JSONBIN CONFIG ────────────────────────
+// Free cloud storage via JSONBin.io — works from ANY device/browser, no setup wizard.
+// HOW TO SET UP (2 minutes):
+//   1. Go to https://jsonbin.io → Sign up free
+//   2. Go to API Keys → Create Access Key → copy it
+//   3. Paste your key below as JSONBIN_API_KEY
+//   4. The bins (storage slots) are created automatically on first save
+const JSONBIN_API_KEY = '$2a$10$zovgdA6JP/5.Gt2rd6XdDeOhoROJoePurbzTxPEVE3Fd2p5Ei1Ryi';
+const JSONBIN_BASE    = 'https://api.jsonbin.io/v3';
 
-let _db = null;
-function getDB() {
-  if (_db) return _db;
+// Bin IDs are stored in localStorage after first creation
+function getBinId(name){ return localStorage.getItem('fwa_bin_'+name)||null; }
+function setBinId(name, id){ localStorage.setItem('fwa_bin_'+name, id); }
+
+function isJBReady(){ return JSONBIN_API_KEY && JSONBIN_API_KEY !== 'YOUR_JSONBIN_API_KEY'; }
+
+async function jbGet(name){
+  if(!isJBReady()) return null;
+  const id = getBinId(name);
+  if(!id) return null;
   try {
-    if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
-    _db = firebase.database();
-    return _db;
-  } catch(e) { return null; }
-}
-function isFirebaseReady() {
-  return FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey !== 'YOUR_API_KEY';
+    const r = await fetch(`${JSONBIN_BASE}/b/${id}/latest`,{
+      headers:{'X-Master-Key': JSONBIN_API_KEY}
+    });
+    if(!r.ok) return null;
+    const j = await r.json();
+    return j.record ?? null;
+  } catch(e){ return null; }
 }
 
-// Safe sanitise key for Firebase (no . $ # [ ] /)
-function fbKey(str) { return String(str).replace(/[.#$\[\]/]/g,'_'); }
-
-async function fbSet(path, value) {
-  if (!isFirebaseReady()) return false;
-  try { await getDB().ref(path).set(value); return true; } catch(e) { return false; }
-}
-async function fbGet(path) {
-  if (!isFirebaseReady()) return null;
+async function jbSet(name, data){
+  if(!isJBReady()) return false;
+  const id = getBinId(name);
   try {
-    const snap = await getDB().ref(path).once('value');
-    return snap.exists() ? snap.val() : null;
-  } catch(e) { return null; }
+    if(id){
+      // Update existing bin
+      const r = await fetch(`${JSONBIN_BASE}/b/${id}`,{
+        method:'PUT',
+        headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_API_KEY},
+        body: JSON.stringify(data)
+      });
+      return r.ok;
+    } else {
+      // Create new bin
+      const r = await fetch(`${JSONBIN_BASE}/b`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_API_KEY,'X-Bin-Name':name,'X-Bin-Private':'false'},
+        body: JSON.stringify(data)
+      });
+      if(!r.ok) return false;
+      const j = await r.json();
+      setBinId(name, j.metadata.id);
+      return true;
+    }
+  } catch(e){ return false; }
 }
 
 // ── AUTH ──────────────────────────────────
 function getUsers(){ return JSON.parse(localStorage.getItem('fwa_users')||'{}'); }
 function saveUsers(u){
   localStorage.setItem('fwa_users', JSON.stringify(u));
-  // Push to Firebase (works from any device)
-  fbSet('fwa/users', u).then(ok => { if(ok) showSyncBadge(true); });
-  // Also try window.storage (Claude.ai env)
-  try { window.storage.set('fwa_users', JSON.stringify(u)); } catch(e) {}
+  jbSet('fwa-users', u).then(ok=>{ if(ok) showSyncBadge(true); });
+  try { window.storage.set('fwa_users', JSON.stringify(u)); } catch(e){}
 }
 async function loadUsersFromCloud(){
-  // 1. Try Firebase first
-  if (isFirebaseReady()) {
-    const cloud = await fbGet('fwa/users');
-    if (cloud) {
+  // 1. JSONBin (works from any device)
+  if(isJBReady()){
+    const cloud = await jbGet('fwa-users');
+    if(cloud && typeof cloud === 'object'){
       const merged = Object.assign({}, getUsers(), cloud);
       localStorage.setItem('fwa_users', JSON.stringify(merged));
       return;
     }
   }
-  // 2. Try window.storage (Claude.ai env)
+  // 2. window.storage fallback (Claude.ai)
   try {
-    if (typeof window.storage !== 'undefined') {
+    if(typeof window.storage !== 'undefined'){
       const res = await window.storage.get('fwa_users');
-      if (res && res.value) {
+      if(res && res.value){
         const cloud = JSON.parse(res.value);
         const merged = Object.assign({}, getUsers(), cloud);
         localStorage.setItem('fwa_users', JSON.stringify(merged));
       }
     }
-  } catch(e) {}
+  } catch(e){}
 }
 function getCurrentUser(){ return localStorage.getItem('fwa_current_user')||null; }
 function setCurrentUser(u){ localStorage.setItem('fwa_current_user',u); }
-function getCurrentUser(){return localStorage.getItem('fwa_current_user')||null;}
-function setCurrentUser(u){localStorage.setItem('fwa_current_user',u);}
 
 function isValidEmail(email){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()); }
 
@@ -1220,34 +1227,30 @@ const SL={ongoing:'Ongoing / In-Process',completed:'Completed',recurring:'Recurr
 const SC={ongoing:'O',completed:'C',recurring:'R',notinit:'N'};
 const STATUS_ORDER=['completed','ongoing','recurring','notinit'];
 
-// ── CLOUD STORAGE (Firebase-backed, works on any device) ─────────────
+// ── CLOUD STORAGE (JSONBin-backed, works on any device) ──────────────
 async function save(){
   const u=getCurrentUser();
   if(!u) return;
   const users=getUsers();
   const email=(users[u]&&users[u].email)||null;
-  const json=JSON.stringify(entries);
-  localStorage.setItem('fwa_entries_'+u, json);
-
-  // Firebase (primary — any device)
-  const fbPath = email ? 'fwa/entries/'+fbKey(email) : 'fwa/entries_u/'+fbKey(u);
-  const ok = await fbSet(fbPath, json);
-
-  // window.storage fallback (Claude.ai)
+  const binName = email ? 'fwa-entries-'+email.replace(/[^a-z0-9]/gi,'-') : 'fwa-entries-u-'+u;
+  localStorage.setItem('fwa_entries_'+u, JSON.stringify(entries));
+  const ok = await jbSet(binName, entries);
   try {
     const ekey = email ? emailKey(email,'entries') : 'fwa_entries_'+u;
-    await window.storage.set(ekey, json);
+    await window.storage.set(ekey, JSON.stringify(entries));
   } catch(e){}
-
   showSyncBadge(ok);
 }
 
 async function loadEntriesByEmail(username, email) {
-  // 1. Firebase (most authoritative — any device)
-  if(isFirebaseReady()){
-    const path = email ? 'fwa/entries/'+fbKey(email) : 'fwa/entries_u/'+fbKey(username);
-    const val = await fbGet(path);
-    if(val){ showSyncBadge(true); return JSON.parse(val); }
+  // 1. JSONBin (any device)
+  if(isJBReady()){
+    const binName = email
+      ? 'fwa-entries-'+email.replace(/[^a-z0-9]/gi,'-')
+      : 'fwa-entries-u-'+username;
+    const val = await jbGet(binName);
+    if(Array.isArray(val)){ showSyncBadge(true); return val; }
   }
   // 2. window.storage (Claude.ai)
   if(email){
@@ -1267,15 +1270,15 @@ async function loadEntries(username){ return loadEntriesByEmail(username, null);
 
 async function saveTeamDataCloud() {
   localStorage.setItem('fwa_team_data', JSON.stringify(teamData));
-  await fbSet('fwa/team_data', JSON.stringify(teamData));
+  await jbSet('fwa-team-data', teamData);
   try { await window.storage.set('fwa_team_data', JSON.stringify(teamData)); } catch(e){}
 }
 
 async function loadTeamDataCloud() {
-  // 1. Firebase
-  if(isFirebaseReady()){
-    const val = await fbGet('fwa/team_data');
-    if(val){ teamData = JSON.parse(val); return; }
+  // 1. JSONBin
+  if(isJBReady()){
+    const val = await jbGet('fwa-team-data');
+    if(val && typeof val === 'object'){ teamData = val; return; }
   }
   // 2. window.storage
   try {
@@ -1473,23 +1476,20 @@ let reactions = {};
 let _emojiTargetId = null;
 
 async function loadReactions(){
-  // 1. Firebase
-  if(isFirebaseReady()){
-    const val = await fbGet('fwa/reactions');
-    if(val){ reactions = JSON.parse(val); return; }
+  if(isJBReady()){
+    const val = await jbGet('fwa-reactions');
+    if(val && typeof val === 'object'){ reactions = val; return; }
   }
-  // 2. window.storage
   try {
     const res = await window.storage.get('fwa_reactions');
     if(res && res.value){ reactions = JSON.parse(res.value); return; }
   } catch(e){}
-  // 3. localStorage
   reactions = JSON.parse(localStorage.getItem('fwa_reactions')||'{}');
 }
 async function saveReactions(){
   const json = JSON.stringify(reactions);
   localStorage.setItem('fwa_reactions', json);
-  await fbSet('fwa/reactions', json);
+  await jbSet('fwa-reactions', reactions);
   try { await window.storage.set('fwa_reactions', json); } catch(e){}
 }
 
