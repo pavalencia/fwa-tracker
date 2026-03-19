@@ -543,7 +543,15 @@
           <div class="form-grid full" style="margin-bottom:12px;">
             <div class="field"><label>Target deliverable</label><input type="text" id="tDeliverable" placeholder="Describe the deliverable..." /></div>
           </div>
-          <div class="form-grid" style="margin-bottom:12px;">
+          <div class="form-grid three" style="margin-bottom:12px;">
+            <div class="field"><label>Nature of Task</label>
+              <select id="tNature">
+                <option value="">Select nature...</option>
+                <option value="Strategy-based">Strategy-based</option>
+                <option value="Project-based">Project-based</option>
+                <option value="Routine-based">Routine-based</option>
+              </select>
+            </div>
             <div class="field"><label>Status</label>
               <select id="tStatus">
                 <option value="Completed">Completed</option>
@@ -560,6 +568,9 @@
               <select id="tAssignees">
                 <option value="">Select assignee</option>
               </select>
+            </div>
+            <div class="field"><label>MOV (Mode of Verification)</label>
+              <input type="text" id="tMov" placeholder="e.g. Minutes, Report, Screenshot..." />
             </div>
           </div>
           <button class="btn btn-primary" onclick="addTeamRow()">+ Add entry</button>
@@ -1755,16 +1766,19 @@ async function addTeamRow() {
   const person = document.getElementById('tPerson').value.trim();
   const project = document.getElementById('tProject').value.trim();
   const deliverable = document.getElementById('tDeliverable').value.trim();
+  const nature = document.getElementById('tNature').value;
   const status = document.getElementById('tStatus').value;
   const assignees = document.getElementById('tAssignees').value.trim();
   const dueDate = document.getElementById('tDueDate').value;
+  const mov = document.getElementById('tMov').value.trim();
   if (!person) { alert('Please select a person.'); return; }
   if (!deliverable) { alert('Please describe the deliverable.'); return; }
   ensureTeamPeriod(period, activeTeam);
-  teamData[period][activeTeam].push({ id: Date.now(), person, project, deliverable, status, assignees, dueDate });
+  teamData[period][activeTeam].push({ id: Date.now(), person, project, deliverable, nature, status, assignees, dueDate, mov });
   await saveTeamDataCloud();
   showSyncBadge(true);
-  ['tProject','tDeliverable'].forEach(id => document.getElementById(id).value = '');
+  ['tProject','tDeliverable','tMov'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('tNature').value = '';
   document.getElementById('tStatus').value = 'Ongoing Progress';
   document.getElementById('tAssignees').value = '';
   document.getElementById('tDueDate').value = '';
@@ -1805,6 +1819,13 @@ function statusBadge(s) {
   return `<span style="background:var(--surface2);color:var(--text-muted);font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;">${s}</span>`;
 }
 
+function natureBadge(n) {
+  if (n==='Strategy-based') return `<span style="background:#e8eaf6;color:#3949ab;font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;">Strategy</span>`;
+  if (n==='Project-based')  return `<span style="background:#e0f2f1;color:#00695c;font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;">Project</span>`;
+  if (n==='Routine-based')  return `<span style="background:#fff3e0;color:#e65100;font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;">Routine</span>`;
+  return `<span style="color:var(--text-faint);">—</span>`;
+}
+
 function renderTeamTables() {
   const period = getTPeriod();
   ensureTeamPeriod(period, activeTeam);
@@ -1832,11 +1853,13 @@ function renderTeamTables() {
       <div class="team-table-wrap" style="border:none;border-radius:0;">
         <table class="team-table">
           <thead><tr>
-            <th style="width:130px;">Project</th>
+            <th style="width:110px;">Project</th>
             <th>Target Deliverable</th>
-            <th style="width:160px;">Status</th>
-            <th style="width:100px;">Due Date</th>
-            <th style="width:120px;">Assignees</th>
+            <th style="width:90px;">Nature</th>
+            <th style="width:150px;">Status</th>
+            <th style="width:90px;">Due Date</th>
+            <th style="width:110px;">Assignees</th>
+            <th style="width:140px;">MOV</th>
             <th style="width:32px;"></th>
           </tr></thead>
           <tbody>`;
@@ -1850,9 +1873,11 @@ function renderTeamTables() {
       html += `<tr id="trow-${row.id}">
         <td style="font-size:12px;">${escHtml(row.project)||'<span style="color:var(--text-faint);">—</span>'}</td>
         <td style="font-size:12px;">${escHtml(row.deliverable)}</td>
+        <td>${natureBadge(row.nature)}</td>
         <td id="tstat-${row.id}">${statusBadgeWithEdit(row.status, row.id)}</td>
         <td>${dueTxt}</td>
         <td style="font-size:12px;">${escHtml(row.assignees)||'<span style="color:var(--text-faint);">—</span>'}</td>
+        <td style="font-size:12px;">${escHtml(row.mov)||'<span style="color:var(--text-faint);">—</span>'}</td>
         <td><button class="del-row-btn" onclick="deleteTeamRow('${activeTeam}',${row.id})">×</button></td>
       </tr>`;
     });
@@ -1946,10 +1971,10 @@ function buildTeamTSV() {
 
   const lines = [];
 
-  // Row 1: person names as headers — each person gets 4 cols, separated by blank col
+  // Row 1: person names as headers — each person gets 6 cols, separated by blank col
   const headerR1 = [];
   allPersonBlocks.forEach((block, idx) => {
-    headerR1.push(`"${block.person}"`, '""', '""', '""');
+    headerR1.push(`"${block.person}"`, '""', '""', '""', '""', '""');
     if (idx < allPersonBlocks.length - 1) headerR1.push('""');
   });
   lines.push(headerR1.join('\t'));
@@ -1957,7 +1982,7 @@ function buildTeamTSV() {
   // Row 2: column sub-headers under each person
   const headerR2 = [];
   allPersonBlocks.forEach((block, idx) => {
-    headerR2.push('"Project"', '"Target Deliverables"', '"Status"', '"Assignees"');
+    headerR2.push('"Project"', '"Target Deliverables"', '"Nature of Task"', '"Status"', '"Assignees"', '"MOV"');
     if (idx < allPersonBlocks.length - 1) headerR2.push('""');
   });
   lines.push(headerR2.join('\t'));
@@ -1972,11 +1997,13 @@ function buildTeamTSV() {
         row.push(
           `"${(r.project||'').replace(/"/g,'""')}"`,
           `"${(r.deliverable||'').replace(/"/g,'""')}"`,
+          `"${(r.nature||'').replace(/"/g,'""')}"`,
           `"${(r.status||'').replace(/"/g,'""')}"`,
-          `"${(r.assignees||'').replace(/"/g,'""')}"`
+          `"${(r.assignees||'').replace(/"/g,'""')}"`,
+          `"${(r.mov||'').replace(/"/g,'""')}"`
         );
       } else {
-        row.push('""','""','""','""');
+        row.push('""','""','""','""','""','""');
       }
       if (idx < allPersonBlocks.length - 1) row.push('""');
     });
@@ -1998,19 +2025,14 @@ function buildTeamSheetData(team, period) {
   const members = TEAM_MEMBERS[team] || [];
   const teamRows = (teamData[period] && teamData[period][team]) ? teamData[period][team] : [];
 
-  // Build side-by-side: each member gets 4 cols, blank separator between
-  // Row 0: person names
-  // Row 1: sub-headers
-  // Row 2+: data
-
+  // Each member gets 6 cols: Project, Target Deliverables, Nature of Task, Status, Assignees, MOV
   const maxRows = Math.max(...members.map(m => teamRows.filter(r => r.person === m).length), 0);
-
   const sheetData = [];
 
-  // Row 1 — person names
+  // Row 1 — person names (span 6 cols each)
   const nameRow = [];
   members.forEach((m, idx) => {
-    nameRow.push(m, '', '', '');
+    nameRow.push(m, '', '', '', '', '');
     if (idx < members.length - 1) nameRow.push('');
   });
   sheetData.push(nameRow);
@@ -2018,7 +2040,7 @@ function buildTeamSheetData(team, period) {
   // Row 2 — sub-headers
   const subRow = [];
   members.forEach((m, idx) => {
-    subRow.push('Project', 'Target Deliverables', 'Status', 'Assignees');
+    subRow.push('Project', 'Target Deliverables', 'Nature of Task', 'Status', 'Assignees', 'MOV');
     if (idx < members.length - 1) subRow.push('');
   });
   sheetData.push(subRow);
@@ -2030,9 +2052,9 @@ function buildTeamSheetData(team, period) {
       const mRows = teamRows.filter(r => r.person === m);
       const r = mRows[i];
       if (r) {
-        row.push(r.project||'', r.deliverable||'', r.status||'', r.assignees||'');
+        row.push(r.project||'', r.deliverable||'', r.nature||'', r.status||'', r.assignees||'', r.mov||'');
       } else {
-        row.push('', '', '', '');
+        row.push('', '', '', '', '', '');
       }
       if (idx < members.length - 1) row.push('');
     });
@@ -2078,20 +2100,20 @@ function exportExcel() {
     const members = TEAM_MEMBERS[team] || [];
     const numCols = members.length * 4 + Math.max(0, members.length - 1);
 
-    // Set column widths
+    // Set column widths (6 data cols + 1 sep per member)
     ws['!cols'] = [];
     members.forEach((m, idx) => {
-      ws['!cols'].push({wch:20},{wch:36},{wch:18},{wch:20});
+      ws['!cols'].push({wch:20},{wch:36},{wch:16},{wch:18},{wch:20},{wch:28});
       if (idx < members.length - 1) ws['!cols'].push({wch:3});
     });
 
-    // Merge cells for person name headers (each name spans 4 cols)
+    // Merge cells for person name headers (each name spans 6 cols)
     if (!ws['!merges']) ws['!merges'] = [];
     members.forEach((m, idx) => {
-      const startCol = idx * 5; // 4 data cols + 1 sep
+      const startCol = idx * 7; // 6 data cols + 1 sep
       ws['!merges'].push({
         s: {r:0, c:startCol},
-        e: {r:0, c:startCol+3}
+        e: {r:0, c:startCol+5}
       });
     });
 
