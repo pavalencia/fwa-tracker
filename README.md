@@ -385,14 +385,10 @@
         </div>
       </div>
       <div class="sidebar-section">
-        <div class="sidebar-label">Admin</div>
+        <div class="sidebar-label">Account</div>
         <div class="sidebar-item" onclick="showPage('profile')" id="nav-profile">
           <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           My Profile
-        </div>
-        <div class="sidebar-item" onclick="showPage('admin')" id="nav-admin">
-          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
-          Settings
         </div>
       </div>
     </aside>
@@ -404,6 +400,12 @@
         <div class="page-header">
           <div class="page-title">Add deliverable</div>
           <div class="page-desc">Fill in the report details, log your tasks, then sign off at the bottom.</div>
+        </div>
+
+        <!-- Motivational banner -->
+        <div id="motiveBanner" style="background:var(--accent-light);border:1px solid #c5dba8;border-radius:var(--radius);padding:12px 18px;margin-bottom:1.25rem;display:flex;align-items:center;gap:12px;">
+          <span style="font-size:20px;">💪</span>
+          <span id="motiveText" style="font-size:13px;color:var(--accent);font-weight:500;line-height:1.5;"></span>
         </div>
         <div class="card">
           <div class="card-title">Report header</div>
@@ -594,67 +596,6 @@
           </div>
         </div>
       </div>
-      <!-- ADMIN SETTINGS PAGE -->
-      <div class="page" id="page-admin">
-        <div class="page-header">
-          <div class="page-title">Settings</div>
-          <div class="page-desc">Configure your organization name, approver, and team members. This data is stored securely and never hardcoded.</div>
-        </div>
-
-        <!-- Org info -->
-        <div class="card">
-          <div class="card-title">Organization</div>
-          <div class="form-grid">
-            <div class="field"><label>Organization / Unit name</label><input type="text" id="cfgOrg" placeholder="e.g. OVPDx · UP System" /></div>
-            <div class="field"><label>PDF header line (university name)</label><input type="text" id="cfgUniv" placeholder="e.g. UNIVERSITY OF THE PHILIPPINES" /></div>
-          </div>
-          <div class="form-grid full">
-            <div class="field"><label>PDF header line 2 (office)</label><input type="text" id="cfgOfficeHeader" placeholder="e.g. Office of the Vice President for Digital Transformation" /></div>
-          </div>
-        </div>
-
-        <!-- Approver -->
-        <div class="card">
-          <div class="card-title">Fixed approver (Approved by)</div>
-          <div class="form-grid">
-            <div class="field"><label>Approver name</label><input type="text" id="cfgApproverName" placeholder="e.g. Juan dela Cruz" /></div>
-            <div class="field"><label>Approver position</label><input type="text" id="cfgApproverRole" placeholder="e.g. Vice President for Digital Transformation" /></div>
-          </div>
-        </div>
-
-        <!-- Teams -->
-        <div class="card">
-          <div class="card-title">Teams &amp; members</div>
-          <div class="export-note">Enter one team per line. Members are comma-separated after the team name, separated by a colon.<br>Format: <strong>Team Name: Member One, Member Two, Member Three</strong></div>
-          <div class="field">
-            <label>Teams config</label>
-            <textarea id="cfgTeams" rows="8" placeholder="Admin Team: John Doe, Jane Smith&#10;Project Team: Alice Reyes, Bob Cruz&#10;Research Team: Carol Tan"></textarea>
-          </div>
-        </div>
-
-        <!-- EmailJS -->
-        <div class="card">
-          <div class="card-title">Email (EmailJS) — for welcome &amp; password reset emails</div>
-          <div class="emailjs-note">
-            This app uses <strong>EmailJS</strong> to send emails without a backend. You need a free account at <a href="https://emailjs.com" target="_blank" style="color:var(--accent);">emailjs.com</a>.<br>
-            1. Create a free account → add an <strong>Email Service</strong> (Gmail recommended) → create an <strong>Email Template</strong>.<br>
-            2. In your template use variables: <code>{{to_email}}</code>, <code>{{to_name}}</code>, <code>{{username}}</code>, <code>{{password}}</code>, <code>{{subject}}</code>, <code>{{message}}</code>.<br>
-            3. Paste your <strong>Public Key</strong>, <strong>Service ID</strong>, and <strong>Template ID</strong> below.
-          </div>
-          <div class="form-grid three">
-            <div class="field"><label>EmailJS Public Key</label><input type="text" id="cfgEjsPublicKey" placeholder="e.g. aBcDeFgHiJ..." /></div>
-            <div class="field"><label>Service ID</label><input type="text" id="cfgEjsService" placeholder="e.g. service_xxxx" /></div>
-            <div class="field"><label>Template ID</label><input type="text" id="cfgEjsTemplate" placeholder="e.g. template_xxxx" /></div>
-          </div>
-        </div>
-
-        <div class="btn-group">
-          <button class="btn btn-primary" onclick="saveAdminConfig()">💾 Save settings</button>
-          <button class="btn" onclick="loadAdminConfigToForm()">↺ Reset to saved</button>
-        </div>
-        <div id="adminMsg" style="font-size:12px;margin-top:10px;min-height:18px;"></div>
-      </div>
-
       <!-- DASHBOARD PAGE -->
       <div class="page" id="page-dashboard">
         <div class="page-header">
@@ -682,7 +623,7 @@
       <div class="page" id="page-kudos">
         <div class="page-header">
           <div class="page-title">Kudos Wall</div>
-          <div class="page-desc">Celebrate your team's efforts — react to entries and see who's been recognized the most.</div>
+          <div class="page-desc">Every task you complete moves the team forward. Your work matters — keep going! React to entries to show your teammates you see their effort.</div>
         </div>
         <div class="kudos-tabs">
           <button class="kudos-tab active" id="ktab-wall" onclick="switchKudosTab('wall')">🏅 Recognition Wall</button>
@@ -703,8 +644,8 @@
         <!-- Team Appreciation summary — no ranking, just a warm overview -->
         <div id="kudos-appreciation-pane" style="display:none;">
           <div class="card" style="margin-bottom:1rem;">
-            <div class="card-title">Everyone's been appreciated ✨</div>
-            <div style="font-size:12px;color:var(--text-muted);margin-bottom:1rem;line-height:1.65;">A snapshot of the reactions each person has received across all their entries. This is not a ranking — every effort counts.</div>
+            <div class="card-title">Your team shows up, every single week ✨</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:1rem;line-height:1.65;">Progress isn't always loud. Every entry here is proof someone showed up and delivered. That counts — and so does every reaction below.</div>
             <div id="kudos-appr-list"></div>
           </div>
           <div class="card">
@@ -955,7 +896,7 @@ async function doRegister(){
   if(emailResult.ok){
     msg.textContent='Account created! Credentials also sent to your email.';
   } else if(emailResult.reason==='not_configured'){
-    msg.textContent='Account created! (Configure EmailJS in Admin → Settings to also send by email.)';
+    msg.textContent='Account created! (To enable email sending, configure EmailJS credentials in the source code.)';
   } else {
     msg.textContent='Account created! (Email delivery failed — check EmailJS settings.)';
   }
@@ -1015,11 +956,11 @@ async function doForgotPassword(){
         <div style="margin-bottom:6px;"><strong>Username:</strong> ${username}</div>
         <div><strong>Temporary password:</strong> <span style="font-family:monospace;font-size:14px;color:var(--accent);">${tempPass}</span></div>
        </div>
-       <div style="font-size:11px;color:var(--text-muted);margin-top:8px;">To enable email sending, add your EmailJS credentials in Admin → Settings.</div>`
+       <div style="font-size:11px;color:var(--text-muted);margin-top:8px;">To enable email sending, configure EmailJS credentials in the source code.</div>`
     );
     msg.className='lmsg ok'; msg.textContent='Temporary password set. See the popup for credentials.';
   } else {
-    msg.className='lmsg err'; msg.textContent='Could not send email. Check EmailJS settings in Admin → Settings.';
+    msg.className='lmsg err'; msg.textContent='Could not send email. Check EmailJS configuration.';
   }
 }
 
@@ -1033,7 +974,6 @@ async function launchApp(username, fullname, email){
   if(emailPill) emailPill.textContent = email||'';
 
   await loadAppConfig();
-  loadAdminConfigToForm();
 
   // Load entries — prefer email-keyed cloud storage for cross-device restore
   entries = await loadEntriesByEmail(username, email);
@@ -1044,6 +984,7 @@ async function launchApp(username, fullname, email){
   generateWeekOptions();
   document.getElementById('hnav-add').classList.add('active');
   renderRecent();
+  initMotive();
 }
 
 window.addEventListener('DOMContentLoaded',async ()=>{
@@ -1560,6 +1501,35 @@ function renderRecent(){
     :'<div class="empty-state">No entries yet. Add one above.</div>';
 }
 
+// ── MOTIVATIONAL BANNER ───────────────────
+const MOTIVE_MESSAGES = [
+  'Every task you complete moves the team forward. Your work matters — keep going!',
+  'Progress isn\'t always loud. Every entry here is proof you showed up and delivered. That counts.',
+  'Every task you complete moves the team forward. Keep showing up — it makes a difference!',
+  'Progress isn\'t always visible right away, but every effort you log brings the team closer to the goal.',
+  'Your work matters. Every deliverable you complete is a step forward for the whole team.',
+  'Showing up consistently is one of the most powerful things you can do. Thank you for being here.',
+  'Great teams are built on consistent effort — just like yours. Keep it going!',
+  'Behind every deliverable is a person who chose to show up. That person is you. 🙌',
+];
+let _motiveIdx = Math.floor(Math.random() * MOTIVE_MESSAGES.length);
+function rotateMotive() {
+  const el = document.getElementById('motiveText');
+  if (!el) return;
+  _motiveIdx = (_motiveIdx + 1) % MOTIVE_MESSAGES.length;
+  el.style.opacity = '0';
+  setTimeout(() => {
+    el.textContent = MOTIVE_MESSAGES[_motiveIdx];
+    el.style.transition = 'opacity .5s';
+    el.style.opacity = '1';
+  }, 300);
+}
+function initMotive() {
+  const el = document.getElementById('motiveText');
+  if (el) el.textContent = MOTIVE_MESSAGES[_motiveIdx];
+  setInterval(rotateMotive, 8000);
+}
+
 function renderView(){
   const we=getPeriodEntries(),sEl=document.getElementById('stats'),lEl=document.getElementById('view-list');
   document.getElementById('viewDesc').textContent='Showing entries for: '+getPeriod();
@@ -1720,123 +1690,41 @@ async function exportPDF(){
   doc.save(`FWA_${(h.name||'Report').replace(/\s+/g,'_')}_${(h.period||'Period').replace(/[^a-z0-9]/gi,'_')}.pdf`);
 }
 
-// ── APP CONFIG (loaded from storage, never hardcoded) ─────────────────
-let APP_CONFIG = {
-  org: '',
-  univ: '',
-  officeHeader: '',
+// ── APP CONFIG (hardcoded) ────────────────
+const APP_CONFIG = {
+  org:          'OVPDx · UP System',
+  univ:         'UNIVERSITY OF THE PHILIPPINES',
+  officeHeader: 'Office of the Vice President for Digital Transformation',
   approverName: 'Peter A. Sy',
   approverRole: 'Vice President for Digital Transformation',
-  teamsRaw: '',
   ejsPublicKey: '',
-  ejsService: '',
-  ejsTemplate: ''
+  ejsService:   '',
+  ejsTemplate:  ''
 };
-let TEAMS = [];
-let TEAM_MEMBERS = {};
+
+const TEAMS = ['Admin Team','Communications Team','Project Team','Research Team','Management Team'];
+const TEAM_MEMBERS = {
+  'Admin Team':          ['John Mark Paya','Paula Beatrize Valencia','Rozhelle Yu'],
+  'Communications Team': ['Marianne Laron','Eileen Rudi'],
+  'Project Team':        ['John Paul Cristobal','Duane Burdeos','Keith Andrei Layson'],
+  'Research Team':       ['Katheryn Hidalgo','Veronica Consolacion'],
+  'Management Team':     ['Marisha Beloro','Kristofferson Dela Cruz','Regine Pustadan']
+};
 const STATUSES = ['Completed','Ongoing Progress','Not Initiated'];
 
-async function loadAppConfig() {
-  try {
-    const res = await window.storage.get('fwa_app_config');
-    if (res && res.value) APP_CONFIG = JSON.parse(res.value);
-  } catch(e) {
-    const local = localStorage.getItem('fwa_app_config');
-    if (local) APP_CONFIG = JSON.parse(local);
-  }
-  applyConfig();
-}
-
-async function saveAdminConfig() {
-  APP_CONFIG.org           = document.getElementById('cfgOrg').value.trim();
-  APP_CONFIG.univ          = document.getElementById('cfgUniv').value.trim();
-  APP_CONFIG.officeHeader  = document.getElementById('cfgOfficeHeader').value.trim();
-  APP_CONFIG.approverName  = document.getElementById('cfgApproverName').value.trim();
-  APP_CONFIG.approverRole  = document.getElementById('cfgApproverRole').value.trim();
-  APP_CONFIG.teamsRaw      = document.getElementById('cfgTeams').value.trim();
-  APP_CONFIG.ejsPublicKey  = document.getElementById('cfgEjsPublicKey').value.trim();
-  APP_CONFIG.ejsService    = document.getElementById('cfgEjsService').value.trim();
-  APP_CONFIG.ejsTemplate   = document.getElementById('cfgEjsTemplate').value.trim();
-  const json = JSON.stringify(APP_CONFIG);
-  localStorage.setItem('fwa_app_config', json);
-  try { await window.storage.set('fwa_app_config', json); } catch(e) {}
-  applyConfig();
-  const msg = document.getElementById('adminMsg');
-  msg.style.color = 'var(--accent)';
-  msg.textContent = '✓ Settings saved and applied.';
-  showSyncBadge(true);
-  setTimeout(()=>{ msg.textContent=''; }, 3000);
-}
-
-const DEFAULT_TEAMS_RAW = `Admin Team: John Mark Paya, Paula Beatrize Valencia, Rozhelle Yu
-Communications Team: Marianne Laron, Eileen Rudi
-Project Team: John Paul Cristobal, Duane Burdeos, Keith Andrei Layson
-Research Team: Katheryn Hidalgo, Veronica Consolacion
-Management Team: Marisha Beloro, Kristofferson Dela Cruz, Regine Pustadan`;
-
-function loadAdminConfigToForm() {
-  document.getElementById('cfgOrg').value           = APP_CONFIG.org || '';
-  document.getElementById('cfgUniv').value          = APP_CONFIG.univ || '';
-  document.getElementById('cfgOfficeHeader').value  = APP_CONFIG.officeHeader || '';
-  document.getElementById('cfgApproverName').value  = APP_CONFIG.approverName || 'Peter A. Sy';
-  document.getElementById('cfgApproverRole').value  = APP_CONFIG.approverRole || 'Vice President for Digital Transformation';
-  document.getElementById('cfgTeams').value         = APP_CONFIG.teamsRaw || DEFAULT_TEAMS_RAW;
-  document.getElementById('cfgEjsPublicKey').value  = APP_CONFIG.ejsPublicKey || '';
-  document.getElementById('cfgEjsService').value    = APP_CONFIG.ejsService || '';
-  document.getElementById('cfgEjsTemplate').value   = APP_CONFIG.ejsTemplate || '';
-}
-
-function parseTeamsConfig(raw) {
-  const teams = [];
-  const members = {};
-  (raw||'').split('\n').forEach(line => {
-    line = line.trim();
-    if (!line) return;
-    const colonIdx = line.indexOf(':');
-    if (colonIdx < 0) { teams.push(line); members[line] = []; return; }
-    const teamName = line.slice(0, colonIdx).trim();
-    const memberList = line.slice(colonIdx + 1).split(',').map(m => m.trim()).filter(Boolean);
-    teams.push(teamName);
-    members[teamName] = memberList;
-  });
-  return { teams, members };
-}
+function loadAppConfig() { applyConfig(); }
 
 function applyConfig() {
-  // Update org labels
-  const orgText = APP_CONFIG.org || 'FWA Tracker';
   const loginSub = document.getElementById('loginOrgSub');
   const appSub   = document.getElementById('appOrgSub');
-  if (loginSub) loginSub.textContent = orgText;
-  if (appSub)   appSub.textContent   = orgText;
-
-  // Update approver block
+  if (loginSub) loginSub.textContent = APP_CONFIG.org;
+  if (appSub)   appSub.textContent   = APP_CONFIG.org;
   const an = document.getElementById('sigApprovedName');
   const ar = document.getElementById('sigApprovedRole');
-  if (an) an.textContent = APP_CONFIG.approverName || 'Peter A. Sy';
-  if (ar) ar.textContent = APP_CONFIG.approverRole || 'Vice President for Digital Transformation';
-
-  // Parse teams — fall back to built-in defaults if not yet configured
-  const parsed = parseTeamsConfig(APP_CONFIG.teamsRaw);
-  if (parsed.teams.length > 0) {
-    TEAMS = parsed.teams;
-    TEAM_MEMBERS = parsed.members;
-  } else {
-    // Default teams so the page works before admin configures anything
-    TEAMS = ['Admin Team','Communications Team','Project Team','Research Team','Management Team'];
-    TEAM_MEMBERS = {
-      'Admin Team': [],
-      'Communications Team': [],
-      'Project Team': [],
-      'Research Team': [],
-      'Management Team': []
-    };
-  }
-
-  // Always keep activeTeam valid — reset if current value is no longer in TEAMS
-  if (!activeTeam || !TEAMS.includes(activeTeam)) {
-    activeTeam = TEAMS[0];
-  }
+  if (an) an.textContent = APP_CONFIG.approverName;
+  if (ar) ar.textContent = APP_CONFIG.approverRole;
+  // activeTeam init
+  if (!activeTeam || !TEAMS.includes(activeTeam)) activeTeam = TEAMS[0];
 }
 let activeTeam = null;
 // teamData: { period: { teamName: [{id, person, project, deliverable, status, assignees}] } }
@@ -1896,11 +1784,10 @@ async function deleteTeamRow(team, id) {
 
 function renderTeamTabs() {
   if (!TEAMS.length) {
-    document.getElementById('teamTabs').innerHTML = `<div style="font-size:12px;color:var(--text-muted);padding:8px 0;">No teams configured yet. Go to <strong>Admin → Settings</strong> to add your teams and members.</div>`;
+    document.getElementById('teamTabs').innerHTML = '';
     document.getElementById('teamAddTitle').textContent = 'Add entry';
     return;
   }
-  // Ensure activeTeam is always valid
   if (!activeTeam || !TEAMS.includes(activeTeam)) activeTeam = TEAMS[0];
   document.getElementById('teamTabs').innerHTML = TEAMS.map(t => {
     const period = getTPeriod();
@@ -2237,7 +2124,6 @@ async function showPage(page){
     if (tp) document.getElementById('tPeriodExport').value = tp;
     previewExport();
   }
-  if(page==='admin'){ loadAdminConfigToForm(); }
   if(page==='profile'){ loadProfilePage(); }
 }
 
