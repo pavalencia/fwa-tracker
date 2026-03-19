@@ -819,149 +819,53 @@
 </div>
 
 <script>
-// ── JSONBIN CONFIG ────────────────────────
-// Zero manual setup. Works on any device automatically.
-// Device 1 creates two bins: a master data bin + a pointer bin that stores the master ID.
-// Device 2+ reads the pointer bin (found by listing bins with the shared API key) → gets master ID → syncs.
-const JSONBIN_API_KEY = '$2a$10$zovgdA6JP/5.Gt2rd6XdDeOhoROJoePurbzTxPEVE3Fd2p5Ei1Ryi';
-const JSONBIN_BASE    = 'https://api.jsonbin.io/v3';
-const PTR_BIN_NAME    = 'fwa-ptr-ovpdx'; // fixed name all devices agree on
+// ── GOOGLE SHEETS BACKEND ─────────────────
+// Paste your deployed Apps Script Web App URL below after setup.
+// Setup instructions: see APPS_SCRIPT_CODE.js file included with this tracker.
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbw2-S3rThKNORRRG8SXQrdrI3LNpVTP42e74EgIFOB9sDFtJZT2pYSmqekA0523dvWIHg/exec';
 
-function isJBReady(){ return !!JSONBIN_API_KEY && JSONBIN_API_KEY !== 'YOUR_JSONBIN_API_KEY'; }
+function isGASReady(){ return GAS_URL && GAS_URL !== 'YOUR_APPS_SCRIPT_URL'; }
 
-let _masterBinId = localStorage.getItem('jb_master_id') || '';
-let _ptrBinId    = localStorage.getItem('jb_ptr_id')    || '';
-let _masterCache = null;
+let _gasCache = null;
 
-// Find pointer bin ID by listing all bins
-async function findPtrBin(){
-  if(_ptrBinId) return _ptrBinId;
+async function gasRead(){
+  if(!isGASReady()) return null;
   try {
-    const r = await fetch(`${JSONBIN_BASE}/b`,{ headers:{'X-Master-Key':JSONBIN_API_KEY} });
-    if(r.ok){
-      const list = await r.json();
-      const arr = Array.isArray(list) ? list : [];
-      for(const b of arr){
-        const n  = b.snippetMeta?.name || b.name || '';
-        const id = b.snippetMeta?.id   || b.id   || b._id || '';
-        if(n === PTR_BIN_NAME && id){
-          _ptrBinId = id;
-          localStorage.setItem('jb_ptr_id', id);
-          return id;
-        }
-      }
-    }
-  } catch(e){}
-  return '';
-}
-
-// Create pointer bin
-async function createPtrBin(masterId){
-  try {
-    const r = await fetch(`${JSONBIN_BASE}/b`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_API_KEY,
-               'X-Bin-Name':PTR_BIN_NAME,'X-Bin-Private':'false'},
-      body: JSON.stringify({m: masterId})
-    });
-    if(r.ok){
-      const j = await r.json();
-      _ptrBinId = j.metadata?.id || '';
-      if(_ptrBinId) localStorage.setItem('jb_ptr_id', _ptrBinId);
-      return _ptrBinId;
-    }
-  } catch(e){}
-  return '';
-}
-
-// Update pointer bin with master ID
-async function updatePtrBin(ptrId, masterId){
-  try {
-    await fetch(`${JSONBIN_BASE}/b/${ptrId}`,{
-      method:'PUT',
-      headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_API_KEY},
-      body: JSON.stringify({m: masterId})
-    });
-  } catch(e){}
-}
-
-// Ensure master bin exists, discovering via pointer bin
-async function ensureMasterBin(){
-  if(_masterBinId) return true;
-  // Try to read master ID from pointer bin
-  let ptrId = await findPtrBin();
-  if(ptrId){
-    try {
-      const r = await fetch(`${JSONBIN_BASE}/b/${ptrId}/latest`,{
-        headers:{'X-Master-Key':JSONBIN_API_KEY,'X-Bin-Meta':'false'}
-      });
-      if(r.ok){
-        const j = await r.json();
-        const mid = j?.m || '';
-        if(mid){ _masterBinId = mid; localStorage.setItem('jb_master_id', mid); return true; }
-      }
-    } catch(e){}
-  }
-  // Create master bin
-  try {
-    const r = await fetch(`${JSONBIN_BASE}/b`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_API_KEY,
-               'X-Bin-Name':'fwa-tracker-master','X-Bin-Private':'false'},
-      body: JSON.stringify({users:{},teamData:{},reactions:{}})
-    });
-    if(r.ok){
-      const j = await r.json();
-      _masterBinId = j.metadata?.id || '';
-      if(_masterBinId){
-        localStorage.setItem('jb_master_id', _masterBinId);
-        // Write master ID to pointer bin so other devices can find it
-        if(ptrId) await updatePtrBin(ptrId, _masterBinId);
-        else await createPtrBin(_masterBinId);
-        return true;
-      }
-    }
-  } catch(e){}
-  return false;
-}
-
-async function readMasterBin(){
-  if(!await ensureMasterBin()) return null;
-  try {
-    const r = await fetch(`${JSONBIN_BASE}/b/${_masterBinId}/latest`,{
-      headers:{'X-Master-Key':JSONBIN_API_KEY,'X-Bin-Meta':'false'}
-    });
+    const r = await fetch(GAS_URL + '?action=read');
     if(!r.ok) return null;
-    _masterCache = await r.json();
-    return _masterCache;
+    const j = await r.json();
+    if(j.ok){ _gasCache = j.data; return j.data; }
+    return null;
   } catch(e){ return null; }
 }
 
-async function writeMasterBin(data){
-  if(!await ensureMasterBin()) return false;
+async function gasWrite(data){
+  if(!isGASReady()) return false;
   try {
-    const r = await fetch(`${JSONBIN_BASE}/b/${_masterBinId}`,{
-      method:'PUT',
-      headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_API_KEY},
-      body: JSON.stringify(data)
+    const r = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'text/plain'},
+      body: JSON.stringify({action:'write', data})
     });
-    if(r.ok){ _masterCache = data; return true; }
-  } catch(e){}
-  return false;
+    if(!r.ok) return false;
+    const j = await r.json();
+    if(j.ok){ _gasCache = data; return true; }
+    return false;
+  } catch(e){ return false; }
 }
 
-async function jbGet(key, defaultVal=null){
-  if(!isJBReady()) return defaultVal;
-  const master = await readMasterBin();
-  if(!master) return defaultVal;
-  return (master[key] !== undefined) ? master[key] : defaultVal;
+async function dbGet(key, defaultVal=null){
+  if(!isGASReady()) return defaultVal;
+  const store = await gasRead();
+  if(!store) return defaultVal;
+  return (store[key] !== undefined) ? store[key] : defaultVal;
 }
 
-async function jbSet(key, data){
-  if(!isJBReady()) return false;
-  let master = _masterCache || await readMasterBin() || {};
-  master[key] = data;
-  return await writeMasterBin(master);
+async function dbSet(key, data){
+  if(!isGASReady()) return false;
+  let store = _gasCache || await gasRead() || {};
+  store[key] = data;
+  return await gasWrite(store);
 }
 
 // ── AUTH ──────────────────────────────────
@@ -969,14 +873,27 @@ function getUsers(){ return JSON.parse(localStorage.getItem('fwa_users')||'{}');
 
 async function saveUsers(u){
   localStorage.setItem('fwa_users', JSON.stringify(u));
-  const ok = await jbSet('users', u);
-  if(ok) showSyncBadge(true);
+  const ok = await dbSet('users', u);
+  if(ok) showSyncBadge(true); else showSyncBadge(false);
   try { window.storage.set('fwa_users', JSON.stringify(u)); } catch(e){}
 }
 
 async function loadUsersFromCloud(){
-  if(!isJBReady()) return;
-  const cloud = await jbGet('users', {});
+  if(!isGASReady()){
+    // Fallback: window.storage (Claude.ai env)
+    try {
+      if(typeof window.storage !== 'undefined'){
+        const res = await window.storage.get('fwa_users');
+        if(res && res.value){
+          const c = JSON.parse(res.value);
+          const merged = Object.assign({}, getUsers(), c);
+          localStorage.setItem('fwa_users', JSON.stringify(merged));
+        }
+      }
+    } catch(e){}
+    return;
+  }
+  const cloud = await dbGet('users', {});
   if(cloud && typeof cloud === 'object' && !Array.isArray(cloud)){
     const merged = Object.assign({}, getUsers(), cloud);
     localStorage.setItem('fwa_users', JSON.stringify(merged));
@@ -1268,14 +1185,14 @@ async function save(){
   const u=getCurrentUser();
   if(!u) return;
   localStorage.setItem('fwa_entries_'+u, JSON.stringify(entries));
-  const ok = await jbSet('entries_'+u, entries);
+  const ok = await dbSet('entries_'+u, entries);
   try { await window.storage.set('fwa_entries_'+u, JSON.stringify(entries)); } catch(e){}
   showSyncBadge(ok);
 }
 
 async function loadEntriesByEmail(username, email) {
-  if(isJBReady()){
-    const val = await jbGet('entries_'+username, []);
+  if(isGASReady()){
+    const val = await dbGet('entries_'+username, []);
     if(Array.isArray(val)){ showSyncBadge(true); return val; }
   }
   try {
@@ -1288,13 +1205,13 @@ async function loadEntries(username){ return loadEntriesByEmail(username, null);
 
 async function saveTeamDataCloud() {
   localStorage.setItem('fwa_team_data', JSON.stringify(teamData));
-  await jbSet('teamData', teamData);
+  await dbSet('teamData', teamData);
   try { await window.storage.set('fwa_team_data', JSON.stringify(teamData)); } catch(e){}
 }
 
 async function loadTeamDataCloud() {
-  if(isJBReady()){
-    const val = await jbGet('teamData', {});
+  if(isGASReady()){
+    const val = await dbGet('teamData', {});
     if(val && typeof val === 'object'){ teamData = val; return; }
   }
   try {
@@ -1491,8 +1408,8 @@ let reactions = {};
 let _emojiTargetId = null;
 
 async function loadReactions(){
-  if(isJBReady()){
-    const val = await jbGet('reactions', {});
+  if(isGASReady()){
+    const val = await dbGet('reactions', {});
     if(val && typeof val === 'object'){ reactions = val; return; }
   }
   try {
@@ -1504,7 +1421,7 @@ async function loadReactions(){
 async function saveReactions(){
   const json = JSON.stringify(reactions);
   localStorage.setItem('fwa_reactions', json);
-  await jbSet('reactions', reactions);
+  await dbSet('reactions', reactions);
   try { await window.storage.set('fwa_reactions', json); } catch(e){}
 }
 
