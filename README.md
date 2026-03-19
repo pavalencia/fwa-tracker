@@ -7,6 +7,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -288,9 +290,6 @@
       <button class="login-tab" id="ltab-forgot" onclick="switchLoginTab('forgot')">Forgot password</button>
     </div>
     <div id="lpane-login">
-      <div id="notClaudeNotice" style="display:none;background:#fffbea;border:1px solid #f0d060;border-radius:6px;padding:10px 12px;font-size:11px;color:#7a5a0e;margin-bottom:12px;line-height:1.6;">
-        ⚠ <strong>Cross-device login requires Claude.ai.</strong> Open this app at <strong>claude.ai</strong> to log in from any device. If you're already there, accounts sync automatically.
-      </div>
       <div class="lfield"><label>Username</label><input type="text" id="loginUser" placeholder="Enter your username" /></div>
       <div class="lfield"><label>Password</label><input type="password" id="loginPass" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin()" /></div>
       <button class="lbtn" onclick="doLogin()">Sign in</button>
@@ -489,18 +488,41 @@
         <div class="card">
           <div class="card-title">Signature block</div>
           <div class="form-grid" style="margin-bottom:12px;">
-            <div class="field"><label>Submitted by (name)</label><input type="text" id="sigSubmitted" placeholder="e.g. Juan dela Cruz" /></div>
+            <div class="field"><label>Submitted by (name)</label>
+              <select id="sigSubmitted">
+                <option value="">Select name...</option>
+                <option>Marisha D. Beloro</option>
+                <option>Duane Albert J. Burdeos</option>
+                <option>Veronica Marie B. Consolacion</option>
+                <option>John Paul S. Cristobal</option>
+                <option>Kristofferson Dela Cruz</option>
+                <option>Katheryn H. Hidalgo</option>
+                <option>Marianne Yzabelle P. Laron</option>
+                <option>Keith Andrei A. Layson</option>
+                <option>John Mark S. Paya</option>
+                <option>Regine C. Pustadan</option>
+                <option>Eileen Claire J. Rudi</option>
+                <option>Paula Beatrize A. Valencia</option>
+                <option>Rozhelle Sophia L. Yu</option>
+              </select>
+            </div>
             <div class="field"><label>Submitted by (position)</label><input type="text" id="sigSubmittedPos" placeholder="e.g. Administrative Aide" /></div>
           </div>
           <div class="form-grid" style="margin-bottom:12px;">
-            <div class="field"><label>Reviewed by (name)</label><input type="text" id="sigReviewed" placeholder="e.g. Maria Santos" /></div>
+            <div class="field"><label>Reviewed by (name)</label>
+              <select id="sigReviewed">
+                <option value="">Select name...</option>
+                <option>Kristofferson Dela Cruz</option>
+                <option>Regine C. Pustadan</option>
+                <option>Marisha D. Beloro</option>
+              </select>
+            </div>
             <div class="field"><label>Reviewed by (position)</label><input type="text" id="sigReviewedPos" placeholder="e.g. Project Development Officer" /></div>
           </div>
           <div class="sig-fixed-box">
-            <div class="sig-fixed-title">Approved by — fixed (set in Admin config)</div>
-            <div class="sig-fixed-name" id="sigApprovedName">—</div>
-            <div class="sig-fixed-role" id="sigApprovedRole"></div>
-            <div class="sig-fixed-note">Editable by admin in Settings.</div>
+            <div class="sig-fixed-title">Approved by</div>
+            <div class="sig-fixed-name">Peter A. Sy</div>
+            <div class="sig-fixed-role">Vice President for Digital Transformation</div>
           </div>
         </div>
       </div>
@@ -801,57 +823,84 @@
 </div>
 
 <script>
-// ── AUTH ──────────────────────────────────
-// Users stored in localStorage (device-local) + synced via Anthropic API (cross-device)
-// The API call uses a shared artifact storage key so all devices share the same user list.
+// ── FIREBASE CONFIG ───────────────────────
+// Free Firebase Realtime Database — works from ANY device/browser, no server needed.
+// HOW TO SET UP (one-time, 5 minutes):
+//   1. Go to https://console.firebase.google.com → Create project (free)
+//   2. Build → Realtime Database → Create database → Start in TEST mode
+//   3. Project Settings → Your apps → Add web app → copy firebaseConfig values below
+//   4. Replace the placeholder values with your actual config
+const FIREBASE_CONFIG = {
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
+  databaseURL:       "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId:             "YOUR_APP_ID"
+};
 
-function getUsers(){return JSON.parse(localStorage.getItem('fwa_users')||'{}');}
-function saveUsers(u){
-  localStorage.setItem('fwa_users',JSON.stringify(u));
-  // Push to cloud async — don't await so UI isn't blocked
-  pushUsersToCloud(u);
+let _db = null;
+function getDB() {
+  if (_db) return _db;
+  try {
+    if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    _db = firebase.database();
+    return _db;
+  } catch(e) { return null; }
+}
+function isFirebaseReady() {
+  return FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey !== 'YOUR_API_KEY';
 }
 
-async function pushUsersToCloud(users){
+// Safe sanitise key for Firebase (no . $ # [ ] /)
+function fbKey(str) { return String(str).replace(/[.#$\[\]/]/g,'_'); }
+
+async function fbSet(path, value) {
+  if (!isFirebaseReady()) return false;
+  try { await getDB().ref(path).set(value); return true; } catch(e) { return false; }
+}
+async function fbGet(path) {
+  if (!isFirebaseReady()) return null;
   try {
-    // Use window.storage if available (Claude.ai environment)
-    if(typeof window.storage !== 'undefined'){
-      await window.storage.set('fwa_users', JSON.stringify(users));
+    const snap = await getDB().ref(path).once('value');
+    return snap.exists() ? snap.val() : null;
+  } catch(e) { return null; }
+}
+
+// ── AUTH ──────────────────────────────────
+function getUsers(){ return JSON.parse(localStorage.getItem('fwa_users')||'{}'); }
+function saveUsers(u){
+  localStorage.setItem('fwa_users', JSON.stringify(u));
+  // Push to Firebase (works from any device)
+  fbSet('fwa/users', u).then(ok => { if(ok) showSyncBadge(true); });
+  // Also try window.storage (Claude.ai env)
+  try { window.storage.set('fwa_users', JSON.stringify(u)); } catch(e) {}
+}
+async function loadUsersFromCloud(){
+  // 1. Try Firebase first
+  if (isFirebaseReady()) {
+    const cloud = await fbGet('fwa/users');
+    if (cloud) {
+      const merged = Object.assign({}, getUsers(), cloud);
+      localStorage.setItem('fwa_users', JSON.stringify(merged));
       return;
     }
-    // Fallback: use Anthropic API to store via a Claude assistant that writes to artifact storage
-    // We encode the users object as a JSON string in the prompt and ask Claude to store it
-    await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:100,
-        system:'You are a data store. When given a JSON payload prefixed with STORE_USERS:, acknowledge with exactly: STORED',
-        messages:[{role:'user',content:'STORE_USERS:'+JSON.stringify(users)}]
-      })
-    });
-  } catch(e){ console.warn('Cloud user sync unavailable:', e.message); }
-}
-
-async function loadUsersFromCloud(){
+  }
+  // 2. Try window.storage (Claude.ai env)
   try {
-    // Try window.storage first (Claude.ai environment)
-    if(typeof window.storage !== 'undefined'){
+    if (typeof window.storage !== 'undefined') {
       const res = await window.storage.get('fwa_users');
-      if(res && res.value){
+      if (res && res.value) {
         const cloud = JSON.parse(res.value);
-        const local = getUsers();
-        const merged = Object.assign({}, local, cloud);
+        const merged = Object.assign({}, getUsers(), cloud);
         localStorage.setItem('fwa_users', JSON.stringify(merged));
       }
-      return;
     }
-    // Outside Claude.ai: users are only in localStorage on this device.
-    // Cross-device login requires the user to have logged in on this device before,
-    // OR the admin exports/imports accounts. Show a helpful message if no users found.
-  } catch(e){ console.warn('Could not load users from cloud:', e.message); }
+  } catch(e) {}
 }
+function getCurrentUser(){ return localStorage.getItem('fwa_current_user')||null; }
+function setCurrentUser(u){ localStorage.setItem('fwa_current_user',u); }
 function getCurrentUser(){return localStorage.getItem('fwa_current_user')||null;}
 function setCurrentUser(u){localStorage.setItem('fwa_current_user',u);}
 
@@ -926,14 +975,7 @@ async function doLogin(){
   await loadUsersFromCloud();
   const users=getUsers();
   if(!users[user]){
-    // Account not found locally — check if this might be a cross-device issue
-    const isClaudeEnv = typeof window.storage !== 'undefined';
-    if(!isClaudeEnv){
-      msg.className='lmsg err';
-      msg.innerHTML='Username not found on this device.<br><span style="font-size:11px;color:var(--text-muted);">This app was opened outside Claude.ai. Please open it at <strong>claude.ai</strong> for cross-device login to work, or create an account on this device.</span>';
-    } else {
-      msg.className='lmsg err';msg.textContent='Username not found. Please check your username or create an account.';
-    }
+    msg.className='lmsg err';msg.textContent='Username not found. Please check your username or create an account.';
     return;
   }
   if(users[user].password!==btoa(pass)){msg.className='lmsg err';msg.textContent='Incorrect password.';return;}
@@ -1073,9 +1115,15 @@ async function launchApp(username, fullname, email){
   if(users[username]&&users[username].name){
     const sel = document.getElementById('hName');
     if(sel){
-      // Try to match full name in dropdown, otherwise select closest or leave blank
       for(const opt of sel.options){
         if(opt.value === users[username].name){ sel.value = users[username].name; break; }
+      }
+    }
+    // Also pre-select Submitted by name to match
+    const sigSel = document.getElementById('sigSubmitted');
+    if(sigSel){
+      for(const opt of sigSel.options){
+        if(opt.value === users[username].name){ sigSel.value = users[username].name; break; }
       }
     }
   }
@@ -1086,11 +1134,7 @@ async function launchApp(username, fullname, email){
 }
 
 window.addEventListener('DOMContentLoaded',async ()=>{
-  // Show cross-device notice if window.storage isn't available
-  const notice = document.getElementById('notClaudeNotice');
-  if(notice && typeof window.storage === 'undefined') notice.style.display='block';
-
-  await loadUsersFromCloud(); // sync accounts from cloud first
+  await loadUsersFromCloud();
   const u=getCurrentUser();
   if(u){const users=getUsers();if(users[u]){await launchApp(u,users[u].name,users[u].email);return;}}
   document.getElementById('loginScreen').style.display='flex';
@@ -1176,58 +1220,69 @@ const SL={ongoing:'Ongoing / In-Process',completed:'Completed',recurring:'Recurr
 const SC={ongoing:'O',completed:'C',recurring:'R',notinit:'N'};
 const STATUS_ORDER=['completed','ongoing','recurring','notinit'];
 
-// ── CLOUD STORAGE (cross-device sync via window.storage) ──────────────
+// ── CLOUD STORAGE (Firebase-backed, works on any device) ─────────────
 async function save(){
   const u=getCurrentUser();
   if(!u) return;
   const users=getUsers();
   const email=(users[u]&&users[u].email)||null;
   const json=JSON.stringify(entries);
-  // Save to username key (legacy fallback)
   localStorage.setItem('fwa_entries_'+u, json);
-  try { await window.storage.set('fwa_entries_'+u, json); } catch(e) {}
-  // Also save to email key (primary cross-device key)
-  if(email){
-    const ekey=emailKey(email,'entries');
-    localStorage.setItem(ekey, json);
-    try { await window.storage.set(ekey, json); showSyncBadge(true); } catch(e) { showSyncBadge(false); }
-  }
+
+  // Firebase (primary — any device)
+  const fbPath = email ? 'fwa/entries/'+fbKey(email) : 'fwa/entries_u/'+fbKey(u);
+  const ok = await fbSet(fbPath, json);
+
+  // window.storage fallback (Claude.ai)
+  try {
+    const ekey = email ? emailKey(email,'entries') : 'fwa_entries_'+u;
+    await window.storage.set(ekey, json);
+  } catch(e){}
+
+  showSyncBadge(ok);
 }
 
 async function loadEntriesByEmail(username, email) {
-  // 1. Try email-keyed cloud storage first (most authoritative — cross-device)
+  // 1. Firebase (most authoritative — any device)
+  if(isFirebaseReady()){
+    const path = email ? 'fwa/entries/'+fbKey(email) : 'fwa/entries_u/'+fbKey(username);
+    const val = await fbGet(path);
+    if(val){ showSyncBadge(true); return JSON.parse(val); }
+  }
+  // 2. window.storage (Claude.ai)
   if(email){
-    const ekey = emailKey(email,'entries');
     try {
-      const res = await window.storage.get(ekey);
-      if(res && res.value){ showSyncBadge(true); return JSON.parse(res.value); }
+      const res = await window.storage.get(emailKey(email,'entries'));
+      if(res && res.value) return JSON.parse(res.value);
     } catch(e){}
-    // 2. Try email-keyed localStorage
+  }
+  // 3. localStorage fallback
+  if(email){
     const local = localStorage.getItem(emailKey(email,'entries'));
     if(local) return JSON.parse(local);
   }
-  // 3. Fall back to username-keyed cloud
-  try {
-    const res = await window.storage.get('fwa_entries_'+username);
-    if(res && res.value) return JSON.parse(res.value);
-  } catch(e){}
-  // 4. Final fallback: username-keyed localStorage
   return JSON.parse(localStorage.getItem('fwa_entries_'+username)||'[]');
 }
-
-// Keep old loadEntries as alias for backward compat
 async function loadEntries(username){ return loadEntriesByEmail(username, null); }
 
 async function saveTeamDataCloud() {
   localStorage.setItem('fwa_team_data', JSON.stringify(teamData));
-  try { await window.storage.set('fwa_team_data', JSON.stringify(teamData)); } catch(e) {}
+  await fbSet('fwa/team_data', JSON.stringify(teamData));
+  try { await window.storage.set('fwa_team_data', JSON.stringify(teamData)); } catch(e){}
 }
 
 async function loadTeamDataCloud() {
+  // 1. Firebase
+  if(isFirebaseReady()){
+    const val = await fbGet('fwa/team_data');
+    if(val){ teamData = JSON.parse(val); return; }
+  }
+  // 2. window.storage
   try {
     const res = await window.storage.get('fwa_team_data');
-    if (res && res.value) { teamData = JSON.parse(res.value); return; }
-  } catch(e) {}
+    if(res && res.value){ teamData = JSON.parse(res.value); return; }
+  } catch(e){}
+  // 3. localStorage
   teamData = JSON.parse(localStorage.getItem('fwa_team_data') || '{}');
 }
 
@@ -1418,16 +1473,23 @@ let reactions = {};
 let _emojiTargetId = null;
 
 async function loadReactions(){
+  // 1. Firebase
+  if(isFirebaseReady()){
+    const val = await fbGet('fwa/reactions');
+    if(val){ reactions = JSON.parse(val); return; }
+  }
+  // 2. window.storage
   try {
     const res = await window.storage.get('fwa_reactions');
-    if(res && res.value) reactions = JSON.parse(res.value);
-  } catch(e){
-    reactions = JSON.parse(localStorage.getItem('fwa_reactions')||'{}');
-  }
+    if(res && res.value){ reactions = JSON.parse(res.value); return; }
+  } catch(e){}
+  // 3. localStorage
+  reactions = JSON.parse(localStorage.getItem('fwa_reactions')||'{}');
 }
 async function saveReactions(){
   const json = JSON.stringify(reactions);
   localStorage.setItem('fwa_reactions', json);
+  await fbSet('fwa/reactions', json);
   try { await window.storage.set('fwa_reactions', json); } catch(e){}
 }
 
@@ -1822,10 +1884,6 @@ function applyConfig() {
   const appSub   = document.getElementById('appOrgSub');
   if (loginSub) loginSub.textContent = APP_CONFIG.org;
   if (appSub)   appSub.textContent   = APP_CONFIG.org;
-  const an = document.getElementById('sigApprovedName');
-  const ar = document.getElementById('sigApprovedRole');
-  if (an) an.textContent = APP_CONFIG.approverName;
-  if (ar) ar.textContent = APP_CONFIG.approverRole;
   // activeTeam init
   if (!activeTeam || !TEAMS.includes(activeTeam)) activeTeam = TEAMS[0];
 }
