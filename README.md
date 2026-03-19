@@ -297,7 +297,6 @@
     <div id="lpane-register" style="display:none;">
       <div class="lfield"><label>Full name</label><input type="text" id="regName" placeholder="e.g. Bea Valencia" /></div>
       <div class="lfield"><label>Email address <span style="color:#c0392b;">*</span></label><input type="text" id="regEmail" placeholder="e.g. bea@email.com" autocomplete="email" /></div>
-      <div style="font-size:11px;color:var(--text-muted);margin:-8px 0 10px;line-height:1.5;">Your email is used to sync and restore your data across devices and to send you a copy of your credentials.</div>
       <div class="lfield"><label>Username</label><input type="text" id="regUser" placeholder="Choose a username" /></div>
       <div class="lfield"><label>Password</label><input type="password" id="regPass" placeholder="Choose a password (min 4 chars)" /></div>
       <div class="lfield"><label>Confirm password</label><input type="password" id="regPass2" placeholder="Repeat password" onkeydown="if(event.key==='Enter')doRegister()" /></div>
@@ -782,7 +781,23 @@
 <script>
 // ── AUTH ──────────────────────────────────
 function getUsers(){return JSON.parse(localStorage.getItem('fwa_users')||'{}');}
-function saveUsers(u){localStorage.setItem('fwa_users',JSON.stringify(u));}
+function saveUsers(u){
+  localStorage.setItem('fwa_users',JSON.stringify(u));
+  // Also push to cloud so other devices can log in
+  try { window.storage.set('fwa_users', JSON.stringify(u)); } catch(e){}
+}
+async function loadUsersFromCloud(){
+  try {
+    const res = await window.storage.get('fwa_users');
+    if(res && res.value){
+      const cloud = JSON.parse(res.value);
+      // Merge cloud into localStorage — cloud wins for any key
+      const local = getUsers();
+      const merged = Object.assign({}, local, cloud);
+      localStorage.setItem('fwa_users', JSON.stringify(merged));
+    }
+  } catch(e){}
+}
 function getCurrentUser(){return localStorage.getItem('fwa_current_user')||null;}
 function setCurrentUser(u){localStorage.setItem('fwa_current_user',u);}
 
@@ -853,6 +868,8 @@ async function doLogin(){
   const pass=document.getElementById('loginPass').value;
   const msg=document.getElementById('loginMsg');
   if(!user||!pass){msg.className='lmsg err';msg.textContent='Please fill in all fields.';return;}
+  msg.className='lmsg ok';msg.textContent='Checking credentials…';
+  await loadUsersFromCloud(); // pull latest accounts from cloud before checking
   const users=getUsers();
   if(!users[user]){msg.className='lmsg err';msg.textContent='Username not found.';return;}
   if(users[user].password!==btoa(pass)){msg.className='lmsg err';msg.textContent='Incorrect password.';return;}
@@ -929,7 +946,8 @@ async function doForgotPassword(){
   const msg = document.getElementById('forgotMsg');
   if(!email){ msg.className='lmsg err'; msg.textContent='Please enter your email address.'; return; }
   if(!isValidEmail(email)){ msg.className='lmsg err'; msg.textContent='Please enter a valid email address.'; return; }
-
+  msg.className='lmsg ok'; msg.textContent='Looking up account…';
+  await loadUsersFromCloud(); // ensure we have the latest accounts
   const users = getUsers();
   const username = Object.keys(users).find(u => users[u].email === email);
   if(!username){
@@ -939,40 +957,37 @@ async function doForgotPassword(){
     return;
   }
 
-  msg.className='lmsg ok'; msg.textContent='Sending reset email…';
+  msg.className='lmsg ok'; msg.textContent='Generating temporary password…';
 
   // Generate a new temporary password
   const tempPass = genTempPassword();
   users[username].password = btoa(tempPass);
   saveUsers(users);
 
+  // Always show credentials in modal — reliable regardless of email config
+  showModal(
+    '🔑 Password Reset',
+    'Your temporary credentials are ready. Screenshot or copy them before closing.',
+    `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;font-size:13px;line-height:2;">
+      <div><span style="color:var(--text-muted);width:110px;display:inline-block;">Username</span> <strong>${escHtmlEntry(username)}</strong></div>
+      <div><span style="color:var(--text-muted);width:110px;display:inline-block;">Temp password</span> <strong style="font-family:monospace;font-size:14px;color:var(--accent);">${escHtmlEntry(tempPass)}</strong></div>
+    </div>
+    <div style="font-size:11px;color:var(--text-faint);margin-top:10px;">⚠ Sign in immediately and change your password in My Profile.</div>`,
+    `<button class="btn btn-primary" onclick="closeModal()">Got it, I've saved them</button>`
+  );
+
+  msg.className='lmsg ok'; msg.textContent='Temporary password ready. Check the popup.';
+
+  // Also attempt to send via EmailJS if configured
   const result = await sendEmail({
     toEmail: email,
     toName: users[username].name||username,
     subject: 'FWA Tracker — Password Reset',
     username: username,
     password: tempPass,
-    message: `Hi ${users[username].name||username},\n\nA password reset was requested for your FWA Tracker account.\n\nUsername: ${username}\nTemporary password: ${tempPass}\n\nPlease sign in with this temporary password and change it as soon as possible.\n\nIf you did not request this reset, please contact your admin.\n\nOVPDx FWA Tracker`
+    message: `Hi ${users[username].name||username},\n\nA password reset was requested for your FWA Tracker account.\n\nUsername: ${username}\nTemporary password: ${tempPass}\n\nPlease sign in with this temporary password and change it immediately in My Profile.\n\nFWA Tracker`
   });
-
-  if(result.ok){
-    msg.className='lmsg ok';
-    msg.textContent='Reset email sent! Check your inbox.';
-  } else if(result.reason==='not_configured'){
-    // EmailJS not set up — show temp password in a modal as fallback
-    showModal(
-      'Password Reset',
-      'EmailJS is not configured, so the email could not be sent. Share this temporary password securely:',
-      `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 14px;font-size:13px;margin-bottom:4px;">
-        <div style="margin-bottom:6px;"><strong>Username:</strong> ${username}</div>
-        <div><strong>Temporary password:</strong> <span style="font-family:monospace;font-size:14px;color:var(--accent);">${tempPass}</span></div>
-       </div>
-       <div style="font-size:11px;color:var(--text-muted);margin-top:8px;">To enable email sending, configure EmailJS credentials in the source code.</div>`
-    );
-    msg.className='lmsg ok'; msg.textContent='Temporary password set. See the popup for credentials.';
-  } else {
-    msg.className='lmsg err'; msg.textContent='Could not send email. Check EmailJS configuration.';
-  }
+  if(result.ok) msg.textContent='Temporary password ready — also sent to your email.';
 }
 
 async function launchApp(username, fullname, email){
@@ -999,6 +1014,7 @@ async function launchApp(username, fullname, email){
 }
 
 window.addEventListener('DOMContentLoaded',async ()=>{
+  await loadUsersFromCloud(); // sync accounts from cloud first
   const u=getCurrentUser();
   if(u){const users=getUsers();if(users[u]){await launchApp(u,users[u].name,users[u].email);return;}}
   document.getElementById('loginScreen').style.display='flex';
