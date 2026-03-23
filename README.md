@@ -251,6 +251,13 @@
     .submit-btn:hover{background:#3949ab;color:#fff;}
     .review-btn{font-family:'DM Sans',sans-serif;font-size:10px;font-weight:600;padding:3px 9px;border-radius:99px;border:1px solid #15803d;background:#dcfce7;color:#15803d;cursor:pointer;white-space:nowrap;transition:all .15s;}
     .review-btn:hover{background:#15803d;color:#fff;}
+    /* STAFF INBOX */
+    .notif-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow);transition:border-color .15s;animation:fadeIn .2s ease;}
+    .notif-card.unread{border-left:3px solid #c0392b;background:#fff9f9;}
+    .notif-card.approved{border-left:3px solid #15803d;background:#f0fdf4;}
+    .notif-card.reverted{border-left:3px solid #f59e0b;background:#fffbeb;}
+    .notif-dot{width:8px;height:8px;border-radius:50%;background:#c0392b;display:inline-block;flex-shrink:0;margin-top:4px;}
+    .staff-inbox-badge{display:none;background:#c0392b;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;margin-left:4px;}
     /* ACKNOWLEDGEMENTS / REACTIONS */
     .react-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
     .react-btn{font-family:'DM Sans',sans-serif;font-size:12px;padding:3px 9px;border-radius:99px;border:1px solid var(--border);background:var(--surface);cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all .15s;color:var(--text-muted);}
@@ -353,7 +360,10 @@
         <button class="hnav-btn" onclick="showPage('export')" id="hnav-export">PDF</button>
         <button class="hnav-btn" onclick="showPage('teamexport')" id="hnav-teamexport">Sheets</button>
         <button class="hnav-btn" onclick="showPage('review')" id="hnav-review" style="display:none;position:relative;">
-          📋 Review Inbox <span id="reviewBadge" style="display:none;background:#c0392b;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;margin-left:4px;">0</span>
+          📋 Review Inbox <span id="reviewBadge" class="staff-inbox-badge">0</span>
+        </button>
+        <button class="hnav-btn" onclick="showPage('staffinbox')" id="hnav-staffinbox" style="display:none;">
+          🔔 Inbox <span id="staffInboxBadge" class="staff-inbox-badge">0</span>
         </button>
       </div>
       <div class="user-pill">
@@ -415,6 +425,11 @@
       </div>
       <div class="sidebar-section">
         <div class="sidebar-label">Account</div>
+        <div class="sidebar-item" onclick="showPage('staffinbox')" id="nav-staffinbox" style="display:none;">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          Notifications
+          <span id="staffInboxBadgeSide" class="staff-inbox-badge" style="margin-left:auto;">0</span>
+        </div>
         <div class="sidebar-item" onclick="showPage('profile')" id="nav-profile">
           <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           My Profile
@@ -692,6 +707,22 @@
         <div id="teamTableArea"></div>
       </div>
 
+      <!-- STAFF INBOX PAGE -->
+      <div class="page" id="page-staffinbox">
+        <div class="page-header">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+            <div>
+              <div class="page-title">🔔 My Notifications</div>
+              <div class="page-desc">Updates from your manager on submitted WARs and team deliverables.</div>
+            </div>
+            <button class="btn" onclick="markAllNotificationsRead()" style="flex-shrink:0;margin-top:6px;font-size:12px;">
+              ✓ Mark all as read
+            </button>
+          </div>
+        </div>
+        <div id="staffInboxArea"><div class="empty-state" style="padding:3rem 0;">No notifications yet.</div></div>
+      </div>
+
       <!-- REVIEW INBOX PAGE (managers only) -->
       <div class="page" id="page-review">
         <div class="page-header">
@@ -906,34 +937,6 @@
   </div>
 </div>
 
-<!-- Approval / Review Modal (legacy, kept for compatibility) -->
-<div class="modal-overlay" id="approvalModal" style="display:none!important;"></div>
-  <div class="modal-box" style="max-width:480px;">
-    <div class="modal-title" id="approvalModalTitle">Review Deliverable</div>
-    <div class="modal-desc" id="approvalModalDesc"></div>
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:12px;line-height:1.7;margin-bottom:4px;" id="approvalModalDetail"></div>
-    <div style="margin-top:12px;">
-      <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">Manager decision</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn btn-primary" id="approvalApproveBtn" onclick="doApproveRow()" style="background:#15803d;border-color:#15803d;">
-          <svg style="width:13px;height:13px;stroke:#fff;fill:none;stroke-width:2.5;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-          Approve
-        </button>
-        <button class="btn" id="approvalRemarkBtn" onclick="toggleApprovalRemarks()" style="border-color:#bf360c;color:#bf360c;">
-          ↩ Approve with Remarks (Revert)
-        </button>
-      </div>
-      <div class="approval-remarks-area" id="approvalRemarksArea">
-        <label style="font-size:11px;font-weight:500;color:var(--text-muted);display:block;margin-bottom:5px;">Remarks for submitter</label>
-        <textarea id="approvalRemarksText" placeholder="Explain what needs to be revised or clarified..."></textarea>
-        <button class="btn" onclick="doRevertRow()" style="margin-top:8px;border-color:#bf360c;color:#bf360c;width:100%;justify-content:center;">Send back to submitter</button>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn" onclick="closeApprovalModal()">Cancel</button>
-    </div>
-  </div>
-</div>
 
 <!-- Undo Toast -->
 <div class="undo-toast" id="undoToast">
@@ -1202,7 +1205,10 @@ function doLogout(){
   document.getElementById('loginScreen').style.display='flex';
   ['loginUser','loginPass'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('loginMsg').textContent='';
-  entries=[];pendingImages=[];
+  entries=[];pendingImages=[];notifications={};
+  // Remove manager welcome card if present
+  const card = document.getElementById('managerWelcomeCard');
+  if (card) card.remove();
 }
 
 async function doForgotPassword(){
@@ -1250,10 +1256,12 @@ async function launchApp(username, fullname, email){
     loadTeamDataCloud(),
     loadTeamSubmissions(),
     loadWarSubmissions(),
+    loadNotificationsForUser(username),
     loadReactions()
   ]);
   entries = loadedEntries;
   updateReviewBadge();
+  updateStaffInboxBadge();
 
   const users=getUsers();
   if(users[username]&&users[username].name){
@@ -2251,6 +2259,18 @@ async function doApproveTeam() {
   const now=new Date().toLocaleString('en-PH',{timeZone:'Asia/Manila',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
   if(!teamSubmissions[period]) teamSubmissions[period]={};
   teamSubmissions[period][team]={...teamSubmissions[period][team],status:'approved',approvedBy:mName,approvedAt:now,remarks:null};
+  // Notify the person who submitted (submittedBy username) and all team members
+  const sub = teamSubmissions[period][team];
+  const toNotify = new Set();
+  if (sub?.submittedBy) toNotify.add(sub.submittedBy);
+  // Also notify all registered users who are in this team
+  Object.entries(users).forEach(([uname, ud]) => {
+    const members = TEAM_MEMBERS[team] || [];
+    if (members.some(m => m.toLowerCase().includes((ud.name||'').split(' ')[0].toLowerCase()))) toNotify.add(uname);
+  });
+  for (const recipient of toNotify) {
+    await createNotification(recipient, { type:'team_approved', period, team, from:mName, fromPosition:getManagerInfo(mName)?.position||'Manager', at:now });
+  }
   closeTeamReviewModal();
   await saveTeamSubmissions(); updateReviewBadge(); renderTeamTables(); renderReviewInbox(); showSyncBadge(true);
 }
@@ -2263,6 +2283,17 @@ async function doRevertTeam() {
   const now=new Date().toLocaleString('en-PH',{timeZone:'Asia/Manila',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
   if(!teamSubmissions[period]) teamSubmissions[period]={};
   teamSubmissions[period][team]={...teamSubmissions[period][team],status:'reverted',approvedBy:mName,approvedAt:now,remarks};
+  // Notify submitter and team members
+  const sub = teamSubmissions[period][team];
+  const toNotify = new Set();
+  if (sub?.submittedBy) toNotify.add(sub.submittedBy);
+  Object.entries(users).forEach(([uname, ud]) => {
+    const members = TEAM_MEMBERS[team] || [];
+    if (members.some(m => m.toLowerCase().includes((ud.name||'').split(' ')[0].toLowerCase()))) toNotify.add(uname);
+  });
+  for (const recipient of toNotify) {
+    await createNotification(recipient, { type:'team_reverted', period, team, from:mName, fromPosition:getManagerInfo(mName)?.position||'Manager', remarks, at:now });
+  }
   closeTeamReviewModal();
   await saveTeamSubmissions(); updateReviewBadge(); renderTeamTables(); renderReviewInbox(); showSyncBadge(true);
 }
@@ -2299,6 +2330,12 @@ async function doApproveWAR(){
   const now=new Date().toLocaleString('en-PH',{timeZone:'Asia/Manila',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
   if(!warSubmissions[period]) warSubmissions[period]={};
   warSubmissions[period][username]={...warSubmissions[period][username],status:'approved',approvedBy:mName,approvedAt:now,remarks:null};
+  // Notify staff member
+  await createNotification(username, {
+    type: 'war_approved', period, from: mName,
+    fromPosition: getManagerInfo(mName)?.position||'Manager',
+    remarks: null, at: now
+  });
   closeWARReviewModal();
   await saveWarSubmissions(); updateReviewBadge(); renderReviewInbox(); showSyncBadge(true);
 }
@@ -2311,8 +2348,165 @@ async function doRevertWAR(){
   const now=new Date().toLocaleString('en-PH',{timeZone:'Asia/Manila',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
   if(!warSubmissions[period]) warSubmissions[period]={};
   warSubmissions[period][username]={...warSubmissions[period][username],status:'reverted',approvedBy:mName,approvedAt:now,remarks};
+  // Create notification for the staff member
+  await createNotification(username, {
+    type: 'war_reverted', period, from: mName,
+    fromPosition: getManagerInfo(mName)?.position||'Manager',
+    remarks, at: now
+  });
   closeWARReviewModal();
   await saveWarSubmissions(); updateReviewBadge(); renderReviewInbox(); showSyncBadge(true);
+}
+
+// ── STAFF NOTIFICATIONS ───────────────────
+// notifications: { username: [ { id, type, period, from, fromPosition, remarks, at, read, team? } ] }
+let notifications = {};
+
+function notifKey(username) { return 'fwa_notifs__' + username; }
+
+async function saveNotificationsForUser(username) {
+  const data = notifications[username] || [];
+  const key  = notifKey(username);
+  localStorage.setItem(key, JSON.stringify(data));
+  // Shared so manager writes are visible to the staff member on their next login
+  try { await window.storage.set(key, JSON.stringify(data), true); } catch(e){}
+  await dbSet(key, data);
+}
+
+async function loadNotificationsForUser(username) {
+  const key = notifKey(username);
+  // 1. GAS (authoritative)
+  if (isGASReady()) {
+    const v = await dbGet(key, null);
+    if (Array.isArray(v)) {
+      notifications[username] = v;
+      localStorage.setItem(key, JSON.stringify(v));
+      try { await window.storage.set(key, JSON.stringify(v), true); } catch(e){}
+      return;
+    }
+  }
+  // 2. window.storage shared
+  try {
+    const r = await window.storage.get(key, true);
+    if (r && r.value) { notifications[username] = JSON.parse(r.value); return; }
+  } catch(e){}
+  // 3. localStorage
+  const raw = localStorage.getItem(key);
+  notifications[username] = raw ? JSON.parse(raw) : [];
+}
+
+async function createNotification(username, data) {
+  if (!notifications[username]) notifications[username] = [];
+  notifications[username].unshift({
+    id: Date.now(),
+    read: false,
+    ...data
+  });
+  await saveNotificationsForUser(username);
+}
+
+function getMyNotifications() {
+  const u = getCurrentUser();
+  return (notifications[u] || []);
+}
+
+function getUnreadCount() {
+  return getMyNotifications().filter(n => !n.read).length;
+}
+
+function updateStaffInboxBadge() {
+  const u = getCurrentUser();
+  if (!u) return;
+  // Staff inbox is shown to everyone (managers too — they can still receive notifications)
+  const nav  = document.getElementById('nav-staffinbox');
+  const hnav = document.getElementById('hnav-staffinbox');
+  const b1   = document.getElementById('staffInboxBadge');
+  const b2   = document.getElementById('staffInboxBadgeSide');
+  if (nav)  nav.style.display  = '';
+  if (hnav) hnav.style.display = '';
+  const count = getUnreadCount();
+  if (b1) { b1.style.display = count>0?'':'none'; b1.textContent = count; }
+  if (b2) { b2.style.display = count>0?'':'none'; b2.textContent = count; }
+}
+
+async function markAllNotificationsRead() {
+  const u = getCurrentUser();
+  if (!u || !notifications[u]) return;
+  notifications[u].forEach(n => { n.read = true; });
+  await saveNotificationsForUser(u);
+  updateStaffInboxBadge();
+  renderStaffInbox();
+}
+
+async function markNotificationRead(id) {
+  const u = getCurrentUser();
+  if (!u || !notifications[u]) return;
+  const notif = notifications[u].find(n => n.id === id);
+  if (notif) { notif.read = true; await saveNotificationsForUser(u); }
+  updateStaffInboxBadge();
+  renderStaffInbox();
+}
+
+function renderStaffInbox() {
+  const el = document.getElementById('staffInboxArea');
+  if (!el) return;
+  const items = getMyNotifications();
+  if (!items.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:3rem 0;">No notifications yet. You\'ll be notified here when a manager approves or returns your submissions.</div>';
+    return;
+  }
+
+  const html = items.map(n => {
+    const isUnread = !n.read;
+    let icon, titleText, bodyText, cardClass, actionBtn = '';
+
+    if (n.type === 'war_reverted') {
+      icon = '↩';
+      cardClass = 'reverted' + (isUnread ? ' unread' : '');
+      titleText = `WAR Returned — Period: ${escHtml(n.period||'')}`;
+      bodyText  = `<strong>${escHtml(n.from)}</strong> (${escHtml(n.fromPosition||'Manager')}) returned your Work Accomplishment Report with remarks:`;
+      actionBtn = `<button class="submit-btn" onclick="showPage('export')" style="margin-top:6px;">Go to Export → Resubmit</button>`;
+    } else if (n.type === 'war_approved') {
+      icon = '✅';
+      cardClass = 'approved' + (isUnread ? ' unread' : '');
+      titleText = `WAR Approved — Period: ${escHtml(n.period||'')}`;
+      bodyText  = `Your Work Accomplishment Report was approved by <strong>${escHtml(n.from)}</strong> (${escHtml(n.fromPosition||'Manager')}).`;
+    } else if (n.type === 'team_reverted') {
+      icon = '↩';
+      cardClass = 'reverted' + (isUnread ? ' unread' : '');
+      titleText = `Team Deliverables Returned — ${escHtml(n.team||'')} · ${escHtml(n.period||'')}`;
+      bodyText  = `<strong>${escHtml(n.from)}</strong> (${escHtml(n.fromPosition||'Manager')}) returned your team deliverables with remarks:`;
+      actionBtn = `<button class="submit-btn" onclick="showPage('team')" style="margin-top:6px;">Go to Team Deliverables → Resubmit</button>`;
+    } else if (n.type === 'team_approved') {
+      icon = '✅';
+      cardClass = 'approved' + (isUnread ? ' unread' : '');
+      titleText = `Team Deliverables Approved — ${escHtml(n.team||'')} · ${escHtml(n.period||'')}`;
+      bodyText  = `Your team deliverables were approved by <strong>${escHtml(n.from)}</strong> (${escHtml(n.fromPosition||'Manager')}).`;
+    } else {
+      icon = '🔔'; cardClass = isUnread ? 'unread' : '';
+      titleText = 'Notification'; bodyText = '';
+    }
+
+    return `<div class="notif-card ${cardClass}" id="notifcard-${n.id}">
+      <div style="display:flex;align-items:flex-start;gap:10px;">
+        ${isUnread ? '<div class="notif-dot" style="margin-top:6px;flex-shrink:0;"></div>' : '<div style="width:8px;flex-shrink:0;"></div>'}
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+            <div style="font-size:13px;font-weight:600;color:var(--text);">${icon} ${titleText}</div>
+            <div style="font-size:11px;color:var(--text-faint);flex-shrink:0;">${escHtml(n.at||'')}</div>
+          </div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px;line-height:1.6;">${bodyText}</div>
+          ${n.remarks ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:8px 10px;margin-top:8px;font-size:12px;color:#92400e;line-height:1.6;">"${escHtml(n.remarks)}"</div>` : ''}
+          <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;">
+            ${actionBtn}
+            ${isUnread ? `<button onclick="markNotificationRead(${n.id})" style="background:none;border:none;font-size:11px;color:var(--text-faint);cursor:pointer;padding:0;text-decoration:underline;">Mark as read</button>` : ''}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = html;
 }
 
 // ── REVIEW INBOX RENDER ───────────────────
@@ -2422,9 +2616,7 @@ const MANAGERS = [
   { name: 'Liza Soberano',           position: 'Junior Office Manager'  }
 ];
 
-// ── APPROVAL STATE ────────────────────────
-let _approvalTarget = null; // { rowId, rowRef }
-
+// ── MANAGER HELPERS ───────────────────────
 function isManager() {
   const u = getCurrentUser();
   const users = getUsers();
@@ -2435,120 +2627,6 @@ function isManager() {
 
 function getManagerInfo(name) {
   return MANAGERS.find(m => m.name === name) || null;
-}
-
-function openApprovalModal(rowId) {
-  const period = getTPeriod();
-  let rowRef = null;
-  for (const t of Object.keys(teamData[period]||{})) {
-    const found = (teamData[period][t]||[]).find(r=>r.id===rowId);
-    if (found) { rowRef = found; break; }
-  }
-  if (!rowRef) return;
-  _approvalTarget = { rowId, rowRef };
-
-  const u = getCurrentUser();
-  const users = getUsers();
-  const managerName = users[u]?.name || u;
-  const mgr = getManagerInfo(managerName);
-
-  document.getElementById('approvalModalTitle').textContent = `Review: ${rowRef.person}'s Deliverable`;
-  document.getElementById('approvalModalDesc').textContent = `You are reviewing as ${managerName}${mgr?' · '+mgr.position:''}`;
-  document.getElementById('approvalModalDetail').innerHTML =
-    `<div style="margin-bottom:4px;"><span style="color:var(--text-muted);font-size:10px;text-transform:uppercase;letter-spacing:.05em;">Deliverable</span><br><strong>${escHtml(rowRef.deliverable)}</strong></div>` +
-    (rowRef.project ? `<div style="margin-top:6px;"><span style="color:var(--text-muted);font-size:10px;text-transform:uppercase;letter-spacing:.05em;">Project</span><br>${escHtml(rowRef.project)}</div>` : '') +
-    (rowRef.approvalRemarks ? `<div style="margin-top:8px;padding:8px 10px;background:#fff3e0;border-radius:6px;border:1px solid #f0c040;font-size:12px;color:#bf360c;"><strong>Previous remarks:</strong> ${escHtml(rowRef.approvalRemarks)}</div>` : '');
-
-  // Reset remarks area
-  document.getElementById('approvalRemarksArea').style.display = 'none';
-  document.getElementById('approvalRemarksText').value = '';
-
-  document.getElementById('approvalModal').classList.add('open');
-}
-
-function closeApprovalModal() {
-  document.getElementById('approvalModal').classList.remove('open');
-  _approvalTarget = null;
-}
-
-function toggleApprovalRemarks() {
-  const area = document.getElementById('approvalRemarksArea');
-  area.style.display = area.style.display === 'none' ? 'block' : 'none';
-  if (area.style.display === 'block') document.getElementById('approvalRemarksText').focus();
-}
-
-async function doApproveRow() {
-  if (!_approvalTarget) return;
-  const { rowId } = _approvalTarget;
-  const u = getCurrentUser();
-  const users = getUsers();
-  const managerName = users[u]?.name || u;
-  const now = new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila', month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' });
-  const period = getTPeriod();
-  for (const t of Object.keys(teamData[period]||{})) {
-    const row = (teamData[period][t]||[]).find(r=>r.id===rowId);
-    if (row) {
-      row.submissionStatus = 'approved';
-      row.approvalStatus   = 'approved';
-      row.approvedBy       = managerName;
-      row.approvedAt       = now;
-      row.approvalRemarks  = null;
-      break;
-    }
-  }
-  closeApprovalModal();
-  await saveTeamDataCloud();
-  showSyncBadge(true);
-  renderTeamTables();
-}
-
-async function doRevertRow() {
-  if (!_approvalTarget) return;
-  const { rowId } = _approvalTarget;
-  const remarks = document.getElementById('approvalRemarksText').value.trim();
-  if (!remarks) { document.getElementById('approvalRemarksText').focus(); document.getElementById('approvalRemarksText').style.borderColor='#c0392b'; return; }
-  const u = getCurrentUser();
-  const users = getUsers();
-  const managerName = users[u]?.name || u;
-  const now = new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila', month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' });
-  const period = getTPeriod();
-  for (const t of Object.keys(teamData[period]||{})) {
-    const row = (teamData[period][t]||[]).find(r=>r.id===rowId);
-    if (row) {
-      row.submissionStatus = 'reverted';
-      row.approvalStatus   = 'reverted';
-      row.approvedBy       = managerName;
-      row.approvedAt       = now;
-      row.approvalRemarks  = remarks;
-      break;
-    }
-  }
-  closeApprovalModal();
-  await saveTeamDataCloud();
-  showSyncBadge(true);
-  renderTeamTables();
-}
-
-async function submitRowToManager(rowId) {
-  const period = getTPeriod();
-  const u = getCurrentUser();
-  const now = new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila', month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' });
-  for (const t of Object.keys(teamData[period]||{})) {
-    const row = (teamData[period][t]||[]).find(r=>r.id===rowId);
-    if (row) {
-      row.submissionStatus = 'submitted';
-      row.submittedBy      = u;
-      row.submittedAt      = now;
-      row.approvalStatus   = null;
-      row.approvedBy       = null;
-      row.approvedAt       = null;
-      row.approvalRemarks  = null;
-      break;
-    }
-  }
-  await saveTeamDataCloud();
-  showSyncBadge(true);
-  renderTeamTables();
 }
 
 function loadAppConfig() { applyConfig(); }
@@ -2873,51 +2951,6 @@ async function confirmMovEdit(rowId) {
   renderTeamTables();
 }
 
-function approvalCellHTML(row) {
-  const ss = row.submissionStatus || 'draft';
-  const as = row.approvalStatus;
-
-  // ── APPROVED ──────────────────────────
-  if (as === 'approved') {
-    const mgr = getManagerInfo(row.approvedBy) || {};
-    return `<div style="display:flex;flex-direction:column;gap:4px;">
-      <span class="badge badge-approved" style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;display:inline-block;">✅ Approved</span>
-      <div class="esig-box" style="flex-direction:column;align-items:flex-start;gap:3px;padding:6px 10px;">
-        <img src="${SAMPLE_SIG_IMG}" alt="e-signature" style="height:32px;max-width:110px;object-fit:contain;filter:contrast(1.2);opacity:.92;display:block;" />
-        <div style="border-top:1px solid #86efac;padding-top:3px;width:100%;">
-          <div class="esig-italic">${escHtml(row.approvedBy)}</div>
-          <div style="font-size:10px;color:#15803d;font-weight:400;">${escHtml(mgr.position||'Manager')} · ${escHtml(row.approvedAt||'')}</div>
-        </div>
-      </div>
-    </div>`;
-  }
-
-  // ── REVERTED ──────────────────────────
-  if (as === 'reverted') {
-    return `<div style="display:flex;flex-direction:column;gap:4px;">
-      <span class="badge badge-reverted" style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;display:inline-block;">↩ Needs revision</span>
-      ${row.approvalRemarks ? `<div style="font-size:11px;color:#bf360c;background:#fff3e0;border-radius:5px;padding:5px 8px;border:1px solid #f0c040;line-height:1.5;">"${escHtml(row.approvalRemarks)}"<br><span style="font-size:10px;color:var(--text-faint);">— ${escHtml(row.approvedBy||'')}</span></div>` : ''}
-      <button class="submit-btn" onclick="submitRowToManager(${row.id})" style="margin-top:2px;">Resubmit</button>
-    </div>`;
-  }
-
-  // ── SUBMITTED (awaiting review) ────────
-  if (ss === 'submitted') {
-    const isMgr = isManager();
-    return `<div style="display:flex;flex-direction:column;gap:5px;">
-      <span class="badge badge-submitted" style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;display:inline-block;">📤 Submitted</span>
-      <div style="font-size:10px;color:var(--text-faint);">Awaiting manager review</div>
-      ${isMgr ? `<button class="review-btn" onclick="openApprovalModal(${row.id})">Review →</button>` : ''}
-    </div>`;
-  }
-
-  // ── DRAFT ─────────────────────────────
-  return `<div style="display:flex;flex-direction:column;gap:4px;">
-    <span style="font-size:10px;color:var(--text-faint);">Draft</span>
-    <button class="submit-btn" onclick="submitRowToManager(${row.id})">Submit to manager</button>
-  </div>`;
-}
-
 function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 // Build TSV — person names as column headers side by side (matching screenshot layout)
@@ -3129,6 +3162,12 @@ async function showPage(page){
     await loadTeamSubmissions();
     renderTeamTabs(); updatePersonDropdown(); renderTeamTables();
     stampTeamSync();
+  }
+  if(page==='staffinbox'){
+    const u = getCurrentUser();
+    if (u) await loadNotificationsForUser(u);
+    updateStaffInboxBadge();
+    renderStaffInbox();
   }
   if(page==='review'){
     await loadTeamSubmissions();
