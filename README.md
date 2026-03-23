@@ -352,10 +352,14 @@
         <button class="hnav-btn" onclick="showPage('team')" id="hnav-team">Team</button>
         <button class="hnav-btn" onclick="showPage('export')" id="hnav-export">PDF</button>
         <button class="hnav-btn" onclick="showPage('teamexport')" id="hnav-teamexport">Sheets</button>
+        <button class="hnav-btn" onclick="showPage('review')" id="hnav-review" style="display:none;position:relative;">
+          📋 Review Inbox <span id="reviewBadge" style="display:none;background:#c0392b;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;margin-left:4px;">0</span>
+        </button>
       </div>
       <div class="user-pill">
         <div class="user-avatar" id="userAvatar">?</div>
         <span id="userLabel" class="user-label-text">—</span>
+        <span id="managerRoleBadge" style="display:none;background:#3949ab;color:#fff;font-size:9px;font-weight:700;padding:1px 7px;border-radius:99px;letter-spacing:.03em;white-space:nowrap;">MANAGER</span>
       </div>
       <span id="syncBadge" style="font-size:11px;transition:opacity .5s;opacity:0;"></span>
       <button class="logout-btn" onclick="doLogout()">Sign out</button>
@@ -381,6 +385,14 @@
         <div class="sidebar-item" onclick="showPage('view')" id="nav-view">
           <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
           All entries
+        </div>
+      </div>
+      <div class="sidebar-section" id="sidebar-review-section" style="display:none;">
+        <div class="sidebar-label">Manager</div>
+        <div class="sidebar-item" onclick="showPage('review')" id="nav-review">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          Review Inbox
+          <span id="reviewBadgeSide" style="display:none;background:#c0392b;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;margin-left:auto;">0</span>
         </div>
       </div>
       <div class="sidebar-section">
@@ -531,6 +543,7 @@
                 <option>Kristofferson Dela Cruz</option>
                 <option>Regine C. Pustadan</option>
                 <option>Marisha D. Beloro</option>
+                <option>Liza Soberano</option>
               </select>
             </div>
             <div class="field"><label>Reviewed by (position)</label><input type="text" id="sigReviewedPos" placeholder="e.g. Project Development Officer" onchange="saveWarHeader()" /></div>
@@ -566,6 +579,28 @@
             <button class="btn btn-primary" onclick="exportPDF()">⬇ Download PDF</button>
             <button class="btn" onclick="buildPDFPreview()">Refresh preview</button>
           </div>
+        </div>
+        <div class="card" style="border-color:#a5b4fc;background:linear-gradient(135deg,#f8f9ff,#f0f0ff);">
+          <div class="card-title" style="color:#3949ab;">Submit WAR for Manager Review</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;line-height:1.7;">
+            Submit your Work Accomplishment Report for the selected period to your manager for review and approval. The manager will be notified and can approve or send it back with remarks.
+          </div>
+          <div id="warSubmitStatus" style="margin-bottom:12px;"></div>
+          <div class="form-grid full" style="margin-bottom:12px;">
+            <div class="field">
+              <label>Select manager to submit to</label>
+              <select id="warSubmitManager">
+                <option value="">Choose manager…</option>
+                <option value="Kristofferson Dela Cruz">Kristofferson Dela Cruz — Senior Office Manager</option>
+                <option value="Regine C. Pustadan">Regine C. Pustadan — Senior Project Manager</option>
+                <option value="Marisha D. Beloro">Marisha D. Beloro — Senior Project Manager</option>
+                <option value="Liza Soberano">Liza Soberano — Junior Office Manager</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn" id="warSubmitBtn" onclick="submitWARToManager()" style="background:#3949ab;color:#fff;border-color:#3949ab;">
+            📤 Submit WAR to Manager
+          </button>
         </div>
       </div>
 
@@ -655,6 +690,15 @@
 
         <!-- Summary per person -->
         <div id="teamTableArea"></div>
+      </div>
+
+      <!-- REVIEW INBOX PAGE (managers only) -->
+      <div class="page" id="page-review">
+        <div class="page-header">
+          <div class="page-title">Review Inbox</div>
+          <div class="page-desc">Pending WAR and team deliverable submissions awaiting your review and approval.</div>
+        </div>
+        <div id="reviewInboxArea"><div class="empty-state">Loading…</div></div>
       </div>
 
       <!-- TEAM EXPORT PAGE -->
@@ -752,7 +796,7 @@
         </div>
         <div class="card">
           <div class="card-title">Account info</div>
-          <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">Logged in as: <strong id="profileUsername"></strong></div>
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">Logged in as: <strong id="profileUsername"></strong> <span id="profileManagerTag" style="display:none;background:#3949ab;color:#fff;font-size:10px;font-weight:700;padding:1px 8px;border-radius:99px;margin-left:6px;">MANAGER</span></div>
           <div class="form-grid full" style="margin-bottom:12px;">
             <div class="field"><label>Display name</label><input type="text" id="profileName" placeholder="Your full name" /></div>
           </div>
@@ -804,8 +848,66 @@
   </div>
 </div>
 
-<!-- Approval / Review Modal -->
-<div class="modal-overlay" id="approvalModal">
+<!-- Team Review Modal (per-team, manager) -->
+<div class="modal-overlay" id="teamReviewModal">
+  <div class="modal-box" style="max-width:520px;">
+    <div class="modal-title" id="teamReviewTitle">Review Team Deliverables</div>
+    <div class="modal-desc" id="teamReviewDesc"></div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:12px;line-height:1.8;margin-bottom:12px;max-height:220px;overflow-y:auto;" id="teamReviewDetail"></div>
+    <div style="margin-top:12px;">
+      <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">Your decision</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="doApproveTeam()" style="background:#15803d;border-color:#15803d;">
+          <svg style="width:13px;height:13px;stroke:#fff;fill:none;stroke-width:2.5;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          Approve Team
+        </button>
+        <button class="btn" onclick="toggleTeamReviewRemarks()" style="border-color:#bf360c;color:#bf360c;">
+          ↩ Return with Remarks
+        </button>
+      </div>
+      <div class="approval-remarks-area" id="teamReviewRemarksArea">
+        <label style="font-size:11px;font-weight:500;color:var(--text-muted);display:block;margin-bottom:5px;margin-top:10px;">Remarks for the team</label>
+        <textarea id="teamReviewRemarksText" placeholder="Explain what needs to be revised or clarified..."></textarea>
+        <button class="btn" onclick="doRevertTeam()" style="margin-top:8px;border-color:#bf360c;color:#bf360c;width:100%;justify-content:center;">Send back to team</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeTeamReviewModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- WAR Review Modal (manager reviewing individual WAR) -->
+<div class="modal-overlay" id="warReviewModal">
+  <div class="modal-box" style="max-width:520px;">
+    <div class="modal-title" id="warReviewTitle">Review WAR Submission</div>
+    <div class="modal-desc" id="warReviewDesc"></div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:12px;line-height:1.8;margin-bottom:12px;max-height:200px;overflow-y:auto;" id="warReviewDetail"></div>
+    <div style="margin-top:12px;">
+      <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">Your decision</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="doApproveWAR()" style="background:#15803d;border-color:#15803d;">
+          <svg style="width:13px;height:13px;stroke:#fff;fill:none;stroke-width:2.5;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          Approve WAR
+        </button>
+        <button class="btn" onclick="toggleWARReviewRemarks()" style="border-color:#bf360c;color:#bf360c;">
+          ↩ Return with Remarks
+        </button>
+      </div>
+      <div class="approval-remarks-area" id="warReviewRemarksArea">
+        <label style="font-size:11px;font-weight:500;color:var(--text-muted);display:block;margin-bottom:5px;margin-top:10px;">Remarks for submitter</label>
+        <textarea id="warReviewRemarksText" placeholder="Explain what needs to be revised or clarified..."></textarea>
+        <button class="btn" onclick="doRevertWAR()" style="margin-top:8px;border-color:#bf360c;color:#bf360c;width:100%;justify-content:center;">Send back to submitter</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeWARReviewModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Approval / Review Modal (legacy, kept for compatibility) -->
+<div class="modal-overlay" id="approvalModal" style="display:none!important;"></div>
   <div class="modal-box" style="max-width:480px;">
     <div class="modal-title" id="approvalModalTitle">Review Deliverable</div>
     <div class="modal-desc" id="approvalModalDesc"></div>
@@ -1005,7 +1107,7 @@ function showModal(title, desc, bodyHTML='', footerHTML=''){
   document.getElementById('modalOverlay').classList.add('open');
 }
 function closeModal(){ document.getElementById('modalOverlay').classList.remove('open'); }
-document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeModal(); closeApprovalModal(); } });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeModal(); closeTeamReviewModal(); closeWARReviewModal(); } });
 
 // ── EMAILJS ───────────────────────────────
 function getEjsConfig(){
@@ -1146,9 +1248,12 @@ async function launchApp(username, fullname, email){
   const [loadedEntries] = await Promise.all([
     loadEntriesByEmail(username, email),
     loadTeamDataCloud(),
+    loadTeamSubmissions(),
+    loadWarSubmissions(),
     loadReactions()
   ]);
   entries = loadedEntries;
+  updateReviewBadge();
 
   const users=getUsers();
   if(users[username]&&users[username].name){
@@ -1970,11 +2075,351 @@ const TEAM_MEMBERS = {
 };
 const STATUSES = ['Completed','Ongoing Progress','Not Initiated'];
 
-// ── MANAGERS (reviewed-by persons) ────────
+// ── SUBMISSION STORES ────────────────────
+// teamSubmissions: { period: { teamName: { status, submittedBy, submittedAt, approvedBy, approvedAt, remarks } } }
+// warSubmissions:  { period: { username: { status, submittedTo, submittedAt, approvedBy, approvedAt, remarks, name, period } } }
+let teamSubmissions = {};
+let warSubmissions  = {};
+
+async function saveTeamSubmissions() {
+  try { await window.storage.set('fwa_team_submissions', JSON.stringify(teamSubmissions), true); } catch(e){}
+  await dbSet('teamSubmissions', teamSubmissions);
+}
+async function loadTeamSubmissions() {
+  if(isGASReady()){
+    const v = await dbGet('teamSubmissions', null);
+    if(v && typeof v==='object'){ teamSubmissions=v; try{await window.storage.set('fwa_team_submissions',JSON.stringify(v),true);}catch(e){} return; }
+  }
+  try { const r=await window.storage.get('fwa_team_submissions',true); if(r&&r.value){teamSubmissions=JSON.parse(r.value);return;} } catch(e){}
+  teamSubmissions = JSON.parse(localStorage.getItem('fwa_team_submissions')||'{}');
+}
+async function saveWarSubmissions() {
+  try { await window.storage.set('fwa_war_submissions', JSON.stringify(warSubmissions), true); } catch(e){}
+  await dbSet('warSubmissions', warSubmissions);
+}
+async function loadWarSubmissions() {
+  if(isGASReady()){
+    const v = await dbGet('warSubmissions', null);
+    if(v && typeof v==='object'){ warSubmissions=v; try{await window.storage.set('fwa_war_submissions',JSON.stringify(v),true);}catch(e){} return; }
+  }
+  try { const r=await window.storage.get('fwa_war_submissions',true); if(r&&r.value){warSubmissions=JSON.parse(r.value);return;} } catch(e){}
+  warSubmissions = JSON.parse(localStorage.getItem('fwa_war_submissions')||'{}');
+}
+
+// ── REVIEW BADGE ──────────────────────────
+function updateReviewBadge() {
+  const mgrBadge = document.getElementById('managerRoleBadge');
+  if (!isManager()) {
+    document.getElementById('hnav-review').style.display = 'none';
+    document.getElementById('sidebar-review-section').style.display = 'none';
+    if (mgrBadge) mgrBadge.style.display = 'none';
+    // Remove welcome card if switching accounts
+    const old = document.getElementById('managerWelcomeCard');
+    if (old) old.remove();
+    return;
+  }
+
+  // Show manager UI elements
+  document.getElementById('hnav-review').style.display = '';
+  document.getElementById('sidebar-review-section').style.display = '';
+  if (mgrBadge) mgrBadge.style.display = '';
+
+  // Show manager role card once
+  const u = getCurrentUser();
+  const users = getUsers();
+  const mName = users[u]?.name || u;
+  const mgr = getManagerInfo(mName);
+  if (!document.getElementById('managerWelcomeCard') && mgr) {
+    const main = document.querySelector('.main');
+    if (main) {
+      const card = document.createElement('div');
+      card.id = 'managerWelcomeCard';
+      card.style.cssText = 'background:linear-gradient(135deg,#e8eaf6,#f0f0ff);border:1px solid #a5b4fc;border-radius:10px;padding:12px 16px;margin-bottom:1rem;display:flex;align-items:center;gap:12px;flex-wrap:wrap;';
+      card.innerHTML = `
+        <div style="width:34px;height:34px;border-radius:50%;background:#3949ab;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg style="width:17px;height:17px;stroke:#fff;fill:none;stroke-width:2;" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        </div>
+        <div style="flex:1;min-width:180px;">
+          <div style="font-size:13px;font-weight:600;color:#3949ab;">Manager access enabled</div>
+          <div style="font-size:12px;color:#5c6bc0;margin-top:1px;">Signed in as <strong>${escHtml(mName)}</strong> · <em>${escHtml(mgr.position)}</em>. Use <strong>Review Inbox</strong> to approve team deliverables and WARs.</div>
+        </div>
+        <button onclick="showPage('review')" id="goToInboxBtn" style="background:#3949ab;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:background .15s;" onmouseover="this.style.background='#283593'" onmouseout="this.style.background='#3949ab'">📋 Open Inbox</button>`;
+      const firstPage = main.querySelector('.page');
+      if (firstPage) main.insertBefore(card, firstPage); else main.prepend(card);
+    }
+  }
+
+  // Count all pending submissions
+  let pending = 0;
+  Object.values(teamSubmissions).forEach(p => Object.values(p).forEach(s => { if(s.status==='submitted') pending++; }));
+  Object.values(warSubmissions).forEach(p => Object.values(p).forEach(s => { if(s.status==='submitted') pending++; }));
+
+  const b1 = document.getElementById('reviewBadge');
+  const b2 = document.getElementById('reviewBadgeSide');
+  const inboxBtn = document.getElementById('goToInboxBtn');
+  if (b1) { b1.style.display = pending>0?'':'none'; b1.textContent = pending; }
+  if (b2) { b2.style.display = pending>0?'':'none'; b2.textContent = pending; }
+  if (inboxBtn) inboxBtn.textContent = pending>0 ? `📋 Open Inbox (${pending})` : '📋 Open Inbox';
+}
+
+// ── WAR SUBMIT ────────────────────────────
+async function submitWARToManager() {
+  const btn = document.getElementById('warSubmitBtn');
+  const mgr = document.getElementById('warSubmitManager').value;
+  if (!mgr) { alert('Please select a manager.'); return; }
+  const u = getCurrentUser();
+  const users = getUsers();
+  const name = users[u]?.name || u;
+  const period = document.getElementById('hPeriod').value.trim();
+  if (!period) { alert('Please select a period first.'); return; }
+  const now = new Date().toLocaleString('en-PH', { timeZone:'Asia/Manila', month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' });
+  if (!warSubmissions[period]) warSubmissions[period] = {};
+  warSubmissions[period][u] = { status:'submitted', submittedTo:mgr, submittedAt:now, name, period,
+    approvedBy:null, approvedAt:null, remarks:null };
+  if (btn) { btn.disabled=true; btn.innerHTML='⏳ Submitting…'; }
+  await saveWarSubmissions();
+  updateReviewBadge();
+  renderWARSubmitStatus();
+  showSyncBadge(true);
+  if (btn) { btn.disabled=false; btn.innerHTML='📤 Submit WAR to Manager'; }
+}
+
+function renderWARSubmitStatus() {
+  const u = getCurrentUser();
+  const period = document.getElementById('hPeriod').value.trim();
+  const el = document.getElementById('warSubmitStatus');
+  if (!el || !period || !u) return;
+  const sub = warSubmissions[period]?.[u];
+  if (!sub) { el.innerHTML=''; return; }
+  if (sub.status==='submitted') {
+    el.innerHTML=`<div style="background:#e8eaf6;border:1px solid #a5b4fc;border-radius:6px;padding:8px 12px;font-size:12px;color:#3949ab;margin-bottom:4px;">📤 Submitted to <strong>${escHtml(sub.submittedTo)}</strong> on ${escHtml(sub.submittedAt)}. Awaiting review.</div>`;
+  } else if (sub.status==='approved') {
+    el.innerHTML=`<div style="background:#e8f5e9;border:1px solid #86efac;border-radius:6px;padding:8px 12px;font-size:12px;color:#15803d;margin-bottom:4px;">✅ Approved by <strong>${escHtml(sub.approvedBy)}</strong> on ${escHtml(sub.approvedAt)}.</div>`;
+  } else if (sub.status==='reverted') {
+    el.innerHTML=`<div style="background:#fff3e0;border:1px solid #f0c040;border-radius:6px;padding:8px 12px;font-size:12px;color:#bf360c;margin-bottom:4px;">↩ Returned with remarks: "<strong>${escHtml(sub.remarks)}</strong>" — ${escHtml(sub.approvedBy)}</div>`;
+  }
+}
+
+// ── TEAM SUBMIT ───────────────────────────
+async function submitTeamToManager(team, period) {
+  const u = getCurrentUser();
+  const now = new Date().toLocaleString('en-PH', { timeZone:'Asia/Manila', month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' });
+  if (!teamSubmissions[period]) teamSubmissions[period] = {};
+  teamSubmissions[period][team] = { status:'submitted', submittedBy:u, submittedAt:now,
+    approvedBy:null, approvedAt:null, remarks:null };
+  await saveTeamSubmissions();
+  updateReviewBadge();
+  renderTeamTables();
+  showSyncBadge(true);
+}
+
+// ── TEAM REVIEW MODAL ─────────────────────
+let _teamReviewTarget = null;
+
+function openTeamReviewModal(team, period) {
+  _teamReviewTarget = { team, period };
+  const sub = teamSubmissions[period]?.[team] || {};
+  const u = getCurrentUser();
+  const users = getUsers();
+  const managerName = users[u]?.name || u;
+  const mgr = getManagerInfo(managerName);
+  const rows = teamData[period]?.[team] || [];
+
+  document.getElementById('teamReviewTitle').textContent = `Review: ${team}`;
+  document.getElementById('teamReviewDesc').textContent = `Reviewing as ${managerName}${mgr?' · '+mgr.position:''} · Submitted ${sub.submittedAt||''}`;
+  document.getElementById('teamReviewDetail').innerHTML = rows.length
+    ? rows.map(r=>`<div style="padding:4px 0;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:flex-start;">
+        <div style="flex:1;"><div style="font-size:12px;font-weight:600;">${escHtml(r.deliverable)}</div>
+        <div style="font-size:11px;color:var(--text-muted);">${escHtml(r.person)} · ${escHtml(r.project||'')} · ${statusBadge(r.status).replace(/<[^>]*>/g,'').trim()}</div></div>
+      </div>`).join('')
+    : '<div style="color:var(--text-faint);font-size:12px;">No deliverables logged for this team.</div>';
+
+  document.getElementById('teamReviewRemarksArea').style.display='none';
+  document.getElementById('teamReviewRemarksText').value='';
+  document.getElementById('teamReviewModal').classList.add('open');
+}
+function closeTeamReviewModal() { document.getElementById('teamReviewModal').classList.remove('open'); _teamReviewTarget=null; }
+function toggleTeamReviewRemarks() {
+  const a = document.getElementById('teamReviewRemarksArea');
+  a.style.display = a.style.display==='none'?'block':'none';
+  if(a.style.display==='block') document.getElementById('teamReviewRemarksText').focus();
+}
+async function doApproveTeam() {
+  if(!_teamReviewTarget) return;
+  const {team,period}=_teamReviewTarget;
+  const u=getCurrentUser(); const users=getUsers(); const mName=users[u]?.name||u;
+  const now=new Date().toLocaleString('en-PH',{timeZone:'Asia/Manila',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
+  if(!teamSubmissions[period]) teamSubmissions[period]={};
+  teamSubmissions[period][team]={...teamSubmissions[period][team],status:'approved',approvedBy:mName,approvedAt:now,remarks:null};
+  closeTeamReviewModal();
+  await saveTeamSubmissions(); updateReviewBadge(); renderTeamTables(); renderReviewInbox(); showSyncBadge(true);
+}
+async function doRevertTeam() {
+  if(!_teamReviewTarget) return;
+  const remarks=document.getElementById('teamReviewRemarksText').value.trim();
+  if(!remarks){document.getElementById('teamReviewRemarksText').style.borderColor='#c0392b';document.getElementById('teamReviewRemarksText').focus();return;}
+  const {team,period}=_teamReviewTarget;
+  const u=getCurrentUser(); const users=getUsers(); const mName=users[u]?.name||u;
+  const now=new Date().toLocaleString('en-PH',{timeZone:'Asia/Manila',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
+  if(!teamSubmissions[period]) teamSubmissions[period]={};
+  teamSubmissions[period][team]={...teamSubmissions[period][team],status:'reverted',approvedBy:mName,approvedAt:now,remarks};
+  closeTeamReviewModal();
+  await saveTeamSubmissions(); updateReviewBadge(); renderTeamTables(); renderReviewInbox(); showSyncBadge(true);
+}
+
+// ── WAR REVIEW MODAL ─────────────────────
+let _warReviewTarget = null;
+
+function openWARReviewModal(username, period) {
+  _warReviewTarget = { username, period };
+  const sub = warSubmissions[period]?.[username] || {};
+  const u = getCurrentUser(); const users = getUsers(); const mName = users[u]?.name||u;
+  const mgr = getManagerInfo(mName);
+  const entries_for = warSubmissions[period]?.[username];
+  document.getElementById('warReviewTitle').textContent = `Review WAR: ${escHtml(sub.name||username)}`;
+  document.getElementById('warReviewDesc').textContent = `Reviewing as ${mName}${mgr?' · '+mgr.position:''} · Submitted ${sub.submittedAt||''}`;
+  document.getElementById('warReviewDetail').innerHTML =
+    `<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">Period: <strong>${escHtml(sub.period||period)}</strong></div>` +
+    `<div style="font-size:12px;">Submitted by: <strong>${escHtml(sub.name||username)}</strong></div>` +
+    (sub.remarks ? `<div style="margin-top:8px;padding:8px 10px;background:#fff3e0;border-radius:6px;border:1px solid #f0c040;font-size:12px;color:#bf360c;"><strong>Previous remarks:</strong> ${escHtml(sub.remarks)}</div>` : '');
+  document.getElementById('warReviewRemarksArea').style.display='none';
+  document.getElementById('warReviewRemarksText').value='';
+  document.getElementById('warReviewModal').classList.add('open');
+}
+function closeWARReviewModal(){ document.getElementById('warReviewModal').classList.remove('open'); _warReviewTarget=null; }
+function toggleWARReviewRemarks(){
+  const a=document.getElementById('warReviewRemarksArea');
+  a.style.display=a.style.display==='none'?'block':'none';
+  if(a.style.display==='block') document.getElementById('warReviewRemarksText').focus();
+}
+async function doApproveWAR(){
+  if(!_warReviewTarget) return;
+  const {username,period}=_warReviewTarget;
+  const u=getCurrentUser(); const users=getUsers(); const mName=users[u]?.name||u;
+  const now=new Date().toLocaleString('en-PH',{timeZone:'Asia/Manila',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
+  if(!warSubmissions[period]) warSubmissions[period]={};
+  warSubmissions[period][username]={...warSubmissions[period][username],status:'approved',approvedBy:mName,approvedAt:now,remarks:null};
+  closeWARReviewModal();
+  await saveWarSubmissions(); updateReviewBadge(); renderReviewInbox(); showSyncBadge(true);
+}
+async function doRevertWAR(){
+  if(!_warReviewTarget) return;
+  const remarks=document.getElementById('warReviewRemarksText').value.trim();
+  if(!remarks){document.getElementById('warReviewRemarksText').style.borderColor='#c0392b';document.getElementById('warReviewRemarksText').focus();return;}
+  const {username,period}=_warReviewTarget;
+  const u=getCurrentUser(); const users=getUsers(); const mName=users[u]?.name||u;
+  const now=new Date().toLocaleString('en-PH',{timeZone:'Asia/Manila',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
+  if(!warSubmissions[period]) warSubmissions[period]={};
+  warSubmissions[period][username]={...warSubmissions[period][username],status:'reverted',approvedBy:mName,approvedAt:now,remarks};
+  closeWARReviewModal();
+  await saveWarSubmissions(); updateReviewBadge(); renderReviewInbox(); showSyncBadge(true);
+}
+
+// ── REVIEW INBOX RENDER ───────────────────
+function renderReviewInbox() {
+  const el = document.getElementById('reviewInboxArea');
+  if (!el) return;
+  let html = '';
+  let totalPending = 0;
+
+  // Section 1: WAR submissions
+  const warItems = [];
+  Object.entries(warSubmissions).forEach(([period, periodObj]) => {
+    Object.entries(periodObj).forEach(([username, sub]) => {
+      warItems.push({period, username, sub});
+    });
+  });
+  const warPending  = warItems.filter(x=>x.sub.status==='submitted');
+  const warAll      = warItems.filter(x=>x.sub.status!=='draft');
+  totalPending += warPending.length;
+
+  html += `<div style="margin-bottom:1.5rem;">
+    <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:8px;">
+      📄 Work Accomplishment Reports
+      ${warPending.length?`<span style="background:#c0392b;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;">${warPending.length} pending</span>`:''}
+    </div>`;
+
+  if (!warAll.length) {
+    html += `<div class="empty-state" style="padding:1rem 0;font-size:12px;">No WAR submissions yet.</div>`;
+  } else {
+    warAll.sort((a,b)=>a.sub.status==='submitted'?-1:1).forEach(({period,username,sub}) => {
+      const isPending = sub.status==='submitted';
+      html += `<div class="card" style="margin-bottom:8px;${isPending?'border-color:#a5b4fc;':sub.status==='approved'?'border-color:#86efac;':'border-color:#fbbf24;'}">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <div>
+            <div style="font-size:13px;font-weight:600;">${escHtml(sub.name||username)}</div>
+            <div style="font-size:11px;color:var(--text-muted);">Period: ${escHtml(period)} · Submitted ${escHtml(sub.submittedAt||'')} → ${escHtml(sub.submittedTo||'')}</div>
+            ${sub.status==='approved'?`<div style="font-size:11px;color:#15803d;margin-top:2px;">✅ Approved by ${escHtml(sub.approvedBy)} · ${escHtml(sub.approvedAt)}</div>`:''}
+            ${sub.status==='reverted'?`<div style="font-size:11px;color:#bf360c;margin-top:2px;">↩ Returned: "${escHtml(sub.remarks)}"</div>`:''}
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            ${isPending?`<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;background:#e8eaf6;color:#3949ab;">📤 Pending</span>`:''}
+            ${sub.status==='approved'?`<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;background:#e8f5e9;color:#1b5e20;">✅ Approved</span>`:''}
+            ${sub.status==='reverted'?`<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;background:#fff3e0;color:#bf360c;">↩ Returned</span>`:''}
+            ${isPending?`<button class="review-btn" onclick="openWARReviewModal('${escHtml(username)}','${escHtml(period)}')">Review →</button>`:''}
+          </div>
+        </div>
+      </div>`;
+    });
+  }
+  html += `</div>`;
+
+  // Section 2: Team deliverable submissions
+  const teamItems = [];
+  Object.entries(teamSubmissions).forEach(([period, periodObj]) => {
+    Object.entries(periodObj).forEach(([team, sub]) => {
+      teamItems.push({period, team, sub});
+    });
+  });
+  const teamPending = teamItems.filter(x=>x.sub.status==='submitted');
+  const teamAll     = teamItems.filter(x=>x.sub.status!=='draft');
+  totalPending += teamPending.length;
+
+  html += `<div style="margin-bottom:1.5rem;">
+    <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:8px;">
+      👥 Team Deliverables
+      ${teamPending.length?`<span style="background:#c0392b;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;">${teamPending.length} pending</span>`:''}
+    </div>`;
+
+  if (!teamAll.length) {
+    html += `<div class="empty-state" style="padding:1rem 0;font-size:12px;">No team submissions yet.</div>`;
+  } else {
+    teamAll.sort((a,b)=>a.sub.status==='submitted'?-1:1).forEach(({period,team,sub}) => {
+      const isPending = sub.status==='submitted';
+      const rowCount  = teamData[period]?.[team]?.length||0;
+      html += `<div class="card" style="margin-bottom:8px;${isPending?'border-color:#a5b4fc;':sub.status==='approved'?'border-color:#86efac;':'border-color:#fbbf24;'}">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <div>
+            <div style="font-size:13px;font-weight:600;">${escHtml(team)}</div>
+            <div style="font-size:11px;color:var(--text-muted);">Period: ${escHtml(period)} · ${rowCount} deliverable${rowCount!==1?'s':''} · Submitted ${escHtml(sub.submittedAt||'')}</div>
+            ${sub.status==='approved'?`<div style="font-size:11px;color:#15803d;margin-top:2px;">✅ Approved by ${escHtml(sub.approvedBy)} · ${escHtml(sub.approvedAt)}</div>`:''}
+            ${sub.status==='reverted'?`<div style="font-size:11px;color:#bf360c;margin-top:2px;">↩ Returned: "${escHtml(sub.remarks)}"</div>`:''}
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            ${isPending?`<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;background:#e8eaf6;color:#3949ab;">📤 Pending</span>`:''}
+            ${sub.status==='approved'?`<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;background:#e8f5e9;color:#1b5e20;">✅ Approved</span>`:''}
+            ${sub.status==='reverted'?`<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;background:#fff3e0;color:#bf360c;">↩ Returned</span>`:''}
+            ${isPending?`<button class="review-btn" onclick="openTeamReviewModal('${escHtml(team)}','${escHtml(period)}')">Review →</button>`:''}
+          </div>
+        </div>
+      </div>`;
+    });
+  }
+  html += `</div>`;
+
+  if (!warAll.length && !teamAll.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:3rem 0;">No submissions yet. When team members submit their deliverables or WARs for review, they will appear here.</div>';
+    return;
+  }
+  el.innerHTML = html;
+}
+
+// ── MANAGERS ──────────────────────────────
 const MANAGERS = [
-  { name: 'Kristofferson Dela Cruz',  position: 'Senior Office Manager' },
-  { name: 'Regine C. Pustadan',       position: 'Senior Project Manager' },
-  { name: 'Marisha D. Beloro',        position: 'Senior Project Manager' }
+  { name: 'Kristofferson Dela Cruz', position: 'Senior Office Manager' },
+  { name: 'Regine C. Pustadan',      position: 'Senior Project Manager' },
+  { name: 'Marisha D. Beloro',       position: 'Senior Project Manager' },
+  { name: 'Liza Soberano',           position: 'Junior Office Manager'  }
 ];
 
 // ── APPROVAL STATE ────────────────────────
@@ -2242,34 +2687,44 @@ function renderTeamTables() {
   const done     = allRows.filter(r=>r.status==='Completed').length;
   const ongoing  = allRows.filter(r=>r.status==='Ongoing Progress').length;
   const notinit  = allRows.filter(r=>r.status==='Not Initiated').length;
-  const approved = allRows.filter(r=>r.approvalStatus==='approved').length;
-  const pending  = allRows.filter(r=>r.submissionStatus==='submitted' && r.approvalStatus !== 'approved').length;
+
+  // Count per-team submissions
+  const tsubs = teamSubmissions[period] || {};
+  const pendingTeams  = TEAMS.filter(t => tsubs[t]?.status === 'submitted').length;
+  const approvedTeams = TEAMS.filter(t => tsubs[t]?.status === 'approved').length;
 
   let html = `<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:1rem;">
     <div class="stat-card"><div class="stat-val">${total}</div><div class="stat-lbl">Total (All Teams)</div></div>
     <div class="stat-card"><div class="stat-val">${done}</div><div class="stat-lbl">Completed</div></div>
     <div class="stat-card"><div class="stat-val">${ongoing}</div><div class="stat-lbl">Ongoing</div></div>
     <div class="stat-card"><div class="stat-val">${notinit}</div><div class="stat-lbl">Not initiated</div></div>
-    <div class="stat-card" style="border-color:#86efac;"><div class="stat-val" style="color:#15803d;">${approved}</div><div class="stat-lbl">✅ Approved</div></div>
-    <div class="stat-card" style="border-color:#a5b4fc;"><div class="stat-val" style="color:#3949ab;">${pending}</div><div class="stat-lbl">📤 Pending review</div></div>
+    <div class="stat-card" style="border-color:#86efac;"><div class="stat-val" style="color:#15803d;">${approvedTeams}</div><div class="stat-lbl">✅ Teams approved</div></div>
+    <div class="stat-card" style="border-color:#a5b4fc;"><div class="stat-val" style="color:#3949ab;">${pendingTeams}</div><div class="stat-lbl">📤 Pending review</div></div>
   </div>`;
 
   // Show ALL teams
   TEAMS.forEach(team => {
     ensureTeamPeriod(period, team);
     const rows = teamData[period][team] || [];
-    const teamTotal    = rows.length;
-    const teamDone     = rows.filter(r=>r.status==='Completed').length;
-    const teamApproved = rows.filter(r=>r.approvalStatus==='approved').length;
-    const teamPending  = rows.filter(r=>r.submissionStatus==='submitted' && r.approvalStatus !== 'approved').length;
+    const teamTotal = rows.length;
+    const teamDone  = rows.filter(r=>r.status==='Completed').length;
+    const teamSubmit = (teamSubmissions[period] && teamSubmissions[period][team]) ? teamSubmissions[period][team] : { status: 'draft' };
 
     html += `<div style="margin-bottom:1.5rem;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid var(--accent-light);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding-bottom:8px;border-bottom:2px solid var(--accent-light);flex-wrap:wrap;">
         <span style="font-size:15px;font-weight:700;color:var(--accent);">${escHtml(team)}</span>
         <span style="font-size:11px;color:var(--text-muted);">${teamTotal} entr${teamTotal!==1?'ies':'y'} · ${teamDone} completed</span>
-        ${teamApproved ? `<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;background:#e8f5e9;color:#1b5e20;">✅ ${teamApproved} approved</span>` : ''}
-        ${teamPending  ? `<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;background:#e8eaf6;color:#3949ab;">📤 ${teamPending} pending review</span>` : ''}
-      </div>`;
+        ${teamSubmit.status === 'approved' ? `<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;background:#e8f5e9;color:#1b5e20;">✅ Approved by ${escHtml(teamSubmit.approvedBy||'')}</span>` : ''}
+        ${teamSubmit.status === 'submitted' ? `<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;background:#e8eaf6;color:#3949ab;">📤 Pending review</span>` : ''}
+        ${teamSubmit.status === 'reverted' ? `<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;background:#fff3e0;color:#bf360c;">↩ Needs revision</span>` : ''}
+        <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          ${teamSubmit.status !== 'approved' && teamSubmit.status !== 'submitted' ? `<button class="submit-btn" style="font-size:11px;padding:4px 12px;" onclick="submitTeamToManager('${escHtml(team)}','${escHtml(period)}')">📤 Submit team for review</button>` : ''}
+          ${teamSubmit.status === 'submitted' && isManager() ? `<button class="review-btn" style="font-size:11px;padding:4px 12px;" onclick="openTeamReviewModal('${escHtml(team)}','${escHtml(period)}')">Review team →</button>` : ''}
+          ${teamSubmit.status === 'reverted' ? `<button class="submit-btn" style="font-size:11px;padding:4px 12px;" onclick="submitTeamToManager('${escHtml(team)}','${escHtml(period)}')">↩ Resubmit</button>` : ''}
+        </div>
+      </div>
+      ${teamSubmit.status === 'approved' ? `<div class="esig-box" style="flex-direction:column;align-items:flex-start;gap:3px;padding:6px 12px;margin-bottom:10px;"><img src="${SAMPLE_SIG_IMG}" alt="e-signature" style="height:28px;max-width:100px;object-fit:contain;filter:contrast(1.2);opacity:.92;display:block;" /><div style="border-top:1px solid #86efac;padding-top:3px;"><div class="esig-italic">${escHtml(teamSubmit.approvedBy||'')}</div><div style="font-size:10px;color:#15803d;">${escHtml(getManagerInfo(teamSubmit.approvedBy)?.position||'Manager')} · ${escHtml(teamSubmit.approvedAt||'')}</div></div></div>` : ''}
+      ${teamSubmit.status === 'reverted' ? `<div style="font-size:12px;color:#bf360c;background:#fff3e0;border-radius:6px;padding:8px 12px;border:1px solid #f0c040;margin-bottom:10px;line-height:1.6;"><strong>Manager remarks:</strong> "${escHtml(teamSubmit.remarks||'')}" <span style="font-size:11px;color:var(--text-faint);">— ${escHtml(teamSubmit.approvedBy||'')}, ${escHtml(teamSubmit.approvedAt||'')}</span></div>` : ''}`;
 
     if (!rows.length) {
       html += `<div class="empty-state" style="padding:1rem 0;font-size:12px;">No entries yet for ${escHtml(team)}.</div></div>`;
@@ -2298,7 +2753,6 @@ function renderTeamTables() {
               <th style="width:90px;">Due Date</th>
               <th style="width:110px;">Assignees</th>
               <th style="width:180px;">MOV</th>
-              <th style="width:180px;">Approval</th>
               <th style="width:32px;"></th>
             </tr></thead>
             <tbody>`;
@@ -2317,7 +2771,6 @@ function renderTeamTables() {
           <td>${dueTxt}</td>
           <td style="font-size:12px;">${escHtml(row.assignees)||'<span style="color:var(--text-faint);">—</span>'}</td>
           <td id="tmov-${row.id}">${movCellHTML(row.mov, row.id, team)}</td>
-          <td>${approvalCellHTML(row)}</td>
           <td><button class="del-row-btn" onclick="deleteTeamRow('${escHtml(team)}',${row.id})">×</button></td>
         </tr>`;
       });
@@ -2667,12 +3120,21 @@ async function showPage(page){
   if(page==='export'){
     const u=getCurrentUser();
     if(u){ entries = await loadEntriesByEmail(u, null); }
+    await loadWarSubmissions();
     buildPDFPreview();
+    renderWARSubmitStatus();
   }
   if(page==='team'){
     await loadTeamDataCloud();
+    await loadTeamSubmissions();
     renderTeamTabs(); updatePersonDropdown(); renderTeamTables();
     stampTeamSync();
+  }
+  if(page==='review'){
+    await loadTeamSubmissions();
+    await loadWarSubmissions();
+    updateReviewBadge();
+    renderReviewInbox();
   }
   if(page==='teamexport'){
     await loadTeamDataCloud();
@@ -2757,6 +3219,24 @@ function loadProfilePage(){
   document.getElementById('profileNameMsg').textContent='';
   document.getElementById('profilePassMsg').textContent='';
   ['profileOldPass','profileNewPass','profileNewPass2'].forEach(id=>document.getElementById(id).value='');
+  // Show manager tag if applicable
+  const mgr = getManagerInfo(users[u].name||'');
+  const tag = document.getElementById('profileManagerTag');
+  if (tag) {
+    if (mgr) { tag.style.display=''; tag.title = mgr.position; }
+    else tag.style.display='none';
+  }
+  // Show role info box on profile if manager
+  const existing = document.getElementById('profileRoleBox');
+  if (existing) existing.remove();
+  if (mgr) {
+    const box = document.createElement('div');
+    box.id = 'profileRoleBox';
+    box.style.cssText = 'background:linear-gradient(135deg,#e8eaf6,#f0f0ff);border:1px solid #a5b4fc;border-radius:8px;padding:10px 14px;margin-top:12px;font-size:12px;color:#3949ab;line-height:1.6;';
+    box.innerHTML = `<strong>Manager role:</strong> ${escHtml(mgr.position)}<br>You have access to the <strong>Review Inbox</strong> — you can approve or return team deliverables and WARs submitted by team members.`;
+    const card = document.querySelector('#page-profile .card');
+    if (card) card.appendChild(box);
+  }
 }
 
 function saveProfileName(){
