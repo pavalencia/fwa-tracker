@@ -74,6 +74,16 @@
     .approval-toast{position:fixed;bottom:80px;right:24px;background:var(--surface);border:1px solid #86efac;border-radius:12px;padding:14px 16px;box-shadow:0 8px 32px rgba(0,0,0,.15);z-index:9999;display:none;flex-direction:column;gap:6px;max-width:320px;animation:slideInRight .3s ease;}
     .approval-toast.show{display:flex;}
     @keyframes slideInRight{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+    /* WAR PREVIEW MODAL */
+    .war-preview-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9500;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 16px;}
+    .war-preview-modal.open{display:flex;}
+    .war-preview-inner{background:var(--surface);border-radius:14px;width:100%;max-width:860px;box-shadow:0 16px 60px rgba(0,0,0,.22);padding:0;overflow:hidden;margin:auto;}
+    .war-preview-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--surface2);}
+    .war-preview-body{padding:20px;max-height:70vh;overflow-y:auto;}
+    .war-preview-footer{display:flex;gap:8px;padding:14px 20px;border-top:1px solid var(--border);justify-content:flex-end;background:var(--surface2);}
+    /* SIG UPLOAD compact inline */
+    .sig-upload-inline{border:1.5px dashed var(--border-strong);border-radius:6px;padding:10px 12px;background:var(--surface2);cursor:pointer;transition:all .15s;text-align:center;font-size:11px;color:var(--text-muted);}
+    .sig-upload-inline:hover{border-color:var(--accent);background:var(--accent-light);color:var(--accent);}
 
     /* LAYOUT */
     .layout{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 60px);}
@@ -1012,6 +1022,13 @@
     <div class="modal-title" id="warReviewTitle">Review WAR Submission</div>
     <div class="modal-desc" id="warReviewDesc"></div>
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:12px;line-height:1.8;margin-bottom:12px;max-height:200px;overflow-y:auto;" id="warReviewDetail"></div>
+    <!-- View full WAR button -->
+    <div style="margin-bottom:12px;">
+      <button id="viewWARFromModalBtn" class="btn" onclick="openWARPreviewFromModal()" style="width:100%;justify-content:center;gap:6px;">
+        <svg style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        👁 View Full WAR Before Deciding
+      </button>
+    </div>
     <div style="margin-top:12px;">
       <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">Your decision</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -1035,6 +1052,49 @@
   </div>
 </div>
 
+
+<!-- WAR Preview Modal (manager views full WAR before approving) -->
+<div class="war-preview-modal" id="warPreviewModal">
+  <div class="war-preview-inner">
+    <div class="war-preview-header">
+      <div>
+        <div style="font-size:14px;font-weight:700;color:var(--text);" id="warPreviewTitle">WAR Preview</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:1px;" id="warPreviewSubtitle"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button onclick="closeWARPreview()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;color:var(--text-muted);">Close</button>
+        <button id="warPreviewApproveBtn" onclick="approveFromPreview()" class="btn btn-primary" style="background:#15803d;border-color:#15803d;">
+          <svg style="width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2.5;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          Approve WAR
+        </button>
+      </div>
+    </div>
+    <div class="war-preview-body" id="warPreviewBody">
+      <div class="empty-state">Loading WAR…</div>
+    </div>
+    <div class="war-preview-footer">
+      <!-- Signature upload quick-access for managers -->
+      <div style="flex:1;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div style="font-size:11px;color:var(--text-muted);">Your e-signature for this approval:</div>
+        <div id="warPreviewSigThumb" style="display:flex;align-items:center;gap:8px;">
+          <div style="width:80px;height:28px;border:1px solid var(--border);border-radius:4px;background:#fff;overflow:hidden;display:flex;align-items:center;justify-content:center;">
+            <img id="warPreviewSigImg" style="max-width:100%;max-height:100%;object-fit:contain;filter:contrast(1.2);" />
+          </div>
+          <label class="sig-upload-inline" style="cursor:pointer;margin:0;">
+            <input type="file" accept="image/*" style="display:none;" onchange="handleSigUploadFromPreview(event)" />
+            ✏ Change
+          </label>
+        </div>
+      </div>
+      <button onclick="closeWARPreview()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;color:var(--text-muted);">Close</button>
+      <button id="warPreviewReturnBtn" onclick="returnFromPreview()" style="border:1px solid #bf360c;background:none;color:#bf360c;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;">↩ Return with Remarks</button>
+      <button id="warPreviewApproveBtn2" onclick="approveFromPreview()" style="background:#15803d;color:#fff;border:none;border-radius:6px;padding:6px 16px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">
+        <svg style="width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2.5;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        Approve WAR
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- Undo Toast -->
 <div class="undo-toast" id="undoToast">
@@ -1208,7 +1268,7 @@ function showModal(title, desc, bodyHTML='', footerHTML=''){
   document.getElementById('modalOverlay').classList.add('open');
 }
 function closeModal(){ document.getElementById('modalOverlay').classList.remove('open'); }
-document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeModal(); closeTeamReviewModal(); closeWARReviewModal(); } });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeModal(); closeTeamReviewModal(); closeWARReviewModal(); closeWARPreview(); } });
 
 // ── EMAILJS ───────────────────────────────
 function getEjsConfig(){
@@ -1353,6 +1413,12 @@ async function launchApp(username, fullname, email){
   const notifRaw  = localStorage.getItem(notifKey(username));
   notifications[username] = notifRaw ? JSON.parse(notifRaw) : [];
 
+  // Pre-load all manager signatures from localStorage for fast access
+  MANAGERS.forEach(m => {
+    const k = sigStorageKey(m.name);
+    // Already in localStorage — getManagerSigImg reads localStorage directly
+  });
+
   // Pre-populate reactions from localStorage
   const reactRaw = localStorage.getItem('fwa_reactions');
   if (reactRaw) { try { reactions = JSON.parse(reactRaw); } catch(e){} }
@@ -1404,7 +1470,8 @@ async function launchApp(username, fullname, email){
     loadWarSubmissions(),
     loadNotificationsForUser(username),
     loadReactions(),
-    loadWarHeader()
+    loadWarHeader(),
+    loadAllManagerSignatures()
   ]).then(([loadedEntries]) => {
     entries = loadedEntries;
 
@@ -2486,7 +2553,147 @@ async function submitTeamToManager(team, period) {
 // ── TEAM REVIEW MODAL ─────────────────────
 let _teamReviewTarget = null;
 
-function openTeamReviewModal(team, period) {
+function openWARPreviewFromModal() {
+  if (!_warReviewTarget) return;
+  openWARPreview(_warReviewTarget.username, _warReviewTarget.period);
+}
+
+let _warPreviewTarget = null;
+
+function openWARPreview(username, period) {
+  _warPreviewTarget = { username, period };
+
+  const sub = warSubmissions[period]?.[username] || {};
+  const u = getCurrentUser(); const users = getUsers(); const mName = users[u]?.name||u;
+  const mgr = getManagerInfo(mName);
+
+  document.getElementById('warPreviewTitle').textContent = `WAR: ${escHtml(sub.name||username)}`;
+  document.getElementById('warPreviewSubtitle').textContent = `Period: ${escHtml(period)} · Submitted by ${escHtml(sub.name||username)} → ${escHtml(sub.submittedTo||'')} on ${escHtml(sub.submittedAt||'')}`;
+
+  // Build WAR preview from the submitter's entries
+  const allEntries = JSON.parse(localStorage.getItem('fwa_entries_'+username)||'[]');
+  const periodEntries = allEntries.filter(e => e.period === period);
+
+  // Also try to get header data
+  const headerRaw = localStorage.getItem('fwa_header__'+username);
+  const hd = headerRaw ? JSON.parse(headerRaw) : {};
+
+  // Signature
+  const sigImg = getManagerSigImg(mName);
+  document.getElementById('warPreviewSigImg').src = sigImg;
+
+  // Build preview HTML
+  let html = '';
+
+  // Header info
+  html += `<div style="border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:16px;background:var(--surface2);">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
+      <div><span style="color:var(--text-muted);">Name:</span> <strong>${escHtml(sub.name||username)}</strong></div>
+      <div><span style="color:var(--text-muted);">Office:</span> Office of the VP for Digital Transformation</div>
+      <div><span style="color:var(--text-muted);">Period:</span> <strong>${escHtml(period)}</strong></div>
+      <div><span style="color:var(--text-muted);">Submitted to:</span> ${escHtml(sub.submittedTo||'')}</div>
+    </div>
+    ${hd.days ? `<div style="margin-top:10px;display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:10px;">
+      ${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d=>`<div><div style="font-weight:600;color:var(--text-muted);text-transform:uppercase;">${d}</div><div style="color:var(--text);margin-top:2px;">${escHtml(hd.days[d]||'—')}</div></div>`).join('')}
+    </div>` : ''}
+  </div>`;
+
+  // Entries table
+  if (periodEntries.length) {
+    html += `<table class="preview-table" style="margin-bottom:16px;">
+      <thead><tr>
+        <th style="width:70px;">Date</th>
+        <th>Activity / Task</th>
+        <th style="width:28px;text-align:center;">O</th>
+        <th style="width:28px;text-align:center;">C</th>
+        <th style="width:28px;text-align:center;">R</th>
+        <th>Remarks / MOV</th>
+      </tr></thead><tbody>`;
+    periodEntries.forEach(e => {
+      const imgs = (e.images||[]);
+      const thumbs = imgs.map(img=>`<img src="${img.dataUrl}" style="width:52px;height:39px;object-fit:cover;border-radius:3px;margin:2px;display:inline-block;" />`).join('');
+      html += `<tr>
+        <td style="font-size:11px;">${escHtml(e.date||'')}</td>
+        <td style="font-size:11px;">${e.project?`<span style="color:#888;font-size:10px;">[${escHtml(e.project)}]</span><br>`:''}${escHtml(e.desc)}</td>
+        <td style="text-align:center;">${e.status==='ongoing'?'x':''}</td>
+        <td style="text-align:center;">${e.status==='completed'?'x':''}</td>
+        <td style="text-align:center;">${e.status==='recurring'?'x':''}</td>
+        <td style="font-size:11px;">${escHtml(e.notes||'')}${thumbs?`<div style="margin-top:4px;">${thumbs}</div>`:''}</td>
+      </tr>`;
+    });
+    html += `</tbody></table>`;
+  } else {
+    html += `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:12px;font-size:12px;color:#92400e;margin-bottom:16px;">
+      ⚠ No entries found for this period in local storage. The submitter's entries may only be available on their device.
+    </div>`;
+  }
+
+  // Signature block preview
+  html += `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;font-size:11px;border-top:1px solid var(--border);padding-top:14px;margin-top:4px;">
+    <div>
+      <div style="color:var(--text-muted);margin-bottom:22px;">Submitted by:</div>
+      <div style="border-top:1px solid var(--text);padding-top:4px;font-weight:600;">${escHtml(hd.submitted||sub.name||username)}</div>
+      <div style="color:var(--text-muted);font-size:10px;">${escHtml(hd.submittedPos||'')}</div>
+    </div>
+    <div>
+      <div style="color:var(--text-muted);margin-bottom:8px;">Reviewed by <em style="color:#15803d;">(your signature will appear here)</em>:</div>
+      <img src="${sigImg}" style="height:32px;max-width:120px;object-fit:contain;filter:contrast(1.2);display:block;opacity:.9;margin-bottom:4px;" />
+      <div style="border-top:2px solid #15803d;padding-top:3px;font-weight:600;color:#15803d;">${escHtml(mName)}</div>
+      <div style="font-size:10px;color:#15803d;">${escHtml(mgr?.position||'Manager')}</div>
+    </div>
+    <div>
+      <div style="color:var(--text-muted);margin-bottom:22px;">Approved by:</div>
+      <div style="border-top:1px solid var(--text);padding-top:4px;font-weight:600;">Peter A. Sy</div>
+      <div style="color:var(--text-muted);font-size:10px;">Vice President for Digital Transformation</div>
+    </div>
+  </div>`;
+
+  document.getElementById('warPreviewBody').innerHTML = html;
+  document.getElementById('warPreviewModal').classList.add('open');
+}
+
+function closeWARPreview() {
+  document.getElementById('warPreviewModal').classList.remove('open');
+  _warPreviewTarget = null;
+}
+
+async function approveFromPreview() {
+  if (!_warPreviewTarget) return;
+  const { username, period } = _warPreviewTarget;
+  closeWARPreview();
+  // Set target and approve
+  _warReviewTarget = { username, period };
+  await doApproveWAR();
+}
+
+async function returnFromPreview() {
+  if (!_warPreviewTarget) return;
+  const { username, period } = _warPreviewTarget;
+  closeWARPreview();
+  // Open the review modal for the return flow
+  _warReviewTarget = { username, period };
+  openWARReviewModal(username, period);
+  // Expand the remarks area automatically
+  setTimeout(() => toggleWARReviewRemarks(), 100);
+}
+
+async function handleSigUploadFromPreview(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const dataUrl = e.target.result;
+    const u = getCurrentUser(); const users = getUsers(); const mName = users[u]?.name||u;
+    await saveManagerSignature(mName, dataUrl);
+    // Update preview sig thumb
+    const img = document.getElementById('warPreviewSigImg');
+    if (img) img.src = dataUrl;
+    // Also update signature block in the preview body
+    if (_warPreviewTarget) openWARPreview(_warPreviewTarget.username, _warPreviewTarget.period);
+  };
+  reader.readAsDataURL(file);
+  event.target.value='';
+}
   _teamReviewTarget = { team, period };
   const sub = teamSubmissions[period]?.[team] || {};
   const u = getCurrentUser();
@@ -2989,6 +3196,7 @@ function renderReviewInbox() {
             ${isPending?`<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;background:#e8eaf6;color:#3949ab;">📤 Pending</span>`:''}
             ${sub.status==='approved'?`<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;background:#e8f5e9;color:#1b5e20;">✅ Approved</span>`:''}
             ${sub.status==='reverted'?`<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;background:#fff3e0;color:#bf360c;">↩ Returned</span>`:''}
+            ${isPending?`<button class="btn" onclick="openWARPreview('${escHtml(username)}','${escHtml(period)}')" style="font-size:11px;padding:4px 10px;">👁 View WAR</button>`:''}
             ${isPending?`<button class="review-btn" onclick="openWARReviewModal('${escHtml(username)}','${escHtml(period)}')">Review →</button>`:''}
           </div>
         </div>
@@ -3068,23 +3276,28 @@ function getManagerInfo(name) {
   return MANAGERS.find(m => m.name === name) || null;
 }
 
-// ── MANAGER SIGNATURE STORAGE ─────────────
-// Signatures are stored per manager name, shared across all users
-let managerSignatures = {}; // { [managerName]: dataUrl }
+// ── MANAGER SIGNATURES ────────────────────
+// Per-manager signature storage. Key: 'fwa_sig__<name>' — same key used by both sigKey and sigStorageKey
+let managerSignatures = {}; // in-memory cache { [managerName]: dataUrl }
 
-function sigKey(managerName) { return 'fwa_sig__' + managerName.replace(/\s+/g,'_').toLowerCase(); }
+function sigStorageKey(managerName) {
+  return 'fwa_sig__' + managerName.replace(/\s+/g,'_').toLowerCase();
+}
+// alias for compatibility
+const sigKey = sigStorageKey;
 
 async function saveManagerSignature(managerName, dataUrl) {
   managerSignatures[managerName] = dataUrl;
-  const key = sigKey(managerName);
+  const key = sigStorageKey(managerName);
   localStorage.setItem(key, dataUrl);
   try { await window.storage.set(key, dataUrl, true); } catch(e){}
-  await dbSet(key, dataUrl);
+  await dbSet(key, dataUrl).catch(()=>{});
 }
 
 async function loadManagerSignature(managerName) {
+  // Return cached value instantly
   if (managerSignatures[managerName]) return managerSignatures[managerName];
-  const key = sigKey(managerName);
+  const key = sigStorageKey(managerName);
   // 1. GAS
   if (isGASReady()) {
     try {
@@ -3113,17 +3326,27 @@ async function loadManagerSignature(managerName) {
 }
 
 async function loadAllManagerSignatures() {
-  await Promise.all(MANAGERS.map(m => loadManagerSignature(m.name)));
+  await Promise.all(MANAGERS.map(async m => {
+    try {
+      const sig = await loadManagerSignature(m.name);
+      if (sig) managerSignatures[m.name] = sig;
+    } catch(e){}
+  }));
 }
 
-function getManagerSignature(managerName) {
-  // Returns uploaded sig if exists, otherwise the sample sig image
-  return managerSignatures[managerName] || SAMPLE_SIG_IMG;
+function getManagerSigImg(managerName) {
+  if (!managerName) return SAMPLE_SIG_IMG;
+  // Check in-memory cache first, then localStorage
+  const cached = managerSignatures[managerName];
+  if (cached && cached.startsWith('data:')) return cached;
+  const key = sigStorageKey(managerName);
+  const stored = localStorage.getItem(key);
+  return (stored && stored.startsWith('data:')) ? stored : SAMPLE_SIG_IMG;
 }
 
 async function deleteManagerSignature(managerName) {
   delete managerSignatures[managerName];
-  const key = sigKey(managerName);
+  const key = sigStorageKey(managerName);
   localStorage.removeItem(key);
   try { await window.storage.delete(key, true); } catch(e){}
   try { await dbSet(key, null); } catch(e){}
@@ -3135,36 +3358,28 @@ function handleSignatureUpload(event) {
   if (!file) return;
   if (!file.type.startsWith('image/')) { showSigMsg('Please upload an image file.', true); return; }
   if (file.size > 2 * 1024 * 1024) { showSigMsg('Image too large — please use an image under 2MB.', true); return; }
-
   const reader = new FileReader();
   reader.onload = async (e) => {
-    // Process: convert to transparent-friendly PNG, crop to content
     const img = new Image();
     img.onload = async () => {
       const canvas = document.createElement('canvas');
-      // Scale down if needed, max 400×200
       const maxW = 400, maxH = 200;
       let w = img.width, h = img.height;
       if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
       if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; }
       canvas.width = w; canvas.height = h;
       const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
       ctx.drawImage(img, 0, 0, w, h);
       const dataUrl = canvas.toDataURL('image/png', 0.95);
-
-      const u = getCurrentUser();
-      const users = getUsers();
+      const u = getCurrentUser(); const users = getUsers();
       const managerName = users[u]?.name || u;
-
       showSigMsg('⏳ Saving signature…');
       await saveManagerSignature(managerName, dataUrl);
+      renderSigPreview(dataUrl);
       renderSignaturePreview(managerName, dataUrl);
       showSigMsg('✅ Signature saved successfully!');
       setTimeout(() => showSigMsg(''), 3000);
-
-      // Reset file input
       event.target.value = '';
     };
     img.src = e.target.result;
@@ -3180,85 +3395,20 @@ function showSigMsg(msg, isErr=false) {
 }
 
 function renderSignaturePreview(managerName, dataUrl) {
-  const previewEl  = document.getElementById('sigCurrentPreview');
-  const imgEl      = document.getElementById('sigPreviewImg');
-  const byEl       = document.getElementById('sigUploadedBy');
-  const uploadZone = document.getElementById('sigUploadZone');
-  if (!previewEl || !imgEl) return;
-  if (dataUrl) {
-    imgEl.src = dataUrl;
-    if (byEl) byEl.textContent = `Uploaded for: ${managerName}`;
-    previewEl.style.display = 'block';
-    if (uploadZone) uploadZone.querySelector('.upload-zone-text').innerHTML =
-      '<svg style="width:16px;height:16px;stroke:var(--text-faint);fill:none;stroke-width:1.5;display:block;margin:0 auto 4px;" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Upload a different signature';
-  } else {
-    previewEl.style.display = 'none';
-    if (uploadZone) uploadZone.querySelector('.upload-zone-text').innerHTML =
-      '<svg style="width:20px;height:20px;stroke:var(--text-faint);fill:none;stroke-width:1.5;display:block;margin:0 auto 6px;" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Click to upload or drag &amp; drop · <strong>PNG, JPG, WEBP</strong> · Recommended: white background, clear strokes';
-  }
+  // Update profile page preview elements
+  renderSigPreview(dataUrl);
+  const byEl = document.getElementById('sigUploadedBy');
+  if (byEl) byEl.textContent = dataUrl ? `Uploaded for: ${managerName}` : '';
 }
 
 async function clearManagerSignature() {
-  const u = getCurrentUser();
-  const users = getUsers();
+  const u = getCurrentUser(); const users = getUsers();
   const managerName = users[u]?.name || u;
   if (!confirm('Remove your uploaded signature? The default sample signature will be used instead.')) return;
   await deleteManagerSignature(managerName);
-  renderSignaturePreview(managerName, null);
+  renderSigPreview(null);
   showSigMsg('Signature removed.');
   setTimeout(() => showSigMsg(''), 3000);
-}
-
-// ── MANAGER SIGNATURES ────────────────────
-// Stored per manager name: 'fwa_sig__<managerName>' → base64 dataUrl
-function sigStorageKey(managerName) {
-  return 'fwa_sig__' + managerName.replace(/\s+/g,'_').toLowerCase();
-}
-
-async function saveManagerSignature(managerName, dataUrl) {
-  const key = sigStorageKey(managerName);
-  localStorage.setItem(key, dataUrl);
-  try { await window.storage.set(key, dataUrl, true); } catch(e){}
-  await dbSet(key, dataUrl).catch(()=>{});
-}
-
-async function loadManagerSignature(managerName) {
-  const key = sigStorageKey(managerName);
-  // 1. GAS
-  if (isGASReady()) {
-    try {
-      const v = await dbGet(key, null);
-      if (v && typeof v === 'string' && v.startsWith('data:')) {
-        localStorage.setItem(key, v);
-        try { await window.storage.set(key, v, true); } catch(e){}
-        return v;
-      }
-    } catch(e){}
-  }
-  // 2. window.storage shared
-  try {
-    const r = await window.storage.get(key, true);
-    if (r && r.value && r.value.startsWith('data:')) return r.value;
-  } catch(e){}
-  // 3. localStorage
-  const local = localStorage.getItem(key);
-  if (local && local.startsWith('data:')) return local;
-  return null;
-}
-
-async function removeManagerSignature(managerName) {
-  const key = sigStorageKey(managerName);
-  localStorage.removeItem(key);
-  try { await window.storage.delete(key, true); } catch(e){}
-  await dbSet(key, null).catch(()=>{});
-}
-
-// Get the right signature for a given manager name (their custom one or fallback to sample)
-function getManagerSigImg(managerName) {
-  if (!managerName) return SAMPLE_SIG_IMG;
-  const key = sigStorageKey(managerName);
-  const stored = localStorage.getItem(key);
-  return (stored && stored.startsWith('data:')) ? stored : SAMPLE_SIG_IMG;
 }
 
 function loadAppConfig() { applyConfig(); }
@@ -3979,35 +4129,18 @@ function loadProfilePage(){
   const tag = document.getElementById('profileManagerTag');
   if (tag) { tag.style.display = mgr ? '' : 'none'; if(mgr) tag.title = mgr.position; }
 
-  // Show signature upload card for managers
+  // Show signature upload card for managers only
   const sigCard = document.getElementById('sigUploadCard');
-  if (sigCard) {
-    if (mgr) {
-      sigCard.style.display = '';
-      // Load and show current signature
-      const current = getManagerSigImg(mName);
-      const hasCurrent = current !== SAMPLE_SIG_IMG;
-      renderSigPreview(hasCurrent ? current : null);
-      // Also show sample sig if no custom one
-      if (!hasCurrent) {
-        const img = document.getElementById('sigPreviewImg');
-        const empty = document.getElementById('sigPreviewEmpty');
-        if (img) { img.src = SAMPLE_SIG_IMG; img.style.display='block'; img.style.opacity='.5'; }
-        if (empty) { empty.style.display='none'; }
-        const note = document.createElement('div');
-        note.id = 'sigSampleNote';
-        note.style.cssText='font-size:10px;color:var(--text-faint);margin-top:3px;';
-        note.textContent='Showing sample signature — upload yours above';
-        const box = document.getElementById('sigPreviewBox');
-        const existing = document.getElementById('sigSampleNote');
-        if (box && !existing) box.parentNode.insertBefore(note, box.nextSibling);
-      } else {
-        const existing = document.getElementById('sigSampleNote');
-        if (existing) existing.remove();
-      }
-    } else {
-      sigCard.style.display = 'none';
-    }
+  if (sigCard) sigCard.style.display = mgr ? '' : 'none';
+
+  if (mgr) {
+    // Show from in-memory first (instant)
+    const cachedSig = managerSignatures[mName] || null;
+    renderSignaturePreview(mName, cachedSig);
+    // Then load fresh from cloud
+    loadManagerSignature(mName).then(sig => {
+      renderSignaturePreview(mName, sig || null);
+    }).catch(() => {});
   }
 
   // Show role info box for managers
