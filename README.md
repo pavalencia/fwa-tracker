@@ -64,7 +64,7 @@
     .sidebar-item.active{color:var(--accent);border-left-color:var(--accent);background:var(--accent-light);font-weight:500;}
     .sidebar-icon{width:16px;height:16px;flex-shrink:0;opacity:.7;}
     .sidebar-item.active .sidebar-icon{opacity:1;}
-    .main{padding:2rem;max-width:860px;}
+    .main{padding:2rem;max-width:1100px;}
     .page{display:none;}.page.active{display:block;animation:fadeIn .2s ease;}
     @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
     .page-header{margin-bottom:1.75rem;}
@@ -231,6 +231,26 @@
     /* EDIT entry button */
     .entry-edit{background:none;border:none;color:var(--text-faint);font-size:13px;cursor:pointer;padding:0 4px;line-height:1;}
     .entry-edit:hover{color:var(--accent);}
+    /* LOADING SPINNER */
+    .btn-loading{opacity:.75;pointer-events:none !important;cursor:not-allowed !important;}
+    @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+    /* SUBMIT / APPROVAL BADGES */
+    .badge-submitted{background:#e8eaf6;color:#3949ab;}
+    .badge-approved{background:#e8f5e9;color:#1b5e20;}
+    .badge-reverted{background:#fff3e0;color:#bf360c;}
+    /* E-SIGNATURE DISPLAY */
+    .esig-box{display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1px solid #86efac;border-radius:6px;padding:4px 10px;font-size:11px;color:#15803d;font-weight:600;margin-top:4px;}
+    .esig-box svg{width:14px;height:14px;stroke:#15803d;fill:none;stroke-width:2;flex-shrink:0;}
+    .esig-italic{font-style:italic;font-family:'DM Serif Display',serif;font-size:14px;color:#15803d;letter-spacing:.01em;}
+    /* APPROVAL MODAL */
+    .approval-remarks-area{margin-top:10px;display:none;}
+    .approval-remarks-area textarea{width:100%;font-family:'DM Sans',sans-serif;font-size:12px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);resize:vertical;min-height:72px;outline:none;}
+    .approval-remarks-area textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(45,80,22,.08);}
+    /* SUBMIT / REVIEW BUTTONS in table */
+    .submit-btn{font-family:'DM Sans',sans-serif;font-size:10px;font-weight:600;padding:3px 9px;border-radius:99px;border:1px solid #3949ab;background:#e8eaf6;color:#3949ab;cursor:pointer;white-space:nowrap;transition:all .15s;}
+    .submit-btn:hover{background:#3949ab;color:#fff;}
+    .review-btn{font-family:'DM Sans',sans-serif;font-size:10px;font-weight:600;padding:3px 9px;border-radius:99px;border:1px solid #15803d;background:#dcfce7;color:#15803d;cursor:pointer;white-space:nowrap;transition:all .15s;}
+    .review-btn:hover{background:#15803d;color:#fff;}
     /* ACKNOWLEDGEMENTS / REACTIONS */
     .react-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
     .react-btn{font-family:'DM Sans',sans-serif;font-size:12px;padding:3px 9px;border-radius:99px;border:1px solid var(--border);background:var(--surface);cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all .15s;color:var(--text-muted);}
@@ -476,7 +496,7 @@
             </div>
             <div class="thumb-row" id="thumbRow"></div>
           </div>
-          <button class="btn btn-primary" onclick="addEntry()">+ Add entry</button>
+          <button class="btn btn-primary" id="addEntryBtn" onclick="addEntry()">+ Add entry</button>
         </div>
 
         <div id="recent-list"></div>
@@ -552,9 +572,27 @@
       <!-- TEAM DELIVERABLES PAGE -->
       <div class="page" id="page-team">
         <div class="page-header">
-          <div class="page-title">Team deliverables</div>
-          <div class="page-desc">All team deliverables visible at a glance. Use the team tabs to add entries to a specific team.</div>
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+            <div>
+              <div class="page-title">Team deliverables</div>
+              <div class="page-desc">All team deliverables — shared across all team members. Use the tabs below to add entries to a specific team.</div>
+            </div>
+            <button class="btn" id="refreshTeamBtn" onclick="refreshTeamData()" style="flex-shrink:0;margin-top:6px;">
+              <svg style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;" viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+              Refresh
+            </button>
+          </div>
         </div>
+        <div class="card" style="padding:10px 16px;margin-bottom:12px;background:var(--accent-light);border-color:#c5dba8;">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+            <div style="font-size:12px;color:var(--accent);display:flex;align-items:center;gap:8px;">
+              <svg style="width:14px;height:14px;stroke:var(--accent);fill:none;stroke-width:2;flex-shrink:0;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              <span>Team data is <strong>shared in real-time</strong> — all members see each other's deliverables. Click Refresh to pull the latest.</span>
+            </div>
+            <span id="teamLastSynced" style="font-size:11px;color:var(--accent);opacity:.7;"></span>
+          </div>
+        </div>
+
         <div class="card">
           <div class="card-title">Week / period</div>
           <div class="form-grid full" style="margin-bottom:0;">
@@ -612,7 +650,7 @@
               <input type="text" id="tMov" placeholder="e.g. Minutes, Report, Screenshot..." />
             </div>
           </div>
-          <button class="btn btn-primary" onclick="addTeamRow()">+ Add entry</button>
+          <button class="btn btn-primary" id="addTeamRowBtn" onclick="addTeamRow()">+ Add entry</button>
         </div>
 
         <!-- Summary per person -->
@@ -766,6 +804,35 @@
   </div>
 </div>
 
+<!-- Approval / Review Modal -->
+<div class="modal-overlay" id="approvalModal">
+  <div class="modal-box" style="max-width:480px;">
+    <div class="modal-title" id="approvalModalTitle">Review Deliverable</div>
+    <div class="modal-desc" id="approvalModalDesc"></div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:12px;line-height:1.7;margin-bottom:4px;" id="approvalModalDetail"></div>
+    <div style="margin-top:12px;">
+      <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">Manager decision</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-primary" id="approvalApproveBtn" onclick="doApproveRow()" style="background:#15803d;border-color:#15803d;">
+          <svg style="width:13px;height:13px;stroke:#fff;fill:none;stroke-width:2.5;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          Approve
+        </button>
+        <button class="btn" id="approvalRemarkBtn" onclick="toggleApprovalRemarks()" style="border-color:#bf360c;color:#bf360c;">
+          ↩ Approve with Remarks (Revert)
+        </button>
+      </div>
+      <div class="approval-remarks-area" id="approvalRemarksArea">
+        <label style="font-size:11px;font-weight:500;color:var(--text-muted);display:block;margin-bottom:5px;">Remarks for submitter</label>
+        <textarea id="approvalRemarksText" placeholder="Explain what needs to be revised or clarified..."></textarea>
+        <button class="btn" onclick="doRevertRow()" style="margin-top:8px;border-color:#bf360c;color:#bf360c;width:100%;justify-content:center;">Send back to submitter</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeApprovalModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- Undo Toast -->
 <div class="undo-toast" id="undoToast">
   <span id="undoMsg">Entry deleted.</span>
@@ -819,6 +886,9 @@
 </div>
 
 <script>
+// ── SIGNATURE IMAGE ───────────────────────
+const SAMPLE_SIG_IMG = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAASABIAAD/4QkhaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLwA8P3hwYWNrZXQgYmVnaW49Iu+7vyIgaWQ9Ilc1TTBNcENlaGlIenJlU3pOVGN6a2M5ZCI/PiA8eDp4bXBtZXRhIHhtbG5zOng9ImFkb2JlOm5zOm1ldGEvIiB4OnhtcHRrPSJYTVAgQ29yZSA2LjAuMCI+IDxyZGY6UkRGIHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyI+IDxyZGY6RGVzY3JpcHRpb24gcmRmOmFib3V0PSIiLz4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA8P3hwYWNrZXQgZW5kPSJ3Ij8+AP/iAihJQ0NfUFJPRklMRQABAQAAAhhhcHBsBAAAAG1udHJSR0IgWFlaIAfmAAEAAQAAAAAAAGFjc3BBUFBMAAAAAEFQUEwAAAAAAAAAAAAAAAAAAAAAAAD21gABAAAAANMtYXBwbAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACmRlc2MAAAD8AAAAMGNwcnQAAAEsAAAAUHd0cHQAAAF8AAAAFHJYWVoAAAGQAAAAFGdYWVoAAAGkAAAAFGJYWVoAAAG4AAAAFHJUUkMAAAHMAAAAIGNoYWQAAAHsAAAALGJUUkMAAAHMAAAAIGdUUkMAAAHMAAAAIG1sdWMAAAAAAAAAAQAAAAxlblVTAAAAFAAAABwARABpAHMAcABsAGEAeQAgAFAAM21sdWMAAAAAAAAAAQAAAAxlblVTAAAANAAAABwAQwBvAHAAeQByAGkAZwBoAHQAIABBAHAAcABsAGUAIABJAG4AYwAuACwAIAAyADAAMgAyWFlaIAAAAAAAAPbVAAEAAAAA0yxYWVogAAAAAAAAg98AAD2/////u1hZWiAAAAAAAABKvwAAsTcAAAq5WFlaIAAAAAAAACg4AAARCwAAyLlwYXJhAAAAAAADAAAAAmZmAADypwAADVkAABPQAAAKW3NmMzIAAAAAAAEMQgAABd7///MmAAAHkwAA/ZD///ui///9owAAA9wAAMBu/8AAEQgBaQKfAwEiAAIRAQMRAf/EAB8AAAEFAQEBAQEBAAAAAAAAAAABAgMEBQYHCAkKC//EALUQAAIBAwMCBAMFBQQEAAABfQECAwAEEQUSITFBBhNRYQcicRQygZGhCCNCscEVUtHwJDNicoIJChYXGBkaJSYnKCkqNDU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6g4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2drh4uPk5ebn6Onq8fLz9PX29/j5+v/EAB8BAAMBAQEBAQEBAQEAAAAAAAABAgMEBQYHCAkKC//EALURAAIBAgQEAwQHBQQEAAECdwABAgMRBAUhMQYSQVEHYXETIjKBCBRCkaGxwQkjM1LwFWJy0QoWJDThJfEXGBkaJicoKSo1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoKDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uLj5OXm5+jp6vLz9PX29/j5+v/bAEMAAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAf/bAEMBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAf/dAAQAKv/aAAwDAQACEQMRAD8A/v4ooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigD/0P7+KKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooA/9H+/iiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACvgv/gpD+3x8Kv+CbH7JXxI/ao+KyPqtn4ShtNK8J+DLC8gtdY+IXjvXWa18M+D9ImuCFFzd3Aa8vbsqfsOi2V9qDf6rZX3pX+dB/weq/tZ3niP45fsx/sXaHq//Eh+G/gfUvjd480uKbEcvjDx5dXPh7wd9uHALaX4Y0LWbu0ByMa8zADINAHqf/BM3/g7a/aZ+Pf7dnw5+Cv7V3wx+Etj8Efj98QNM+Hnhe5+HGj61pviL4V654r1E6b4PubrUb/XdVHinSjq11Y2Osfa7K1vRZn7dZYdTG3+gZX+D5+zFrl34X/aT/Z98S2bmC88PfG74Va1ayn/AJZT6Z450K/gPr9634yfz5r/AHfYZRLDFKP+WsUUn4SqD79vc+nHWgCaiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigD//S/v4ooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAr/F1/4Lo/tLf8NX/8FVv2yfinZ6m2q+G9N+Kuo/DTwdL5vnQx+FvhVb2vgCw+zNn/AI97q50G8vl+VRm9+lf65v7e37QenfsqfsWftRftE6hcfZ1+E3wS8e+KdOk29dfh0G6t/DEAAySbrxBd6Ra5/wBrOAeK/wANzU9S1PxFrGpaxqU81/rGu6lealf3UmZJ7zUtTuTc3M5wx3T3V1cFmwAQzdM0Adh8H5Db/Fr4XTk/6n4jeCZun/PHxPph/vH0/pz1r/ed0iXzdK0uT+9YWb/99Wyn0H+ewr/Bt8JQQWHxn8L21oNtvZ/E7RorX/rjB4otVth+Cqv4Yz0Ff7xPhpt3h7Qj/e0bSz/5IW/1/n+fWgDcooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooA//T/v4ooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigD+UL/g8E/aRf4P/wDBL7TPg3pt89pr37Tnxl8K+DpIYpD503g/wOs/j/xQCO9s15pXhuyusdVv1Ff5sP7Gfw4i+L37WP7Ovw4u42m0rxN8YPAtrrwjh87b4WtfENnqHii48jgH7N4etNWuuf7n3QMCv6ov+D0j9pH/AITj9tX9nr9mrTb6ZtN+BXwXn8Za9Y+aPs8Xi/4tawbiFio5+02/hfwvo54b7t/znIDfkP8A8EDPguvxK/bB+K/xHv7KS40L9mb9jL9rL46Xd0Isw2WsaZ8HPE3hbwrMRwQ6694otby2OPvWRzjaKAPyQ+FsMmu/G74dW6H95rPxT8HxRenm6j4u00KMc8g3A7/nX+8bpFv9l0nTLY/8uthZ23/fi3WDr749OPfFf4Vv7HOkHxF+11+y1oO3d/bP7RXwT0vy/UXvxI8MWx7Hqrcjj61/uy0AFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFAH//1P7+KKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAoor5a/bZ+OWn/ALNH7IH7TXx+1K5FpD8JPgj8SPG9vLkEnVNH8L6ncaLB93INzrn2K06N9/k8UAf5AH/BbL9ok/tTf8FTv20vixbahJqO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+O3wItvhBp3w+8GR/DDwrqHi+XwT47m8T6tqHinT/EWm6LbXN3ph8QG50W9s9ZvLVLK9s7H7Eb4GwKr/AE5/8EBP+CfOt/8ABOj/AIJwfCn4UfELw8nh/wCN3j281b4tfGywf7PJqOmeL/FzqbDwzqFzat/pNx4W8L2uj6M8ZY/ZL5L9Rn5g37ZUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAf/1P7+KKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooA/9X+/iiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKAP/Z";
+
 // ── GOOGLE SHEETS BACKEND ─────────────────
 // Paste your deployed Apps Script Web App URL below after setup.
 // Setup instructions: see APPS_SCRIPT_CODE.js file included with this tracker.
@@ -935,7 +1005,7 @@ function showModal(title, desc, bodyHTML='', footerHTML=''){
   document.getElementById('modalOverlay').classList.add('open');
 }
 function closeModal(){ document.getElementById('modalOverlay').classList.remove('open'); }
-document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeModal(); closeApprovalModal(); } });
 
 // ── EMAILJS ───────────────────────────────
 function getEjsConfig(){
@@ -1223,13 +1293,16 @@ async function loadEntries(username){ return loadEntriesByEmail(username, null);
 
 async function saveTeamDataCloud() {
   localStorage.setItem('fwa_team_data', JSON.stringify(teamData));
+  // Use GAS as authoritative shared store
   const ok = await dbSet('teamData', teamData);
   if(ok) showSyncBadge(true);
-  try { await window.storage.set('fwa_team_data', JSON.stringify(teamData)); } catch(e){}
+  // window.storage with shared=true so ALL users see the same team data
+  try { await window.storage.set('fwa_team_data', JSON.stringify(teamData), true); } catch(e){}
+  stampTeamSync();
 }
 
 async function loadTeamDataCloud() {
-  // 1. Always try GAS first — authoritative source
+  // 1. Always try GAS first — authoritative shared source
   if(isGASReady()){
     const val = await dbGet('teamData', null);
     if(val && typeof val === 'object' && !Array.isArray(val)){
@@ -1238,12 +1311,12 @@ async function loadTeamDataCloud() {
       return;
     }
   }
-  // 2. window.storage fallback
+  // 2. window.storage shared fallback (shared=true so any user's write is visible to all)
   try {
-    const res = await window.storage.get('fwa_team_data');
-    if(res && res.value){ teamData = JSON.parse(res.value); return; }
+    const res = await window.storage.get('fwa_team_data', true);
+    if(res && res.value){ teamData = JSON.parse(res.value); localStorage.setItem('fwa_team_data', JSON.stringify(teamData)); return; }
   } catch(e){}
-  // 3. localStorage last resort
+  // 3. localStorage last resort (same device only)
   teamData = JSON.parse(localStorage.getItem('fwa_team_data') || '{}');
 }
 
@@ -1380,16 +1453,22 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('o
 
 // ── ENTRIES ──────────────────────────────
 async function addEntry(){
+  const btn = document.getElementById('addEntryBtn');
+  if(btn && btn.classList.contains('btn-loading')) return; // prevent double-click
   const desc=document.getElementById('fDesc').value.trim(),project=document.getElementById('fProject').value.trim(),
         status=document.getElementById('fStatus').value,notes=document.getElementById('fNotes').value.trim(),
         date=document.getElementById('fDate').value.trim();
   if(!desc){alert('Please describe the activity/task.');return;}
   if(!project){alert('Please enter a project name.');return;}
+  // Show loading
+  if(btn){ btn.classList.add('btn-loading'); btn.textContent=''; btn.insertAdjacentHTML('beforeend','<span style="display:inline-flex;align-items:center;gap:7px;">⏳ Saving…<span style="display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;"></span></span>'); }
   entries.push({id:Date.now(),project,desc,status,notes,date,period:getPeriod(),owner:getCurrentUser(),images:pendingImages.map(i=>({dataUrl:i.dataUrl,name:i.name}))});
   await save();
   showSyncBadge(true);
   ['fDesc','fNotes','fProject','fDate'].forEach(id=>document.getElementById(id).value='');
   pendingImages=[];renderThumbs();renderRecent();
+  // Restore button
+  if(btn){ btn.classList.remove('btn-loading'); btn.innerHTML='+ Add entry'; }
 }
 async function deleteEntry(id){
   const deleted = entries.find(e=>e.id===id);
@@ -1891,6 +1970,142 @@ const TEAM_MEMBERS = {
 };
 const STATUSES = ['Completed','Ongoing Progress','Not Initiated'];
 
+// ── MANAGERS (reviewed-by persons) ────────
+const MANAGERS = [
+  { name: 'Kristofferson Dela Cruz',  position: 'Senior Office Manager' },
+  { name: 'Regine C. Pustadan',       position: 'Senior Project Manager' },
+  { name: 'Marisha D. Beloro',        position: 'Senior Project Manager' }
+];
+
+// ── APPROVAL STATE ────────────────────────
+let _approvalTarget = null; // { rowId, rowRef }
+
+function isManager() {
+  const u = getCurrentUser();
+  const users = getUsers();
+  if (!u || !users[u]) return false;
+  const name = (users[u].name || '').trim();
+  return MANAGERS.some(m => m.name === name);
+}
+
+function getManagerInfo(name) {
+  return MANAGERS.find(m => m.name === name) || null;
+}
+
+function openApprovalModal(rowId) {
+  const period = getTPeriod();
+  let rowRef = null;
+  for (const t of Object.keys(teamData[period]||{})) {
+    const found = (teamData[period][t]||[]).find(r=>r.id===rowId);
+    if (found) { rowRef = found; break; }
+  }
+  if (!rowRef) return;
+  _approvalTarget = { rowId, rowRef };
+
+  const u = getCurrentUser();
+  const users = getUsers();
+  const managerName = users[u]?.name || u;
+  const mgr = getManagerInfo(managerName);
+
+  document.getElementById('approvalModalTitle').textContent = `Review: ${rowRef.person}'s Deliverable`;
+  document.getElementById('approvalModalDesc').textContent = `You are reviewing as ${managerName}${mgr?' · '+mgr.position:''}`;
+  document.getElementById('approvalModalDetail').innerHTML =
+    `<div style="margin-bottom:4px;"><span style="color:var(--text-muted);font-size:10px;text-transform:uppercase;letter-spacing:.05em;">Deliverable</span><br><strong>${escHtml(rowRef.deliverable)}</strong></div>` +
+    (rowRef.project ? `<div style="margin-top:6px;"><span style="color:var(--text-muted);font-size:10px;text-transform:uppercase;letter-spacing:.05em;">Project</span><br>${escHtml(rowRef.project)}</div>` : '') +
+    (rowRef.approvalRemarks ? `<div style="margin-top:8px;padding:8px 10px;background:#fff3e0;border-radius:6px;border:1px solid #f0c040;font-size:12px;color:#bf360c;"><strong>Previous remarks:</strong> ${escHtml(rowRef.approvalRemarks)}</div>` : '');
+
+  // Reset remarks area
+  document.getElementById('approvalRemarksArea').style.display = 'none';
+  document.getElementById('approvalRemarksText').value = '';
+
+  document.getElementById('approvalModal').classList.add('open');
+}
+
+function closeApprovalModal() {
+  document.getElementById('approvalModal').classList.remove('open');
+  _approvalTarget = null;
+}
+
+function toggleApprovalRemarks() {
+  const area = document.getElementById('approvalRemarksArea');
+  area.style.display = area.style.display === 'none' ? 'block' : 'none';
+  if (area.style.display === 'block') document.getElementById('approvalRemarksText').focus();
+}
+
+async function doApproveRow() {
+  if (!_approvalTarget) return;
+  const { rowId } = _approvalTarget;
+  const u = getCurrentUser();
+  const users = getUsers();
+  const managerName = users[u]?.name || u;
+  const now = new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila', month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' });
+  const period = getTPeriod();
+  for (const t of Object.keys(teamData[period]||{})) {
+    const row = (teamData[period][t]||[]).find(r=>r.id===rowId);
+    if (row) {
+      row.submissionStatus = 'approved';
+      row.approvalStatus   = 'approved';
+      row.approvedBy       = managerName;
+      row.approvedAt       = now;
+      row.approvalRemarks  = null;
+      break;
+    }
+  }
+  closeApprovalModal();
+  await saveTeamDataCloud();
+  showSyncBadge(true);
+  renderTeamTables();
+}
+
+async function doRevertRow() {
+  if (!_approvalTarget) return;
+  const { rowId } = _approvalTarget;
+  const remarks = document.getElementById('approvalRemarksText').value.trim();
+  if (!remarks) { document.getElementById('approvalRemarksText').focus(); document.getElementById('approvalRemarksText').style.borderColor='#c0392b'; return; }
+  const u = getCurrentUser();
+  const users = getUsers();
+  const managerName = users[u]?.name || u;
+  const now = new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila', month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' });
+  const period = getTPeriod();
+  for (const t of Object.keys(teamData[period]||{})) {
+    const row = (teamData[period][t]||[]).find(r=>r.id===rowId);
+    if (row) {
+      row.submissionStatus = 'reverted';
+      row.approvalStatus   = 'reverted';
+      row.approvedBy       = managerName;
+      row.approvedAt       = now;
+      row.approvalRemarks  = remarks;
+      break;
+    }
+  }
+  closeApprovalModal();
+  await saveTeamDataCloud();
+  showSyncBadge(true);
+  renderTeamTables();
+}
+
+async function submitRowToManager(rowId) {
+  const period = getTPeriod();
+  const u = getCurrentUser();
+  const now = new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila', month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' });
+  for (const t of Object.keys(teamData[period]||{})) {
+    const row = (teamData[period][t]||[]).find(r=>r.id===rowId);
+    if (row) {
+      row.submissionStatus = 'submitted';
+      row.submittedBy      = u;
+      row.submittedAt      = now;
+      row.approvalStatus   = null;
+      row.approvedBy       = null;
+      row.approvedAt       = null;
+      row.approvalRemarks  = null;
+      break;
+    }
+  }
+  await saveTeamDataCloud();
+  showSyncBadge(true);
+  renderTeamTables();
+}
+
 function loadAppConfig() { applyConfig(); }
 
 function applyConfig() {
@@ -1904,6 +2119,22 @@ function applyConfig() {
 let activeTeam = null;
 // teamData: { period: { teamName: [{id, person, project, deliverable, status, assignees}] } }
 let teamData = {};
+
+function stampTeamSync() {
+  const el = document.getElementById('teamLastSynced');
+  if (el) el.textContent = 'Last synced: ' + new Date().toLocaleTimeString('en-PH', { hour:'numeric', minute:'2-digit', second:'2-digit' });
+}
+
+async function refreshTeamData() {
+  const btn = document.getElementById('refreshTeamBtn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;"><span style="display:inline-block;width:11px;height:11px;border:2px solid rgba(0,0,0,.15);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;"></span> Syncing…</span>'; }
+  await loadTeamDataCloud();
+  renderTeamTabs();
+  renderTeamTables();
+  stampTeamSync();
+  showSyncBadge(true);
+  if (btn) { btn.disabled = false; btn.innerHTML = '<svg style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;" viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg> Refresh'; }
+}
 
 function saveTeamData() { saveTeamDataCloud(); }
 function loadTeamData() {
@@ -1926,6 +2157,8 @@ function updatePersonDropdown() {
 }
 
 async function addTeamRow() {
+  const btn = document.getElementById('addTeamRowBtn');
+  if(btn && btn.classList.contains('btn-loading')) return; // prevent double-click
   const period = getTPeriod();
   const person = document.getElementById('tPerson').value.trim();
   const project = document.getElementById('tProject').value.trim();
@@ -1937,8 +2170,12 @@ async function addTeamRow() {
   const mov = document.getElementById('tMov').value.trim();
   if (!person) { alert('Please select a person.'); return; }
   if (!deliverable) { alert('Please describe the deliverable.'); return; }
+  // Show loading
+  if(btn){ btn.classList.add('btn-loading'); btn.innerHTML='<span style="display:inline-flex;align-items:center;gap:7px;">⏳ Saving…<span style="display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;"></span></span>'; }
   ensureTeamPeriod(period, activeTeam);
-  teamData[period][activeTeam].push({ id: Date.now(), person, project, deliverable, nature, status, assignees, dueDate, mov });
+  teamData[period][activeTeam].push({ id: Date.now(), person, project, deliverable, nature, status, assignees, dueDate, mov,
+    submissionStatus: 'draft', submittedBy: null, submittedAt: null,
+    approvalStatus: null, approvedBy: null, approvedAt: null, approvalRemarks: null });
   await saveTeamDataCloud();
   showSyncBadge(true);
   ['tProject','tDeliverable','tMov'].forEach(id => document.getElementById(id).value = '');
@@ -1948,6 +2185,8 @@ async function addTeamRow() {
   document.getElementById('tDueDate').value = '';
   renderTeamTabs();
   renderTeamTables();
+  // Restore button
+  if(btn){ btn.classList.remove('btn-loading'); btn.innerHTML='+ Add entry'; }
 }
 
 async function deleteTeamRow(team, id) {
@@ -1999,29 +2238,37 @@ function renderTeamTables() {
     if (teamData[period] && teamData[period][t]) allRows = allRows.concat(teamData[period][t]);
   });
 
-  const total   = allRows.length;
-  const done    = allRows.filter(r=>r.status==='Completed').length;
-  const ongoing = allRows.filter(r=>r.status==='Ongoing Progress').length;
-  const notinit = allRows.filter(r=>r.status==='Not Initiated').length;
+  const total    = allRows.length;
+  const done     = allRows.filter(r=>r.status==='Completed').length;
+  const ongoing  = allRows.filter(r=>r.status==='Ongoing Progress').length;
+  const notinit  = allRows.filter(r=>r.status==='Not Initiated').length;
+  const approved = allRows.filter(r=>r.approvalStatus==='approved').length;
+  const pending  = allRows.filter(r=>r.submissionStatus==='submitted' && r.approvalStatus !== 'approved').length;
 
-  let html = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1rem;">
+  let html = `<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:1rem;">
     <div class="stat-card"><div class="stat-val">${total}</div><div class="stat-lbl">Total (All Teams)</div></div>
     <div class="stat-card"><div class="stat-val">${done}</div><div class="stat-lbl">Completed</div></div>
     <div class="stat-card"><div class="stat-val">${ongoing}</div><div class="stat-lbl">Ongoing</div></div>
     <div class="stat-card"><div class="stat-val">${notinit}</div><div class="stat-lbl">Not initiated</div></div>
+    <div class="stat-card" style="border-color:#86efac;"><div class="stat-val" style="color:#15803d;">${approved}</div><div class="stat-lbl">✅ Approved</div></div>
+    <div class="stat-card" style="border-color:#a5b4fc;"><div class="stat-val" style="color:#3949ab;">${pending}</div><div class="stat-lbl">📤 Pending review</div></div>
   </div>`;
 
   // Show ALL teams
   TEAMS.forEach(team => {
     ensureTeamPeriod(period, team);
     const rows = teamData[period][team] || [];
-    const teamTotal = rows.length;
-    const teamDone  = rows.filter(r=>r.status==='Completed').length;
+    const teamTotal    = rows.length;
+    const teamDone     = rows.filter(r=>r.status==='Completed').length;
+    const teamApproved = rows.filter(r=>r.approvalStatus==='approved').length;
+    const teamPending  = rows.filter(r=>r.submissionStatus==='submitted' && r.approvalStatus !== 'approved').length;
 
     html += `<div style="margin-bottom:1.5rem;">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid var(--accent-light);">
         <span style="font-size:15px;font-weight:700;color:var(--accent);">${escHtml(team)}</span>
         <span style="font-size:11px;color:var(--text-muted);">${teamTotal} entr${teamTotal!==1?'ies':'y'} · ${teamDone} completed</span>
+        ${teamApproved ? `<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;background:#e8f5e9;color:#1b5e20;">✅ ${teamApproved} approved</span>` : ''}
+        ${teamPending  ? `<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;background:#e8eaf6;color:#3949ab;">📤 ${teamPending} pending review</span>` : ''}
       </div>`;
 
     if (!rows.length) {
@@ -2051,6 +2298,7 @@ function renderTeamTables() {
               <th style="width:90px;">Due Date</th>
               <th style="width:110px;">Assignees</th>
               <th style="width:180px;">MOV</th>
+              <th style="width:180px;">Approval</th>
               <th style="width:32px;"></th>
             </tr></thead>
             <tbody>`;
@@ -2069,6 +2317,7 @@ function renderTeamTables() {
           <td>${dueTxt}</td>
           <td style="font-size:12px;">${escHtml(row.assignees)||'<span style="color:var(--text-faint);">—</span>'}</td>
           <td id="tmov-${row.id}">${movCellHTML(row.mov, row.id, team)}</td>
+          <td>${approvalCellHTML(row)}</td>
           <td><button class="del-row-btn" onclick="deleteTeamRow('${escHtml(team)}',${row.id})">×</button></td>
         </tr>`;
       });
@@ -2169,6 +2418,51 @@ async function confirmMovEdit(rowId) {
     showSyncBadge(true);
   }
   renderTeamTables();
+}
+
+function approvalCellHTML(row) {
+  const ss = row.submissionStatus || 'draft';
+  const as = row.approvalStatus;
+
+  // ── APPROVED ──────────────────────────
+  if (as === 'approved') {
+    const mgr = getManagerInfo(row.approvedBy) || {};
+    return `<div style="display:flex;flex-direction:column;gap:4px;">
+      <span class="badge badge-approved" style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;display:inline-block;">✅ Approved</span>
+      <div class="esig-box" style="flex-direction:column;align-items:flex-start;gap:3px;padding:6px 10px;">
+        <img src="${SAMPLE_SIG_IMG}" alt="e-signature" style="height:32px;max-width:110px;object-fit:contain;filter:contrast(1.2);opacity:.92;display:block;" />
+        <div style="border-top:1px solid #86efac;padding-top:3px;width:100%;">
+          <div class="esig-italic">${escHtml(row.approvedBy)}</div>
+          <div style="font-size:10px;color:#15803d;font-weight:400;">${escHtml(mgr.position||'Manager')} · ${escHtml(row.approvedAt||'')}</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── REVERTED ──────────────────────────
+  if (as === 'reverted') {
+    return `<div style="display:flex;flex-direction:column;gap:4px;">
+      <span class="badge badge-reverted" style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;display:inline-block;">↩ Needs revision</span>
+      ${row.approvalRemarks ? `<div style="font-size:11px;color:#bf360c;background:#fff3e0;border-radius:5px;padding:5px 8px;border:1px solid #f0c040;line-height:1.5;">"${escHtml(row.approvalRemarks)}"<br><span style="font-size:10px;color:var(--text-faint);">— ${escHtml(row.approvedBy||'')}</span></div>` : ''}
+      <button class="submit-btn" onclick="submitRowToManager(${row.id})" style="margin-top:2px;">Resubmit</button>
+    </div>`;
+  }
+
+  // ── SUBMITTED (awaiting review) ────────
+  if (ss === 'submitted') {
+    const isMgr = isManager();
+    return `<div style="display:flex;flex-direction:column;gap:5px;">
+      <span class="badge badge-submitted" style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;display:inline-block;">📤 Submitted</span>
+      <div style="font-size:10px;color:var(--text-faint);">Awaiting manager review</div>
+      ${isMgr ? `<button class="review-btn" onclick="openApprovalModal(${row.id})">Review →</button>` : ''}
+    </div>`;
+  }
+
+  // ── DRAFT ─────────────────────────────
+  return `<div style="display:flex;flex-direction:column;gap:4px;">
+    <span style="font-size:10px;color:var(--text-faint);">Draft</span>
+    <button class="submit-btn" onclick="submitRowToManager(${row.id})">Submit to manager</button>
+  </div>`;
 }
 
 function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -2377,7 +2671,8 @@ async function showPage(page){
   }
   if(page==='team'){
     await loadTeamDataCloud();
-    renderTeamTabs();updatePersonDropdown();renderTeamTables();
+    renderTeamTabs(); updatePersonDropdown(); renderTeamTables();
+    stampTeamSync();
   }
   if(page==='teamexport'){
     await loadTeamDataCloud();
