@@ -1522,7 +1522,11 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   // No local session → need to check cloud (user may have registered on another device)
-  await loadUsersFromCloud();
+  try {
+    await loadUsersFromCloud();
+  } catch(e) {
+    // Cloud fetch failed (CORS, network, etc.) — fall through to show login
+  }
   const u2 = getCurrentUser();
   const users2 = getUsers();
   if (u2 && users2[u2]) {
