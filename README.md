@@ -2,7 +2,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FWA Accomplishment Tracker</title>
+  <title>Work Accomplishment Report Tracker</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet" />
@@ -278,8 +278,8 @@
         <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
       </div>
       <div>
-        <div style="font-size:15px;font-weight:600;letter-spacing:-.02em;">FWA Tracker</div>
-        <div style="font-size:11px;color:var(--text-muted);" id="loginOrgSub">FWA Tracker</div>
+        <div style="font-size:15px;font-weight:600;letter-spacing:-.02em;">WAR Tracker</div>
+        <div style="font-size:11px;color:var(--text-muted);" id="loginOrgSub">Work Accomplishment Report</div>
       </div>
     </div>
     <div class="login-tabs">
@@ -319,14 +319,14 @@
         <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
       </div>
       <div>
-        <div class="logo-text">FWA Tracker</div>
-        <div class="logo-sub" id="appOrgSub">FWA Tracker</div>
+        <div class="logo-text">WAR Tracker</div>
+        <div class="logo-sub" id="appOrgSub">Work Accomplishment Report</div>
       </div>
     </div>
     <div class="header-right">
       <div class="header-nav" id="headerNav">
         <button class="hnav-btn" onclick="showPage('dashboard')" id="hnav-dashboard">Dashboard</button>
-        <button class="hnav-btn" onclick="showPage('add')" id="hnav-add">Add</button>
+        <button class="hnav-btn" onclick="showPage('add')" id="hnav-add">Add deliverable</button>
         <button class="hnav-btn" onclick="showPage('view')" id="hnav-view">Entries</button>
         <button class="hnav-btn" onclick="showPage('kudos')" id="hnav-kudos">🏅 Kudos</button>
         <button class="hnav-btn" onclick="showPage('team')" id="hnav-team">Team</button>
@@ -374,7 +374,7 @@
         <div class="sidebar-label">Export</div>
         <div class="sidebar-item" onclick="showPage('export')" id="nav-export">
           <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="12" x2="12" y2="18"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
-          PDF (FWA format)
+          PDF (WAR format)
         </div>
         <div class="sidebar-item" onclick="showPage('teamexport')" id="nav-teamexport">
           <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
@@ -395,7 +395,7 @@
       <!-- ADD PAGE -->
       <div class="page active" id="page-add">
         <div class="page-header">
-          <div class="page-title">Add deliverable</div>
+          <div class="page-title">Add deliverable (Work Accomplishment Report)</div>
           <div class="page-desc">Fill in the report details, log your tasks, then sign off at the bottom.</div>
         </div>
 
@@ -408,7 +408,7 @@
           <div class="card-title">Report header</div>
           <div class="form-grid">
             <div class="field"><label>Name</label>
-              <select id="hName">
+              <select id="hName" onchange="saveWarHeader()">
                 <option value="">Select your name...</option>
                 <option>Marisha D. Beloro</option>
                 <option>Duane Albert J. Burdeos</option>
@@ -431,20 +431,20 @@
           </div>
           <div class="form-grid full" style="margin-bottom:14px;">
             <div class="field"><label>For the period of</label>
-              <select id="hPeriod" onchange="if(document.getElementById('page-view').classList.contains('active'))renderView()">
+              <select id="hPeriod" onchange="saveWarHeader();if(document.getElementById('page-view').classList.contains('active'))renderView()">
                 <option value="">Select week...</option>
               </select>
             </div>
           </div>
           <div class="card-title" style="margin-top:4px;">Work arrangement (per day)</div>
           <div class="day-grid">
-            <div class="day-cell"><label>Mon</label><select id="dMon"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>SURP</option><option>ITDC</option><option>Rest Day</option></select></div>
-            <div class="day-cell"><label>Tue</label><select id="dTue"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>SURP</option><option>ITDC</option><option>Rest Day</option></select></div>
-            <div class="day-cell"><label>Wed</label><select id="dWed"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>SURP</option><option>ITDC</option><option>Rest Day</option></select></div>
-            <div class="day-cell"><label>Thu</label><select id="dThu"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>SURP</option><option>ITDC</option><option>Rest Day</option></select></div>
-            <div class="day-cell"><label>Fri</label><select id="dFri"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>SURP</option><option>ITDC</option><option>Rest Day</option></select></div>
-            <div class="day-cell"><label>Sat</label><select id="dSat"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>SURP</option><option>ITDC</option><option>Rest Day</option></select></div>
-            <div class="day-cell"><label>Sun</label><select id="dSun"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>SURP</option><option>ITDC</option><option>Rest Day</option></select></div>
+            <div class="day-cell"><label>Mon</label><select id="dMon" onchange="saveWarHeader()"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>SURP</option><option>ITDC</option><option>Rest Day</option></select></div>
+            <div class="day-cell"><label>Tue</label><select id="dTue" onchange="saveWarHeader()"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>SURP</option><option>ITDC</option><option>Rest Day</option></select></div>
+            <div class="day-cell"><label>Wed</label><select id="dWed" onchange="saveWarHeader()"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>SURP</option><option>ITDC</option><option>Rest Day</option></select></div>
+            <div class="day-cell"><label>Thu</label><select id="dThu" onchange="saveWarHeader()"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>SURP</option><option>ITDC</option><option>Rest Day</option></select></div>
+            <div class="day-cell"><label>Fri</label><select id="dFri" onchange="saveWarHeader()"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>SURP</option><option>ITDC</option><option>Rest Day</option></select></div>
+            <div class="day-cell"><label>Sat</label><select id="dSat" onchange="saveWarHeader()"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>SURP</option><option>ITDC</option><option>Rest Day</option></select></div>
+            <div class="day-cell"><label>Sun</label><select id="dSun" onchange="saveWarHeader()"><option value="">—</option><option>WFH</option><option>Office</option><option>Field</option><option>SURP</option><option>ITDC</option><option>Rest Day</option></select></div>
           </div>
         </div>
 
@@ -485,7 +485,7 @@
           <div class="card-title">Signature block</div>
           <div class="form-grid" style="margin-bottom:12px;">
             <div class="field"><label>Submitted by (name)</label>
-              <select id="sigSubmitted">
+              <select id="sigSubmitted" onchange="saveWarHeader()">
                 <option value="">Select name...</option>
                 <option>Marisha D. Beloro</option>
                 <option>Duane Albert J. Burdeos</option>
@@ -502,18 +502,18 @@
                 <option>Rozhelle Sophia L. Yu</option>
               </select>
             </div>
-            <div class="field"><label>Submitted by (position)</label><input type="text" id="sigSubmittedPos" placeholder="e.g. Administrative Aide" /></div>
+            <div class="field"><label>Submitted by (position)</label><input type="text" id="sigSubmittedPos" placeholder="e.g. Administrative Aide" onchange="saveWarHeader()" /></div>
           </div>
           <div class="form-grid" style="margin-bottom:12px;">
             <div class="field"><label>Reviewed by (name)</label>
-              <select id="sigReviewed">
+              <select id="sigReviewed" onchange="saveWarHeader()">
                 <option value="">Select name...</option>
                 <option>Kristofferson Dela Cruz</option>
                 <option>Regine C. Pustadan</option>
                 <option>Marisha D. Beloro</option>
               </select>
             </div>
-            <div class="field"><label>Reviewed by (position)</label><input type="text" id="sigReviewedPos" placeholder="e.g. Project Development Officer" /></div>
+            <div class="field"><label>Reviewed by (position)</label><input type="text" id="sigReviewedPos" placeholder="e.g. Project Development Officer" onchange="saveWarHeader()" /></div>
           </div>
           <div class="sig-fixed-box">
             <div class="sig-fixed-title">Approved by</div>
@@ -537,10 +537,10 @@
       <div class="page" id="page-export">
         <div class="page-header">
           <div class="page-title">Export</div>
-          <div class="page-desc">Generate your official UP FWA Accomplishment Report PDF.</div>
+          <div class="page-desc">Generate your official UP Work Accomplishment Report PDF.</div>
         </div>
         <div class="card">
-          <div class="export-note">Generates the official UP FWA Accomplishment Report — work arrangement table, activity log with verification photos inside the Remarks column, and signature block with positions.</div>
+          <div class="export-note">Generates the official UP Work Accomplishment Report — work arrangement table, activity log with verification photos inside the Remarks column, and signature block with positions.</div>
           <div class="preview-wrap" id="pdf-preview-table"><div class="empty-state">No entries yet for this period.</div></div>
           <div class="btn-group">
             <button class="btn btn-primary" onclick="exportPDF()">⬇ Download PDF</button>
@@ -553,7 +553,7 @@
       <div class="page" id="page-team">
         <div class="page-header">
           <div class="page-title">Team deliverables</div>
-          <div class="page-desc">Log deliverables per team and person. Summarized by person for export.</div>
+          <div class="page-desc">All team deliverables visible at a glance. Use the team tabs to add entries to a specific team.</div>
         </div>
         <div class="card">
           <div class="card-title">Week / period</div>
@@ -1096,6 +1096,7 @@ async function launchApp(username, fullname, email){
     }
   }
   generateWeekOptions();
+  await loadWarHeader();
   document.getElementById('hnav-add').classList.add('active');
   renderRecent();
   initMotive();
@@ -1268,6 +1269,58 @@ function getHeader(){
     reviewedPos:document.getElementById('sigReviewedPos').value.trim(),
     days:{Mon:document.getElementById('dMon').value,Tue:document.getElementById('dTue').value,Wed:document.getElementById('dWed').value,Thu:document.getElementById('dThu').value,Fri:document.getElementById('dFri').value,Sat:document.getElementById('dSat').value,Sun:document.getElementById('dSun').value}
   };
+}
+
+// ── WAR HEADER SAVE / RESTORE ─────────────
+function getWarHeaderKey(username){ return 'fwa_header__'+username; }
+
+async function saveWarHeader(){
+  const u = getCurrentUser();
+  if(!u) return;
+  const h = getHeader();
+  const data = {
+    name: h.name, period: h.period,
+    submitted: h.submitted, submittedPos: h.submittedPos,
+    reviewed: h.reviewed, reviewedPos: h.reviewedPos,
+    days: h.days
+  };
+  localStorage.setItem(getWarHeaderKey(u), JSON.stringify(data));
+  try { await window.storage.set(getWarHeaderKey(u), JSON.stringify(data)); } catch(e){}
+  await dbSet(getWarHeaderKey(u), data);
+}
+
+async function loadWarHeader(){
+  const u = getCurrentUser();
+  if(!u) return;
+  let data = null;
+  // 1. GAS cloud
+  if(isGASReady()){
+    data = await dbGet(getWarHeaderKey(u), null);
+  }
+  // 2. window.storage fallback
+  if(!data){
+    try {
+      const res = await window.storage.get(getWarHeaderKey(u));
+      if(res && res.value) data = JSON.parse(res.value);
+    } catch(e){}
+  }
+  // 3. localStorage last resort
+  if(!data){
+    const raw = localStorage.getItem(getWarHeaderKey(u));
+    if(raw) data = JSON.parse(raw);
+  }
+  if(!data) return;
+  // Apply to form
+  const setVal = (id,val)=>{ const el=document.getElementById(id); if(el&&val!==undefined) el.value=val; };
+  setVal('hName', data.name);
+  setVal('hPeriod', data.period);
+  setVal('sigSubmitted', data.submitted);
+  setVal('sigSubmittedPos', data.submittedPos);
+  setVal('sigReviewed', data.reviewed);
+  setVal('sigReviewedPos', data.reviewedPos);
+  if(data.days){
+    ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(d=>setVal('d'+d, data.days[d]));
+  }
 }
 
 // ── IMAGE PROCESSING (portrait → 4:3 landscape crop) ──
@@ -1719,7 +1772,7 @@ async function exportPDF(){
   doc.text('Name',ml,y);doc.line(ml+10,y+.5,ml+70,y+.5);doc.text(h.name,ml+12,y);
   doc.text('Office/Unit',ml+80,y);doc.line(ml+97,y+.5,ml+cW,y+.5);doc.text(h.office,ml+99,y);y+=10;
   doc.setFont('helvetica','bold');doc.setFontSize(11);
-  doc.text('FLEXIBLE WORK ARRANGEMENT (FWA) ACCOMPLISHMENT REPORT',pw/2,y,{align:'center'});y+=5;
+  doc.text('WORK ACCOMPLISHMENT REPORT (WAR)',pw/2,y,{align:'center'});y+=5;
   doc.setFont('helvetica','normal');doc.setFontSize(10);
   const pl='For the Period of ';
   doc.text(pl,pw/2-30,y);doc.line(pw/2-30+doc.getTextWidth(pl),y+.5,pw/2+35,y+.5);
@@ -1813,7 +1866,7 @@ async function exportPDF(){
     if(col.pos)doc.text(col.pos,x,fy+26);
   });
 
-  doc.save(`FWA_${(h.name||'Report').replace(/\s+/g,'_')}_${(h.period||'Period').replace(/[^a-z0-9]/gi,'_')}.pdf`);
+  doc.save(`WAR_${(h.name||'Report').replace(/\s+/g,'_')}_${(h.period||'Period').replace(/[^a-z0-9]/gi,'_')}.pdf`);
 }
 
 // ── APP CONFIG (hardcoded) ────────────────
@@ -1939,73 +1992,91 @@ function natureBadge(n) {
 
 function renderTeamTables() {
   const period = getTPeriod();
-  ensureTeamPeriod(period, activeTeam);
-  const rows = teamData[period][activeTeam] || [];
 
-  if (!rows.length) {
-    document.getElementById('teamTableArea').innerHTML = `<div class="empty-state">No entries yet for ${activeTeam}. Add one above.</div>`;
-    return;
-  }
-
-  // Group by person
-  const people = [...new Set(rows.map(r => r.person))];
-
-  let html = '';
-  people.forEach(person => {
-    const pRows = rows.filter(r => r.person === person);
-    html += `<div class="card" style="padding:0;overflow:hidden;margin-bottom:1rem;">
-      <div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface2);">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div style="width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;flex-shrink:0;">${person.charAt(0).toUpperCase()}</div>
-          <span style="font-size:13px;font-weight:600;color:var(--text);">${escHtml(person)}</span>
-        </div>
-        <span style="font-size:11px;color:var(--text-muted);">${pRows.length} deliverable${pRows.length!==1?'s':''}</span>
-      </div>
-      <div class="team-table-wrap" style="border:none;border-radius:0;">
-        <table class="team-table">
-          <thead><tr>
-            <th style="width:110px;">Project</th>
-            <th>Target Deliverable</th>
-            <th style="width:90px;">Nature</th>
-            <th style="width:150px;">Status</th>
-            <th style="width:90px;">Due Date</th>
-            <th style="width:110px;">Assignees</th>
-            <th style="width:140px;">MOV</th>
-            <th style="width:32px;"></th>
-          </tr></thead>
-          <tbody>`;
-    pRows.forEach(row => {
-      const today = new Date(); today.setHours(0,0,0,0);
-      const due = row.dueDate ? new Date(row.dueDate) : null;
-      const isOverdue = due && due < today && row.status !== 'Completed';
-      const dueTxt = row.dueDate
-        ? `<span class="badge ${isOverdue?'badge-overdue':'badge-date'}">${isOverdue?'⚠ ':''}${row.dueDate}</span>`
-        : '<span style="color:var(--text-faint);">—</span>';
-      html += `<tr id="trow-${row.id}">
-        <td style="font-size:12px;">${escHtml(row.project)||'<span style="color:var(--text-faint);">—</span>'}</td>
-        <td style="font-size:12px;">${escHtml(row.deliverable)}</td>
-        <td>${natureBadge(row.nature)}</td>
-        <td id="tstat-${row.id}">${statusBadgeWithEdit(row.status, row.id)}</td>
-        <td>${dueTxt}</td>
-        <td style="font-size:12px;">${escHtml(row.assignees)||'<span style="color:var(--text-faint);">—</span>'}</td>
-        <td style="font-size:12px;">${escHtml(row.mov)||'<span style="color:var(--text-faint);">—</span>'}</td>
-        <td><button class="del-row-btn" onclick="deleteTeamRow('${activeTeam}',${row.id})">×</button></td>
-      </tr>`;
-    });
-    html += `</tbody></table></div></div>`;
+  // Compute global stats across ALL teams
+  let allRows = [];
+  TEAMS.forEach(t => {
+    if (teamData[period] && teamData[period][t]) allRows = allRows.concat(teamData[period][t]);
   });
 
-  // Summary stats
-  const total = rows.length;
-  const done = rows.filter(r=>r.status==='Completed').length;
-  const ongoing = rows.filter(r=>r.status==='Ongoing Progress').length;
-  const notinit = rows.filter(r=>r.status==='Not Initiated').length;
-  html = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1rem;">
-    <div class="stat-card"><div class="stat-val">${total}</div><div class="stat-lbl">Total</div></div>
+  const total   = allRows.length;
+  const done    = allRows.filter(r=>r.status==='Completed').length;
+  const ongoing = allRows.filter(r=>r.status==='Ongoing Progress').length;
+  const notinit = allRows.filter(r=>r.status==='Not Initiated').length;
+
+  let html = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1rem;">
+    <div class="stat-card"><div class="stat-val">${total}</div><div class="stat-lbl">Total (All Teams)</div></div>
     <div class="stat-card"><div class="stat-val">${done}</div><div class="stat-lbl">Completed</div></div>
     <div class="stat-card"><div class="stat-val">${ongoing}</div><div class="stat-lbl">Ongoing</div></div>
     <div class="stat-card"><div class="stat-val">${notinit}</div><div class="stat-lbl">Not initiated</div></div>
-  </div>` + html;
+  </div>`;
+
+  // Show ALL teams
+  TEAMS.forEach(team => {
+    ensureTeamPeriod(period, team);
+    const rows = teamData[period][team] || [];
+    const teamTotal = rows.length;
+    const teamDone  = rows.filter(r=>r.status==='Completed').length;
+
+    html += `<div style="margin-bottom:1.5rem;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid var(--accent-light);">
+        <span style="font-size:15px;font-weight:700;color:var(--accent);">${escHtml(team)}</span>
+        <span style="font-size:11px;color:var(--text-muted);">${teamTotal} entr${teamTotal!==1?'ies':'y'} · ${teamDone} completed</span>
+      </div>`;
+
+    if (!rows.length) {
+      html += `<div class="empty-state" style="padding:1rem 0;font-size:12px;">No entries yet for ${escHtml(team)}.</div></div>`;
+      return;
+    }
+
+    // Group by person within the team
+    const people = [...new Set(rows.map(r => r.person))];
+    people.forEach(person => {
+      const pRows = rows.filter(r => r.person === person);
+      html += `<div class="card" style="padding:0;overflow:hidden;margin-bottom:10px;">
+        <div style="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface2);">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:26px;height:26px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;">${person.charAt(0).toUpperCase()}</div>
+            <span style="font-size:13px;font-weight:600;color:var(--text);">${escHtml(person)}</span>
+          </div>
+          <span style="font-size:11px;color:var(--text-muted);">${pRows.length} deliverable${pRows.length!==1?'s':''}</span>
+        </div>
+        <div class="team-table-wrap" style="border:none;border-radius:0;">
+          <table class="team-table">
+            <thead><tr>
+              <th style="width:110px;">Project</th>
+              <th>Target Deliverable</th>
+              <th style="width:90px;">Nature</th>
+              <th style="width:160px;">Status</th>
+              <th style="width:90px;">Due Date</th>
+              <th style="width:110px;">Assignees</th>
+              <th style="width:180px;">MOV</th>
+              <th style="width:32px;"></th>
+            </tr></thead>
+            <tbody>`;
+      pRows.forEach(row => {
+        const today = new Date(); today.setHours(0,0,0,0);
+        const due = row.dueDate ? new Date(row.dueDate) : null;
+        const isOverdue = due && due < today && row.status !== 'Completed';
+        const dueTxt = row.dueDate
+          ? `<span class="badge ${isOverdue?'badge-overdue':'badge-date'}">${isOverdue?'⚠ ':''}${row.dueDate}</span>`
+          : '<span style="color:var(--text-faint);">—</span>';
+        html += `<tr id="trow-${row.id}">
+          <td style="font-size:12px;">${escHtml(row.project)||'<span style="color:var(--text-faint);">—</span>'}</td>
+          <td style="font-size:12px;">${escHtml(row.deliverable)}</td>
+          <td>${natureBadge(row.nature)}</td>
+          <td id="tstat-${row.id}">${statusBadgeWithEdit(row.status, row.id)}</td>
+          <td>${dueTxt}</td>
+          <td style="font-size:12px;">${escHtml(row.assignees)||'<span style="color:var(--text-faint);">—</span>'}</td>
+          <td id="tmov-${row.id}">${movCellHTML(row.mov, row.id, team)}</td>
+          <td><button class="del-row-btn" onclick="deleteTeamRow('${escHtml(team)}',${row.id})">×</button></td>
+        </tr>`;
+      });
+      html += `</tbody></table></div></div>`;
+    });
+
+    html += `</div>`;
+  });
 
   document.getElementById('teamTableArea').innerHTML = html;
 }
@@ -2054,6 +2125,49 @@ async function confirmStatusEdit(rowId) {
     showSyncBadge(true);
   }
   renderTeamTabs();
+  renderTeamTables();
+}
+
+function movCellHTML(mov, rowId, team) {
+  const display = mov ? escHtml(mov) : '<span style="color:var(--text-faint);">—</span>';
+  return `<div style="display:flex;align-items:center;gap:5px;">
+    <span id="movtext-${rowId}" style="font-size:12px;">${display}</span>
+    <button onclick="toggleMovEdit(${rowId},'${escHtml(team)}')" title="Edit MOV" style="background:none;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:10px;color:var(--text-muted);cursor:pointer;flex-shrink:0;transition:all .15s;" onmouseover="this.style.background='var(--accent-light)';this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.background='none';this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">✏ Edit</button>
+  </div>`;
+}
+
+function toggleMovEdit(rowId, team) {
+  const cell = document.getElementById('tmov-' + rowId);
+  if (!cell) return;
+  const period = getTPeriod();
+  let rowRef = null;
+  for (const t of Object.keys(teamData[period]||{})) {
+    const found = (teamData[period][t]||[]).find(r=>r.id===rowId);
+    if (found) { rowRef = found; team = t; break; }
+  }
+  if (!rowRef) return;
+  cell.innerHTML = `<div style="display:flex;align-items:center;gap:6px;">
+    <input id="movedit-${rowId}" type="text" value="${escHtml(rowRef.mov||'')}" placeholder="e.g. Minutes, Report, Screenshot..." style="font-family:'DM Sans',sans-serif;font-size:12px;padding:4px 8px;border:1px solid var(--accent);border-radius:6px;background:var(--surface);color:var(--text);outline:none;width:140px;box-shadow:0 0 0 2px rgba(45,80,22,.1);" onkeydown="if(event.key==='Enter')confirmMovEdit(${rowId});if(event.key==='Escape')renderTeamTables();" />
+    <button onclick="confirmMovEdit(${rowId})" style="background:var(--accent);color:#fff;border:none;border-radius:4px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;">Save</button>
+    <button onclick="renderTeamTables()" style="background:none;border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-size:11px;cursor:pointer;color:var(--text-muted);">✕</button>
+  </div>`;
+  document.getElementById('movedit-'+rowId).focus();
+}
+
+async function confirmMovEdit(rowId) {
+  const inp = document.getElementById('movedit-'+rowId);
+  if (!inp) return;
+  const newMov = inp.value.trim();
+  const period = getTPeriod();
+  let updated = false;
+  for (const t of Object.keys(teamData[period]||{})) {
+    const row = (teamData[period][t]||[]).find(r=>r.id===rowId);
+    if (row) { row.mov = newMov; updated = true; break; }
+  }
+  if (updated) {
+    await saveTeamDataCloud();
+    showSyncBadge(true);
+  }
   renderTeamTables();
 }
 
