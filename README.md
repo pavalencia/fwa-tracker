@@ -24,6 +24,8 @@
 
     /* LOGIN */
     .login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);}
+    /* Hidden by default — JS shows it only when truly logged out */
+    #loginScreen{display:none;}
     .login-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2.5rem 2rem;width:100%;max-width:400px;box-shadow:var(--shadow);}
     .login-logo{display:flex;align-items:center;gap:10px;margin-bottom:1.75rem;}
     .login-logo-mark{width:36px;height:36px;background:var(--accent);border-radius:9px;display:flex;align-items:center;justify-content:center;}
@@ -42,17 +44,36 @@
 
     /* APP */
     #app{display:none;}
-    .site-header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100;box-shadow:var(--shadow);}
-    .logo{display:flex;align-items:center;gap:10px;}
-    .logo-mark{width:32px;height:32px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-    .logo-mark svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;}
-    .logo-text{font-size:15px;font-weight:600;letter-spacing:-.02em;}
-    .logo-sub{font-size:11px;color:var(--text-muted);font-weight:400;}
-    .header-right{display:flex;align-items:center;gap:10px;}
-    .user-pill{display:flex;align-items:center;gap:8px;padding:5px 12px 5px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:99px;font-size:12px;color:var(--text-muted);}
-    .user-avatar{width:24px;height:24px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff;flex-shrink:0;}
-    .logout-btn{font-family:'DM Sans',sans-serif;font-size:12px;padding:5px 12px;border:1px solid var(--border);border-radius:99px;background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all .15s;}
+    .site-header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 1.25rem;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:var(--shadow);gap:10px;}
+    .logo{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+    .logo-mark{width:30px;height:30px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .logo-mark svg{width:16px;height:16px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;}
+    .logo-text{font-size:14px;font-weight:700;letter-spacing:-.02em;white-space:nowrap;}
+    .logo-sub{font-size:10px;color:var(--text-muted);font-weight:400;white-space:nowrap;}
+    .header-right{display:flex;align-items:center;gap:6px;flex:1;justify-content:flex-end;min-width:0;}
+    /* NAV PILLS — compact icon+label style */
+    .header-nav{display:flex;align-items:center;gap:3px;flex-wrap:nowrap;overflow:hidden;}
+    .hnav-btn{font-family:'DM Sans',sans-serif;font-size:11.5px;font-weight:500;padding:5px 10px;border:1px solid transparent;border-radius:6px;background:none;color:var(--text-muted);cursor:pointer;transition:all .15s;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;}
+    .hnav-btn:hover{background:var(--surface2);color:var(--text);border-color:var(--border);}
+    .hnav-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+    .hnav-btn.active:hover{background:#234010;}
+    /* Inbox icon buttons — no text label, just icon + badge */
+    .hnav-icon-btn{font-family:'DM Sans',sans-serif;font-size:16px;width:34px;height:34px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;}
+    .hnav-icon-btn:hover{background:var(--surface2);color:var(--text);}
+    .hnav-icon-btn.active,.hnav-icon-btn.has-badge{border-color:var(--accent);}
+    .hnav-icon-btn .ibadge{position:absolute;top:-5px;right:-5px;background:#c0392b;color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:99px;display:none;align-items:center;justify-content:center;padding:0 3px;border:2px solid var(--surface);}
+    .hnav-icon-btn .ibadge.show{display:flex;}
+    /* User pill — compact */
+    .user-pill{display:flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;background:var(--surface2);border:1px solid var(--border);border-radius:99px;font-size:12px;color:var(--text-muted);flex-shrink:0;cursor:pointer;transition:all .15s;}
+    .user-pill:hover{border-color:var(--border-strong);}
+    .user-avatar{width:24px;height:24px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;}
+    .user-name{max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;color:var(--text);}
+    .logout-btn{font-family:'DM Sans',sans-serif;font-size:11px;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all .15s;flex-shrink:0;white-space:nowrap;}
     .logout-btn:hover{background:#fee;color:#c0392b;border-color:#fcc;}
+    /* APPROVAL TOAST — pops up bottom-right */
+    .approval-toast{position:fixed;bottom:80px;right:24px;background:var(--surface);border:1px solid #86efac;border-radius:12px;padding:14px 16px;box-shadow:0 8px 32px rgba(0,0,0,.15);z-index:9999;display:none;flex-direction:column;gap:6px;max-width:320px;animation:slideInRight .3s ease;}
+    .approval-toast.show{display:flex;}
+    @keyframes slideInRight{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
 
     /* LAYOUT */
     .layout{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 60px);}
@@ -185,19 +206,14 @@
     .export-note{font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.7;}
     pre{white-space:pre-wrap;word-break:break-word;font-family:'Courier New',monospace;font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin:1rem 0;max-height:360px;overflow-y:auto;color:var(--text);line-height:1.6;}
     .btn-group{display:flex;gap:8px;flex-wrap:wrap;}
-    .header-nav{display:flex;gap:4px;align-items:center;}
-    .hnav-btn{font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;padding:6px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text-muted);cursor:pointer;transition:all .15s;white-space:nowrap;}
-    .hnav-btn:hover{background:var(--surface2);color:var(--text);}
-    .hnav-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
-    .user-label-text{}
-    @media(max-width:900px){.user-label-text{display:none;}}
     @media(max-width:768px){
       .layout{grid-template-columns:1fr;}.sidebar{display:none;}
       .main{padding:1rem;}.stats-row{grid-template-columns:repeat(3,1fr);}
       .form-grid,.form-grid.three{grid-template-columns:1fr;}
       .day-grid{grid-template-columns:repeat(4,1fr);}
-      .header-nav{gap:2px;}.hnav-btn{font-size:11px;padding:5px 8px;}
-      .logout-btn{font-size:11px;padding:5px 8px;}
+      .hnav-btn{font-size:10.5px;padding:4px 7px;}
+      .logout-btn{font-size:11px;padding:4px 8px;}
+      .user-name{display:none;}
     }
     /* MODAL */
     .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;align-items:center;justify-content:center;}
@@ -347,34 +363,67 @@
       </div>
       <div>
         <div class="logo-text">WAR Tracker</div>
-        <div class="logo-sub" id="appOrgSub">Work Accomplishment Report</div>
+        <div class="logo-sub" id="appOrgSub">OVPDx · UP System</div>
       </div>
     </div>
+
     <div class="header-right">
-      <div class="header-nav" id="headerNav">
-        <button class="hnav-btn" onclick="showPage('dashboard')" id="hnav-dashboard">Dashboard</button>
-        <button class="hnav-btn" onclick="showPage('add')" id="hnav-add">Add deliverable</button>
+      <!-- Main nav -->
+      <nav class="header-nav" id="headerNav">
+        <button class="hnav-btn" onclick="showPage('dashboard')" id="hnav-dashboard">
+          <svg style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+          Dashboard
+        </button>
+        <button class="hnav-btn" onclick="showPage('add')" id="hnav-add">
+          <svg style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          Add
+        </button>
         <button class="hnav-btn" onclick="showPage('view')" id="hnav-view">Entries</button>
-        <button class="hnav-btn" onclick="showPage('kudos')" id="hnav-kudos">🏅 Kudos</button>
+        <button class="hnav-btn" onclick="showPage('kudos')" id="hnav-kudos">🏅</button>
         <button class="hnav-btn" onclick="showPage('team')" id="hnav-team">Team</button>
         <button class="hnav-btn" onclick="showPage('export')" id="hnav-export">PDF</button>
         <button class="hnav-btn" onclick="showPage('teamexport')" id="hnav-teamexport">Sheets</button>
-        <button class="hnav-btn" onclick="showPage('review')" id="hnav-review" style="display:none;position:relative;">
-          📋 Review Inbox <span id="reviewBadge" class="staff-inbox-badge">0</span>
-        </button>
-        <button class="hnav-btn" onclick="showPage('staffinbox')" id="hnav-staffinbox" style="display:none;">
-          🔔 Inbox <span id="staffInboxBadge" class="staff-inbox-badge">0</span>
-        </button>
-      </div>
-      <div class="user-pill">
+      </nav>
+
+      <!-- Divider -->
+      <div style="width:1px;height:22px;background:var(--border);flex-shrink:0;margin:0 2px;"></div>
+
+      <!-- Manager Review Inbox icon button -->
+      <button class="hnav-icon-btn" onclick="showPage('review')" id="hnav-review" style="display:none;" title="Review Inbox">
+        <svg style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        <span class="ibadge" id="reviewBadge">0</span>
+      </button>
+
+      <!-- Staff Notifications icon button -->
+      <button class="hnav-icon-btn" onclick="showPage('staffinbox')" id="hnav-staffinbox" style="display:none;" title="My Notifications">
+        <svg style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="ibadge" id="staffInboxBadge">0</span>
+      </button>
+
+      <!-- User pill -->
+      <div class="user-pill" onclick="showPage('profile')" title="My profile">
         <div class="user-avatar" id="userAvatar">?</div>
-        <span id="userLabel" class="user-label-text">—</span>
-        <span id="managerRoleBadge" style="display:none;background:#3949ab;color:#fff;font-size:9px;font-weight:700;padding:1px 7px;border-radius:99px;letter-spacing:.03em;white-space:nowrap;">MANAGER</span>
+        <span class="user-name" id="userLabel">—</span>
+        <span id="managerRoleBadge" style="display:none;background:#3949ab;color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:99px;letter-spacing:.03em;white-space:nowrap;">MGR</span>
       </div>
-      <span id="syncBadge" style="font-size:11px;transition:opacity .5s;opacity:0;"></span>
+
+      <span id="syncBadge" style="font-size:10px;transition:opacity .5s;opacity:0;flex-shrink:0;white-space:nowrap;"></span>
       <button class="logout-btn" onclick="doLogout()">Sign out</button>
     </div>
   </header>
+
+  <!-- Approval Toast Notification -->
+  <div class="approval-toast" id="approvalToast">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div id="approvalToastIcon" style="font-size:18px;flex-shrink:0;">✅</div>
+      <div style="flex:1;">
+        <div id="approvalToastTitle" style="font-size:13px;font-weight:600;color:var(--text);"></div>
+        <div id="approvalToastBody" style="font-size:11px;color:var(--text-muted);margin-top:2px;line-height:1.5;"></div>
+      </div>
+      <button onclick="closeApprovalToast()" style="background:none;border:none;font-size:16px;color:var(--text-faint);cursor:pointer;line-height:1;flex-shrink:0;padding:0 0 0 4px;">×</button>
+    </div>
+    <button onclick="showPage('staffinbox');closeApprovalToast();" style="align-self:flex-end;background:var(--accent);color:#fff;border:none;border-radius:5px;padding:4px 12px;font-size:11px;font-weight:600;cursor:pointer;margin-top:2px;">View Inbox</button>
+  </div>
 
   <div class="layout">
     <aside class="sidebar">
@@ -881,58 +930,76 @@
 
 <!-- Team Review Modal (per-team, manager) -->
 <div class="modal-overlay" id="teamReviewModal">
-  <div class="modal-box" style="max-width:520px;">
+  <div class="modal-box" style="max-width:520px;position:relative;">
+    <!-- Success overlay -->
+    <div id="teamApproveSuccess" style="display:none;position:absolute;inset:0;background:rgba(255,255,255,.96);border-radius:14px;z-index:10;flex-direction:column;align-items:center;justify-content:center;gap:12px;">
+      <div style="width:56px;height:56px;border-radius:50%;background:#e8f5e9;display:flex;align-items:center;justify-content:center;">
+        <svg style="width:28px;height:28px;stroke:#15803d;fill:none;stroke-width:2.5;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div style="font-size:15px;font-weight:700;color:#15803d;">Team Approved!</div>
+      <div id="teamApproveSuccessDesc" style="font-size:12px;color:var(--text-muted);text-align:center;max-width:280px;line-height:1.6;"></div>
+      <button onclick="closeTeamReviewModal()" style="margin-top:4px;background:#15803d;color:#fff;border:none;border-radius:6px;padding:8px 20px;font-size:13px;font-weight:600;cursor:pointer;">Done</button>
+    </div>
     <div class="modal-title" id="teamReviewTitle">Review Team Deliverables</div>
     <div class="modal-desc" id="teamReviewDesc"></div>
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:12px;line-height:1.8;margin-bottom:12px;max-height:220px;overflow-y:auto;" id="teamReviewDetail"></div>
     <div style="margin-top:12px;">
       <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">Your decision</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn btn-primary" onclick="doApproveTeam()" style="background:#15803d;border-color:#15803d;">
+        <button id="teamApproveBtn" class="btn btn-primary" onclick="doApproveTeam()" style="background:#15803d;border-color:#15803d;min-width:130px;justify-content:center;">
           <svg style="width:13px;height:13px;stroke:#fff;fill:none;stroke-width:2.5;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
           Approve Team
         </button>
-        <button class="btn" onclick="toggleTeamReviewRemarks()" style="border-color:#bf360c;color:#bf360c;">
+        <button id="teamRevertBtn" class="btn" onclick="toggleTeamReviewRemarks()" style="border-color:#bf360c;color:#bf360c;">
           ↩ Return with Remarks
         </button>
       </div>
       <div class="approval-remarks-area" id="teamReviewRemarksArea">
         <label style="font-size:11px;font-weight:500;color:var(--text-muted);display:block;margin-bottom:5px;margin-top:10px;">Remarks for the team</label>
         <textarea id="teamReviewRemarksText" placeholder="Explain what needs to be revised or clarified..."></textarea>
-        <button class="btn" onclick="doRevertTeam()" style="margin-top:8px;border-color:#bf360c;color:#bf360c;width:100%;justify-content:center;">Send back to team</button>
+        <button id="teamSendBackBtn" class="btn" onclick="doRevertTeam()" style="margin-top:8px;border-color:#bf360c;color:#bf360c;width:100%;justify-content:center;">Send back to team</button>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn" onclick="closeTeamReviewModal()">Cancel</button>
+      <button id="teamCancelBtn" class="btn" onclick="closeTeamReviewModal()">Cancel</button>
     </div>
   </div>
 </div>
 
 <!-- WAR Review Modal (manager reviewing individual WAR) -->
 <div class="modal-overlay" id="warReviewModal">
-  <div class="modal-box" style="max-width:520px;">
+  <div class="modal-box" style="max-width:520px;position:relative;">
+    <!-- Success overlay -->
+    <div id="warApproveSuccess" style="display:none;position:absolute;inset:0;background:rgba(255,255,255,.96);border-radius:14px;z-index:10;flex-direction:column;align-items:center;justify-content:center;gap:12px;">
+      <div style="width:56px;height:56px;border-radius:50%;background:#e8f5e9;display:flex;align-items:center;justify-content:center;">
+        <svg style="width:28px;height:28px;stroke:#15803d;fill:none;stroke-width:2.5;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div style="font-size:15px;font-weight:700;color:#15803d;">WAR Approved!</div>
+      <div id="warApproveSuccessDesc" style="font-size:12px;color:var(--text-muted);text-align:center;max-width:280px;line-height:1.6;"></div>
+      <button onclick="closeWARReviewModal()" style="margin-top:4px;background:#15803d;color:#fff;border:none;border-radius:6px;padding:8px 20px;font-size:13px;font-weight:600;cursor:pointer;">Done</button>
+    </div>
     <div class="modal-title" id="warReviewTitle">Review WAR Submission</div>
     <div class="modal-desc" id="warReviewDesc"></div>
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:12px;line-height:1.8;margin-bottom:12px;max-height:200px;overflow-y:auto;" id="warReviewDetail"></div>
     <div style="margin-top:12px;">
       <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">Your decision</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn btn-primary" onclick="doApproveWAR()" style="background:#15803d;border-color:#15803d;">
+        <button id="warApproveBtn" class="btn btn-primary" onclick="doApproveWAR()" style="background:#15803d;border-color:#15803d;min-width:130px;justify-content:center;">
           <svg style="width:13px;height:13px;stroke:#fff;fill:none;stroke-width:2.5;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
           Approve WAR
         </button>
-        <button class="btn" onclick="toggleWARReviewRemarks()" style="border-color:#bf360c;color:#bf360c;">
+        <button id="warRevertBtn" class="btn" onclick="toggleWARReviewRemarks()" style="border-color:#bf360c;color:#bf360c;">
           ↩ Return with Remarks
         </button>
       </div>
       <div class="approval-remarks-area" id="warReviewRemarksArea">
         <label style="font-size:11px;font-weight:500;color:var(--text-muted);display:block;margin-bottom:5px;margin-top:10px;">Remarks for submitter</label>
         <textarea id="warReviewRemarksText" placeholder="Explain what needs to be revised or clarified..."></textarea>
-        <button class="btn" onclick="doRevertWAR()" style="margin-top:8px;border-color:#bf360c;color:#bf360c;width:100%;justify-content:center;">Send back to submitter</button>
+        <button id="warSendBackBtn" class="btn" onclick="doRevertWAR()" style="margin-top:8px;border-color:#bf360c;color:#bf360c;width:100%;justify-content:center;">Send back to submitter</button>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn" onclick="closeWARReviewModal()">Cancel</button>
+      <button id="warCancelBtn" class="btn" onclick="closeWARReviewModal()">Cancel</button>
     </div>
   </div>
 </div>
@@ -1262,6 +1329,10 @@ async function launchApp(username, fullname, email){
   entries = loadedEntries;
   updateReviewBadge();
   updateStaffInboxBadge();
+  // Show toast for most recent unread approval/revert notification
+  const myNotifs = notifications[username] || [];
+  const latestUnread = myNotifs.find(n => !n.read && (n.type === 'war_approved' || n.type === 'team_approved' || n.type === 'war_reverted' || n.type === 'team_reverted'));
+  if (latestUnread) setTimeout(() => showApprovalToast(latestUnread), 1200);
 
   const users=getUsers();
   if(users[username]&&users[username].name){
@@ -1286,12 +1357,36 @@ async function launchApp(username, fullname, email){
   showSyncBadge(true);
 }
 
-window.addEventListener('DOMContentLoaded',async ()=>{
+window.addEventListener('DOMContentLoaded', async () => {
+  // ── INSTANT SESSION RESTORE ──────────────────────────────────────────────
+  // Check localStorage immediately — no cloud wait — so the user never sees
+  // the login screen on a simple refresh if they were already logged in.
+  const u = getCurrentUser();
+  const localUsers = getUsers();
+
+  if (u && localUsers[u]) {
+    // Session found locally → launch app RIGHT NOW, sync cloud in background
+    document.getElementById('loginScreen').style.display = 'none';
+    await launchApp(u, localUsers[u].name, null);
+    // Background cloud sync (users list + notifications)
+    loadUsersFromCloud().catch(() => {});
+    return;
+  }
+
+  // No local session → need to check cloud (user may have registered on another device)
   await loadUsersFromCloud();
-  const u=getCurrentUser();
-  if(u){const users=getUsers();if(users[u]){await launchApp(u,users[u].name,null);return;}}
-  document.getElementById('loginScreen').style.display='flex';
-  document.getElementById('hPeriod').addEventListener('change',()=>{if(document.getElementById('page-view').classList.contains('active'))renderView();});
+  const u2 = getCurrentUser();
+  const users2 = getUsers();
+  if (u2 && users2[u2]) {
+    await launchApp(u2, users2[u2].name, null);
+    return;
+  }
+
+  // Truly not logged in → show login
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('hPeriod').addEventListener('change', () => {
+    if (document.getElementById('page-view').classList.contains('active')) renderView();
+  });
 });
 
 // ── WEEK DROPDOWN ─────────────────────────
@@ -2165,8 +2260,10 @@ function updateReviewBadge() {
   const b1 = document.getElementById('reviewBadge');
   const b2 = document.getElementById('reviewBadgeSide');
   const inboxBtn = document.getElementById('goToInboxBtn');
-  if (b1) { b1.style.display = pending>0?'':'none'; b1.textContent = pending; }
+  if (b1) { b1.classList.toggle('show', pending>0); b1.textContent = pending; }
   if (b2) { b2.style.display = pending>0?'':'none'; b2.textContent = pending; }
+  const hnRev = document.getElementById('hnav-review');
+  if (hnRev) hnRev.classList.toggle('has-badge', pending>0);
   if (inboxBtn) inboxBtn.textContent = pending>0 ? `📋 Open Inbox (${pending})` : '📋 Open Inbox';
 }
 
@@ -2246,24 +2343,36 @@ function openTeamReviewModal(team, period) {
   document.getElementById('teamReviewRemarksText').value='';
   document.getElementById('teamReviewModal').classList.add('open');
 }
-function closeTeamReviewModal() { document.getElementById('teamReviewModal').classList.remove('open'); _teamReviewTarget=null; }
 function toggleTeamReviewRemarks() {
   const a = document.getElementById('teamReviewRemarksArea');
   a.style.display = a.style.display==='none'?'block':'none';
   if(a.style.display==='block') document.getElementById('teamReviewRemarksText').focus();
 }
+function setTeamModalBusy(busy) {
+  ['teamApproveBtn','teamRevertBtn','teamSendBackBtn','teamCancelBtn'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.disabled = busy;
+    el.style.opacity = busy ? '.5' : '';
+    el.style.cursor  = busy ? 'not-allowed' : '';
+  });
+}
+
 async function doApproveTeam() {
   if(!_teamReviewTarget) return;
+  const btn = document.getElementById('teamApproveBtn');
+  if (btn && btn.disabled) return; // prevent double-click
+  setTeamModalBusy(true);
+  if (btn) btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:7px;"><span style="display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;"></span> Approving…</span>';
+
   const {team,period}=_teamReviewTarget;
   const u=getCurrentUser(); const users=getUsers(); const mName=users[u]?.name||u;
   const now=new Date().toLocaleString('en-PH',{timeZone:'Asia/Manila',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
   if(!teamSubmissions[period]) teamSubmissions[period]={};
   teamSubmissions[period][team]={...teamSubmissions[period][team],status:'approved',approvedBy:mName,approvedAt:now,remarks:null};
-  // Notify the person who submitted (submittedBy username) and all team members
   const sub = teamSubmissions[period][team];
   const toNotify = new Set();
   if (sub?.submittedBy) toNotify.add(sub.submittedBy);
-  // Also notify all registered users who are in this team
   Object.entries(users).forEach(([uname, ud]) => {
     const members = TEAM_MEMBERS[team] || [];
     if (members.some(m => m.toLowerCase().includes((ud.name||'').split(' ')[0].toLowerCase()))) toNotify.add(uname);
@@ -2271,19 +2380,30 @@ async function doApproveTeam() {
   for (const recipient of toNotify) {
     await createNotification(recipient, { type:'team_approved', period, team, from:mName, fromPosition:getManagerInfo(mName)?.position||'Manager', at:now });
   }
-  closeTeamReviewModal();
   await saveTeamSubmissions(); updateReviewBadge(); renderTeamTables(); renderReviewInbox(); showSyncBadge(true);
+
+  // Show success overlay
+  const mgr = getManagerInfo(mName);
+  const successEl = document.getElementById('teamApproveSuccess');
+  const descEl    = document.getElementById('teamApproveSuccessDesc');
+  if (descEl) descEl.textContent = `${team} for ${escHtml(period)} has been approved by ${mName}${mgr?' ('+mgr.position+')':''}.`;
+  if (successEl) { successEl.style.display = 'flex'; }
+  setTeamModalBusy(false);
+  if (btn) btn.innerHTML = '<svg style="width:13px;height:13px;stroke:#fff;fill:none;stroke-width:2.5;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Approve Team';
 }
 async function doRevertTeam() {
   if(!_teamReviewTarget) return;
   const remarks=document.getElementById('teamReviewRemarksText').value.trim();
   if(!remarks){document.getElementById('teamReviewRemarksText').style.borderColor='#c0392b';document.getElementById('teamReviewRemarksText').focus();return;}
+  const btn = document.getElementById('teamSendBackBtn');
+  if (btn && btn.disabled) return;
+  setTeamModalBusy(true);
+  if (btn) btn.innerHTML = '⏳ Sending…';
   const {team,period}=_teamReviewTarget;
   const u=getCurrentUser(); const users=getUsers(); const mName=users[u]?.name||u;
   const now=new Date().toLocaleString('en-PH',{timeZone:'Asia/Manila',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
   if(!teamSubmissions[period]) teamSubmissions[period]={};
   teamSubmissions[period][team]={...teamSubmissions[period][team],status:'reverted',approvedBy:mName,approvedAt:now,remarks};
-  // Notify submitter and team members
   const sub = teamSubmissions[period][team];
   const toNotify = new Set();
   if (sub?.submittedBy) toNotify.add(sub.submittedBy);
@@ -2294,8 +2414,19 @@ async function doRevertTeam() {
   for (const recipient of toNotify) {
     await createNotification(recipient, { type:'team_reverted', period, team, from:mName, fromPosition:getManagerInfo(mName)?.position||'Manager', remarks, at:now });
   }
-  closeTeamReviewModal();
   await saveTeamSubmissions(); updateReviewBadge(); renderTeamTables(); renderReviewInbox(); showSyncBadge(true);
+  setTeamModalBusy(false);
+  closeTeamReviewModal();
+}
+
+function closeTeamReviewModal() {
+  // Reset success overlay before closing
+  const s = document.getElementById('teamApproveSuccess');
+  if (s) s.style.display = 'none';
+  const btn = document.getElementById('teamApproveBtn');
+  if (btn) btn.innerHTML = '<svg style="width:13px;height:13px;stroke:#fff;fill:none;stroke-width:2.5;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Approve Team';
+  document.getElementById('teamReviewModal').classList.remove('open');
+  _teamReviewTarget = null;
 }
 
 // ── WAR REVIEW MODAL ─────────────────────
@@ -2317,45 +2448,81 @@ function openWARReviewModal(username, period) {
   document.getElementById('warReviewRemarksText').value='';
   document.getElementById('warReviewModal').classList.add('open');
 }
-function closeWARReviewModal(){ document.getElementById('warReviewModal').classList.remove('open'); _warReviewTarget=null; }
 function toggleWARReviewRemarks(){
   const a=document.getElementById('warReviewRemarksArea');
   a.style.display=a.style.display==='none'?'block':'none';
   if(a.style.display==='block') document.getElementById('warReviewRemarksText').focus();
 }
+function setWARModalBusy(busy) {
+  ['warApproveBtn','warRevertBtn','warSendBackBtn','warCancelBtn'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.disabled = busy;
+    el.style.opacity = busy ? '.5' : '';
+    el.style.cursor  = busy ? 'not-allowed' : '';
+  });
+}
+
 async function doApproveWAR(){
   if(!_warReviewTarget) return;
+  const btn = document.getElementById('warApproveBtn');
+  if (btn && btn.disabled) return; // prevent double-click
+  setWARModalBusy(true);
+  if (btn) btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:7px;"><span style="display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;"></span> Approving…</span>';
+
   const {username,period}=_warReviewTarget;
   const u=getCurrentUser(); const users=getUsers(); const mName=users[u]?.name||u;
   const now=new Date().toLocaleString('en-PH',{timeZone:'Asia/Manila',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
   if(!warSubmissions[period]) warSubmissions[period]={};
   warSubmissions[period][username]={...warSubmissions[period][username],status:'approved',approvedBy:mName,approvedAt:now,remarks:null};
-  // Notify staff member
   await createNotification(username, {
     type: 'war_approved', period, from: mName,
     fromPosition: getManagerInfo(mName)?.position||'Manager',
     remarks: null, at: now
   });
-  closeWARReviewModal();
   await saveWarSubmissions(); updateReviewBadge(); renderReviewInbox(); showSyncBadge(true);
+
+  // Show success overlay
+  const sub = warSubmissions[period][username];
+  const mgr = getManagerInfo(mName);
+  const successEl = document.getElementById('warApproveSuccess');
+  const descEl    = document.getElementById('warApproveSuccessDesc');
+  if (descEl) descEl.textContent = `WAR submitted by ${escHtml(sub?.name||username)} for ${escHtml(period)} has been approved by ${mName}${mgr?' ('+mgr.position+')':''}.`;
+  if (successEl) { successEl.style.display = 'flex'; }
+  setWARModalBusy(false);
+  if (btn) btn.innerHTML = '<svg style="width:13px;height:13px;stroke:#fff;fill:none;stroke-width:2.5;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Approve WAR';
 }
+
 async function doRevertWAR(){
   if(!_warReviewTarget) return;
   const remarks=document.getElementById('warReviewRemarksText').value.trim();
   if(!remarks){document.getElementById('warReviewRemarksText').style.borderColor='#c0392b';document.getElementById('warReviewRemarksText').focus();return;}
+  const btn = document.getElementById('warSendBackBtn');
+  if (btn && btn.disabled) return;
+  setWARModalBusy(true);
+  if (btn) btn.innerHTML = '⏳ Sending…';
   const {username,period}=_warReviewTarget;
   const u=getCurrentUser(); const users=getUsers(); const mName=users[u]?.name||u;
   const now=new Date().toLocaleString('en-PH',{timeZone:'Asia/Manila',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
   if(!warSubmissions[period]) warSubmissions[period]={};
   warSubmissions[period][username]={...warSubmissions[period][username],status:'reverted',approvedBy:mName,approvedAt:now,remarks};
-  // Create notification for the staff member
   await createNotification(username, {
     type: 'war_reverted', period, from: mName,
     fromPosition: getManagerInfo(mName)?.position||'Manager',
     remarks, at: now
   });
-  closeWARReviewModal();
   await saveWarSubmissions(); updateReviewBadge(); renderReviewInbox(); showSyncBadge(true);
+  setWARModalBusy(false);
+  closeWARReviewModal();
+}
+
+function closeWARReviewModal(){
+  const s = document.getElementById('warApproveSuccess');
+  if (s) s.style.display = 'none';
+  const btn = document.getElementById('warApproveBtn');
+  if (btn) btn.innerHTML = '<svg style="width:13px;height:13px;stroke:#fff;fill:none;stroke-width:2.5;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Approve WAR';
+  document.getElementById('warReviewModal').classList.remove('open');
+  _warReviewTarget=null;
 }
 
 // ── STAFF NOTIFICATIONS ───────────────────
@@ -2403,6 +2570,51 @@ async function createNotification(username, data) {
     ...data
   });
   await saveNotificationsForUser(username);
+  // If this notification is for the currently logged-in user, show a toast
+  const currentUser = getCurrentUser();
+  if (currentUser === username) {
+    updateStaffInboxBadge();
+    showApprovalToast(data);
+  }
+}
+
+function showApprovalToast(data) {
+  const toast = document.getElementById('approvalToast');
+  const iconEl  = document.getElementById('approvalToastIcon');
+  const titleEl = document.getElementById('approvalToastTitle');
+  const bodyEl  = document.getElementById('approvalToastBody');
+  if (!toast) return;
+
+  if (data.type === 'war_approved') {
+    iconEl.textContent = '✅';
+    toast.style.borderColor = '#86efac';
+    titleEl.textContent = 'WAR Approved!';
+    bodyEl.textContent  = `Your Work Accomplishment Report for ${data.period} was approved by ${data.from}.`;
+  } else if (data.type === 'war_reverted') {
+    iconEl.textContent = '↩';
+    toast.style.borderColor = '#fde68a';
+    titleEl.textContent = 'WAR Returned with Remarks';
+    bodyEl.textContent  = `${data.from} returned your WAR for ${data.period}. Check your inbox for details.`;
+  } else if (data.type === 'team_approved') {
+    iconEl.textContent = '✅';
+    toast.style.borderColor = '#86efac';
+    titleEl.textContent = `${data.team} Deliverables Approved!`;
+    bodyEl.textContent  = `Approved by ${data.from} for period ${data.period}.`;
+  } else if (data.type === 'team_reverted') {
+    iconEl.textContent = '↩';
+    toast.style.borderColor = '#fde68a';
+    titleEl.textContent = `${data.team} Deliverables Returned`;
+    bodyEl.textContent  = `${data.from} returned your team's deliverables. Check your inbox.`;
+  } else { return; }
+
+  toast.classList.add('show');
+  clearTimeout(toast._autoClose);
+  toast._autoClose = setTimeout(() => toast.classList.remove('show'), 8000);
+}
+
+function closeApprovalToast() {
+  const toast = document.getElementById('approvalToast');
+  if (toast) { toast.classList.remove('show'); clearTimeout(toast._autoClose); }
 }
 
 function getMyNotifications() {
@@ -2417,7 +2629,6 @@ function getUnreadCount() {
 function updateStaffInboxBadge() {
   const u = getCurrentUser();
   if (!u) return;
-  // Staff inbox is shown to everyone (managers too — they can still receive notifications)
   const nav  = document.getElementById('nav-staffinbox');
   const hnav = document.getElementById('hnav-staffinbox');
   const b1   = document.getElementById('staffInboxBadge');
@@ -2425,8 +2636,10 @@ function updateStaffInboxBadge() {
   if (nav)  nav.style.display  = '';
   if (hnav) hnav.style.display = '';
   const count = getUnreadCount();
-  if (b1) { b1.style.display = count>0?'':'none'; b1.textContent = count; }
+  if (b1) { b1.classList.toggle('show', count>0); b1.textContent = count; }
   if (b2) { b2.style.display = count>0?'':'none'; b2.textContent = count; }
+  // Also pulse the icon button if unread
+  if (hnav) hnav.classList.toggle('has-badge', count>0);
 }
 
 async function markAllNotificationsRead() {
