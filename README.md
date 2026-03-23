@@ -876,7 +876,7 @@
       <div class="page" id="page-profile">
         <div class="page-header">
           <div class="page-title">My Profile</div>
-          <div class="page-desc">Update your display name and change your password.</div>
+          <div class="page-desc">Update your display name, change your password, and upload your signature.</div>
         </div>
         <div class="card">
           <div class="card-title">Account info</div>
@@ -887,6 +887,33 @@
           <button class="btn btn-primary" onclick="saveProfileName()">Save name</button>
           <div id="profileNameMsg" style="font-size:12px;margin-top:8px;min-height:16px;"></div>
         </div>
+
+        <!-- Signature upload card — visible to managers only -->
+        <div class="card" id="sigUploadCard" style="display:none;border-color:#a5b4fc;background:linear-gradient(135deg,#f8f9ff,#f4f4ff);">
+          <div class="card-title" style="color:#3949ab;">My Signature</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;line-height:1.7;">
+            Upload your handwritten signature. It will appear on approved Work Accomplishment Reports and team deliverable exports. Use a clear image on a white background (PNG or JPG).
+          </div>
+          <!-- Current signature preview -->
+          <div id="sigCurrentPreview" style="display:none;margin-bottom:14px;padding:12px 14px;background:#fff;border:1px solid #86efac;border-radius:8px;">
+            <div style="font-size:11px;font-weight:600;color:#15803d;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">Current signature</div>
+            <img id="sigPreviewImg" src="" style="max-height:60px;max-width:220px;object-fit:contain;filter:contrast(1.15);display:block;" />
+            <div style="display:flex;gap:8px;margin-top:10px;align-items:center;">
+              <span id="sigUploadedBy" style="font-size:11px;color:var(--text-muted);flex:1;"></span>
+              <button onclick="clearManagerSignature()" class="btn" style="font-size:11px;padding:4px 10px;border-color:#c0392b;color:#c0392b;">Remove</button>
+            </div>
+          </div>
+          <!-- Upload zone -->
+          <div id="sigUploadZone" class="upload-zone" onclick="document.getElementById('sigFileInput').click()" style="max-width:380px;">
+            <input type="file" id="sigFileInput" accept="image/png,image/jpeg,image/jpg,image/webp" style="display:none;" onchange="handleSignatureUpload(event)" />
+            <div class="upload-zone-text">
+              <svg style="width:20px;height:20px;stroke:var(--text-faint);fill:none;stroke-width:1.5;display:block;margin:0 auto 6px;" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Click to upload or drag &amp; drop · <strong>PNG, JPG, WEBP</strong> · Recommended: white background, clear strokes
+            </div>
+          </div>
+          <div id="sigUploadMsg" style="font-size:12px;margin-top:8px;min-height:16px;"></div>
+        </div>
+
         <div class="card">
           <div class="card-title">Change password</div>
           <div class="form-grid full" style="margin-bottom:12px;">
@@ -2070,7 +2097,23 @@ function renderView(){
 function buildPDFPreview(){
   const we=getPeriodEntries(),h=getHeader(),el=document.getElementById('pdf-preview-table');
   if(!we.length){el.innerHTML='<div class="empty-state">No entries for this period.</div>';return;}
+
+  // Check if this WAR has been approved
+  const approval = getWARApprovalForPeriod(h.period);
+  const approvedBy = approval ? approval.approvedBy : null;
+  const approvedAt = approval ? approval.approvedAt : null;
+  const approverMgr = approvedBy ? getManagerInfo(approvedBy) : null;
+
   let html=`<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;font-weight:500;">${h.name||'(Name)'} · ${h.office||'(Office)'} · ${h.period||'(Period)'}</div>`;
+
+  // Approval status banner
+  if (approval) {
+    html += `<div style="background:#e8f5e9;border:1px solid #86efac;border-radius:6px;padding:8px 12px;font-size:12px;color:#15803d;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
+      <svg style="width:14px;height:14px;stroke:#15803d;fill:none;stroke-width:2.5;flex-shrink:0;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      <span>✅ <strong>WAR Approved</strong> by ${escHtmlEntry(approvedBy||'')}${approverMgr?' ('+approverMgr.position+')':''} on ${escHtmlEntry(approvedAt||'')} — manager signature will appear on the PDF.</span>
+    </div>`;
+  }
+
   html+=`<table class="preview-table"><thead><tr>
     <th style="width:70px;">Date</th><th>Activity / Task</th>
     <th style="width:30px;text-align:center;">O</th><th style="width:30px;text-align:center;">C</th><th style="width:30px;text-align:center;">R</th>
@@ -2088,10 +2131,19 @@ function buildPDFPreview(){
       <td>${e.notes||''}${th?'<div style="margin-top:4px;">'+th+'</div>':''}</td>
     </tr>`;
   });
+
+  // Signature block — show actual sig image if approved
+  const reviewedSigHTML = approval
+    ? `<div style="margin-bottom:8px;"><img src="${getManagerSigImg(approvedBy)}" style="height:36px;max-width:130px;object-fit:contain;filter:contrast(1.2);display:block;opacity:.92;" /></div>
+       <div style="border-top:2px solid #15803d;padding-top:4px;font-weight:600;color:#15803d;">${approvedBy||h.reviewed||'___________________'}</div>
+       <div style="color:var(--text-muted);font-size:10px;">${approverMgr?.position||h.reviewedPos||''}</div>
+       <div style="font-size:10px;color:#15803d;margin-top:2px;font-style:italic;">✅ Electronically approved · ${approvedAt||''}</div>`
+    : `<div style="border-top:1px solid var(--text);padding-top:4px;font-weight:600;">${h.reviewed||'___________________'}</div><div style="color:var(--text-muted);font-size:10px;">${h.reviewedPos||''}</div>`;
+
   html+=`</tbody></table>
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:16px;font-size:11px;">
     <div><div style="color:var(--text-muted);margin-bottom:18px;">Submitted by:</div><div style="border-top:1px solid var(--text);padding-top:4px;font-weight:600;">${h.submitted||'___________________'}</div><div style="color:var(--text-muted);font-size:10px;">${h.submittedPos||''}</div></div>
-    <div><div style="color:var(--text-muted);margin-bottom:18px;">Reviewed by:</div><div style="border-top:1px solid var(--text);padding-top:4px;font-weight:600;">${h.reviewed||'___________________'}</div><div style="color:var(--text-muted);font-size:10px;">${h.reviewedPos||''}</div></div>
+    <div><div style="color:var(--text-muted);margin-bottom:8px;">Reviewed by:</div>${reviewedSigHTML}</div>
     <div><div style="color:var(--text-muted);margin-bottom:18px;">Approved by:</div><div style="border-top:1px solid var(--text);padding-top:4px;font-weight:600;">${APP_CONFIG.approverName||'Peter A. Sy'}</div><div style="color:var(--text-muted);font-size:10px;">${APP_CONFIG.approverRole||'Vice President for Digital Transformation'}</div></div>
   </div>`;
   el.innerHTML=html;
@@ -2193,18 +2245,47 @@ async function exportPDF(){
   doc.setFontSize(7.5);doc.setFont('helvetica','italic');
   doc.text('* Work from Home, Satellite Office or Another Fixed Place within the Philippines',ml,fy);
   fy+=12;
-  if(fy+40>280){doc.addPage();fy=20;}
+  if(fy+50>280){doc.addPage();fy=20;}
   const colW2=cW/3;
-  [{label:'Submitted by:',name:h.submitted||'',pos:h.submittedPos||''},
-   {label:'Reviewed by:',name:h.reviewed||'',pos:h.reviewedPos||''},
-   {label:'Approved by:',name:APP_CONFIG.approverName||'Peter A. Sy',pos:APP_CONFIG.approverRole||'Vice President for Digital Transformation'}
-  ].forEach((col,i)=>{
-    const x=ml+i*colW2;
-    doc.setFont('helvetica','normal');doc.setFontSize(9);doc.text(col.label,x,fy);
-    doc.line(x,fy+16,x+colW2-6,fy+16);
-    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.text(col.name,x,fy+21);
-    doc.setFont('helvetica','normal');doc.setFontSize(8);
-    if(col.pos)doc.text(col.pos,x,fy+26);
+
+  // Check if this WAR has been approved — if so, embed signature image
+  const approval = getWARApprovalForPeriod(h.period);
+  const approvedBy = approval ? approval.approvedBy : null;
+  const approvedAt = approval ? approval.approvedAt : null;
+  const approverMgr = approval ? getManagerInfo(approvedBy) : null;
+
+  const sigCols = [
+    {label:'Submitted by:', name:h.submitted||'', pos:h.submittedPos||'', hasSig:false, sigImg:null},
+    {label:'Reviewed by:',  name:approvedBy||h.reviewed||'', pos:(approverMgr?.position)||h.reviewedPos||'', hasSig:!!approval, sigAt:approvedAt||'', sigImg: approval ? getManagerSigImg(approvedBy) : null},
+    {label:'Approved by:',  name:APP_CONFIG.approverName||'Peter A. Sy', pos:APP_CONFIG.approverRole||'Vice President for Digital Transformation', hasSig:false, sigImg:null}
+  ];
+
+  sigCols.forEach((col, i) => {
+    const x = ml + i * colW2;
+    doc.setFont('helvetica','normal'); doc.setFontSize(9);
+    doc.text(col.label, x, fy);
+
+    if (col.hasSig && col.sigImg) {
+      try {
+        doc.addImage(col.sigImg, 'JPEG', x, fy+2, 38, 12);
+      } catch(e2) { /* fallback to blank space */ }
+      doc.line(x, fy+16, x+colW2-6, fy+16);
+      doc.setFont('helvetica','bold'); doc.setFontSize(9);
+      doc.text(col.name, x, fy+21);
+      doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
+      if(col.pos) doc.text(col.pos, x, fy+26);
+      // Electronically approved stamp
+      doc.setTextColor(21, 128, 61); // green
+      doc.setFontSize(7);
+      doc.text(`Electronically approved · ${col.sigAt}`, x, fy+31);
+      doc.setTextColor(0, 0, 0); // reset
+    } else {
+      doc.line(x, fy+16, x+colW2-6, fy+16);
+      doc.setFont('helvetica','bold'); doc.setFontSize(9);
+      doc.text(col.name, x, fy+21);
+      doc.setFont('helvetica','normal'); doc.setFontSize(8);
+      if(col.pos) doc.text(col.pos, x, fy+26);
+    }
   });
 
   doc.save(`WAR_${(h.name||'Report').replace(/\s+/g,'_')}_${(h.period||'Period').replace(/[^a-z0-9]/gi,'_')}.pdf`);
@@ -2221,6 +2302,16 @@ const APP_CONFIG = {
   ejsService:   '',
   ejsTemplate:  ''
 };
+
+// ── WAR APPROVAL HELPER ───────────────────
+// Returns the WAR approval record for the current user + period (or null)
+function getWARApprovalForPeriod(period) {
+  const u = getCurrentUser();
+  if (!u || !period) return null;
+  const sub = warSubmissions[period]?.[u];
+  if (sub && sub.status === 'approved') return sub;
+  return null;
+}
 
 const TEAMS = ['Admin Team','Communications Team','Project Team','Research Team','Management Team'];
 const TEAM_MEMBERS = {
@@ -2353,7 +2444,27 @@ function renderWARSubmitStatus() {
   if (sub.status==='submitted') {
     el.innerHTML=`<div style="background:#e8eaf6;border:1px solid #a5b4fc;border-radius:6px;padding:8px 12px;font-size:12px;color:#3949ab;margin-bottom:4px;">📤 Submitted to <strong>${escHtml(sub.submittedTo)}</strong> on ${escHtml(sub.submittedAt)}. Awaiting review.</div>`;
   } else if (sub.status==='approved') {
-    el.innerHTML=`<div style="background:#e8f5e9;border:1px solid #86efac;border-radius:6px;padding:8px 12px;font-size:12px;color:#15803d;margin-bottom:4px;">✅ Approved by <strong>${escHtml(sub.approvedBy)}</strong> on ${escHtml(sub.approvedAt)}.</div>`;
+    const mgr = getManagerInfo(sub.approvedBy);
+    el.innerHTML=`
+      <div style="background:#e8f5e9;border:1px solid #86efac;border-radius:8px;padding:12px 14px;margin-bottom:4px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <svg style="width:16px;height:16px;stroke:#15803d;fill:none;stroke-width:2.5;flex-shrink:0;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          <span style="font-size:13px;font-weight:600;color:#15803d;">WAR Approved — Signature included in PDF</span>
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;">
+          <div style="background:#fff;border:1px solid #86efac;border-radius:6px;padding:8px 12px;">
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;">Manager e-signature</div>
+            <img src="${getManagerSigImg(sub.approvedBy)}" style="height:40px;max-width:150px;object-fit:contain;filter:contrast(1.2);display:block;opacity:.92;" />
+            <div style="border-top:1px solid #86efac;margin-top:4px;padding-top:4px;">
+              <div style="font-size:12px;font-weight:600;color:#15803d;font-style:italic;">${escHtml(sub.approvedBy||'')}</div>
+              <div style="font-size:10px;color:var(--text-muted);">${escHtml(mgr?.position||'Manager')} · ${escHtml(sub.approvedAt||'')}</div>
+            </div>
+          </div>
+          <div style="font-size:12px;color:var(--text-muted);line-height:1.6;">
+            This signature will appear on the <strong>Reviewed by</strong> line when you download the PDF.
+          </div>
+        </div>
+      </div>`;
   } else if (sub.status==='reverted') {
     el.innerHTML=`<div style="background:#fff3e0;border:1px solid #f0c040;border-radius:6px;padding:8px 12px;font-size:12px;color:#bf360c;margin-bottom:4px;">↩ Returned with remarks: "<strong>${escHtml(sub.remarks)}</strong>" — ${escHtml(sub.approvedBy)}</div>`;
   }
@@ -2957,6 +3068,199 @@ function getManagerInfo(name) {
   return MANAGERS.find(m => m.name === name) || null;
 }
 
+// ── MANAGER SIGNATURE STORAGE ─────────────
+// Signatures are stored per manager name, shared across all users
+let managerSignatures = {}; // { [managerName]: dataUrl }
+
+function sigKey(managerName) { return 'fwa_sig__' + managerName.replace(/\s+/g,'_').toLowerCase(); }
+
+async function saveManagerSignature(managerName, dataUrl) {
+  managerSignatures[managerName] = dataUrl;
+  const key = sigKey(managerName);
+  localStorage.setItem(key, dataUrl);
+  try { await window.storage.set(key, dataUrl, true); } catch(e){}
+  await dbSet(key, dataUrl);
+}
+
+async function loadManagerSignature(managerName) {
+  if (managerSignatures[managerName]) return managerSignatures[managerName];
+  const key = sigKey(managerName);
+  // 1. GAS
+  if (isGASReady()) {
+    try {
+      const v = await dbGet(key, null);
+      if (v && typeof v === 'string' && v.startsWith('data:')) {
+        managerSignatures[managerName] = v;
+        localStorage.setItem(key, v);
+        try { await window.storage.set(key, v, true); } catch(e2){}
+        return v;
+      }
+    } catch(e){}
+  }
+  // 2. window.storage shared
+  try {
+    const r = await window.storage.get(key, true);
+    if (r && r.value && r.value.startsWith('data:')) {
+      managerSignatures[managerName] = r.value;
+      localStorage.setItem(key, r.value);
+      return r.value;
+    }
+  } catch(e){}
+  // 3. localStorage
+  const raw = localStorage.getItem(key);
+  if (raw && raw.startsWith('data:')) { managerSignatures[managerName] = raw; return raw; }
+  return null;
+}
+
+async function loadAllManagerSignatures() {
+  await Promise.all(MANAGERS.map(m => loadManagerSignature(m.name)));
+}
+
+function getManagerSignature(managerName) {
+  // Returns uploaded sig if exists, otherwise the sample sig image
+  return managerSignatures[managerName] || SAMPLE_SIG_IMG;
+}
+
+async function deleteManagerSignature(managerName) {
+  delete managerSignatures[managerName];
+  const key = sigKey(managerName);
+  localStorage.removeItem(key);
+  try { await window.storage.delete(key, true); } catch(e){}
+  try { await dbSet(key, null); } catch(e){}
+}
+
+// ── SIGNATURE UPLOAD HANDLERS ─────────────
+function handleSignatureUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { showSigMsg('Please upload an image file.', true); return; }
+  if (file.size > 2 * 1024 * 1024) { showSigMsg('Image too large — please use an image under 2MB.', true); return; }
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    // Process: convert to transparent-friendly PNG, crop to content
+    const img = new Image();
+    img.onload = async () => {
+      const canvas = document.createElement('canvas');
+      // Scale down if needed, max 400×200
+      const maxW = 400, maxH = 200;
+      let w = img.width, h = img.height;
+      if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+      if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; }
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL('image/png', 0.95);
+
+      const u = getCurrentUser();
+      const users = getUsers();
+      const managerName = users[u]?.name || u;
+
+      showSigMsg('⏳ Saving signature…');
+      await saveManagerSignature(managerName, dataUrl);
+      renderSignaturePreview(managerName, dataUrl);
+      showSigMsg('✅ Signature saved successfully!');
+      setTimeout(() => showSigMsg(''), 3000);
+
+      // Reset file input
+      event.target.value = '';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function showSigMsg(msg, isErr=false) {
+  const el = document.getElementById('sigUploadMsg');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = isErr ? '#c0392b' : 'var(--accent)';
+}
+
+function renderSignaturePreview(managerName, dataUrl) {
+  const previewEl  = document.getElementById('sigCurrentPreview');
+  const imgEl      = document.getElementById('sigPreviewImg');
+  const byEl       = document.getElementById('sigUploadedBy');
+  const uploadZone = document.getElementById('sigUploadZone');
+  if (!previewEl || !imgEl) return;
+  if (dataUrl) {
+    imgEl.src = dataUrl;
+    if (byEl) byEl.textContent = `Uploaded for: ${managerName}`;
+    previewEl.style.display = 'block';
+    if (uploadZone) uploadZone.querySelector('.upload-zone-text').innerHTML =
+      '<svg style="width:16px;height:16px;stroke:var(--text-faint);fill:none;stroke-width:1.5;display:block;margin:0 auto 4px;" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Upload a different signature';
+  } else {
+    previewEl.style.display = 'none';
+    if (uploadZone) uploadZone.querySelector('.upload-zone-text').innerHTML =
+      '<svg style="width:20px;height:20px;stroke:var(--text-faint);fill:none;stroke-width:1.5;display:block;margin:0 auto 6px;" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Click to upload or drag &amp; drop · <strong>PNG, JPG, WEBP</strong> · Recommended: white background, clear strokes';
+  }
+}
+
+async function clearManagerSignature() {
+  const u = getCurrentUser();
+  const users = getUsers();
+  const managerName = users[u]?.name || u;
+  if (!confirm('Remove your uploaded signature? The default sample signature will be used instead.')) return;
+  await deleteManagerSignature(managerName);
+  renderSignaturePreview(managerName, null);
+  showSigMsg('Signature removed.');
+  setTimeout(() => showSigMsg(''), 3000);
+}
+
+// ── MANAGER SIGNATURES ────────────────────
+// Stored per manager name: 'fwa_sig__<managerName>' → base64 dataUrl
+function sigStorageKey(managerName) {
+  return 'fwa_sig__' + managerName.replace(/\s+/g,'_').toLowerCase();
+}
+
+async function saveManagerSignature(managerName, dataUrl) {
+  const key = sigStorageKey(managerName);
+  localStorage.setItem(key, dataUrl);
+  try { await window.storage.set(key, dataUrl, true); } catch(e){}
+  await dbSet(key, dataUrl).catch(()=>{});
+}
+
+async function loadManagerSignature(managerName) {
+  const key = sigStorageKey(managerName);
+  // 1. GAS
+  if (isGASReady()) {
+    try {
+      const v = await dbGet(key, null);
+      if (v && typeof v === 'string' && v.startsWith('data:')) {
+        localStorage.setItem(key, v);
+        try { await window.storage.set(key, v, true); } catch(e){}
+        return v;
+      }
+    } catch(e){}
+  }
+  // 2. window.storage shared
+  try {
+    const r = await window.storage.get(key, true);
+    if (r && r.value && r.value.startsWith('data:')) return r.value;
+  } catch(e){}
+  // 3. localStorage
+  const local = localStorage.getItem(key);
+  if (local && local.startsWith('data:')) return local;
+  return null;
+}
+
+async function removeManagerSignature(managerName) {
+  const key = sigStorageKey(managerName);
+  localStorage.removeItem(key);
+  try { await window.storage.delete(key, true); } catch(e){}
+  await dbSet(key, null).catch(()=>{});
+}
+
+// Get the right signature for a given manager name (their custom one or fallback to sample)
+function getManagerSigImg(managerName) {
+  if (!managerName) return SAMPLE_SIG_IMG;
+  const key = sigStorageKey(managerName);
+  const stored = localStorage.getItem(key);
+  return (stored && stored.startsWith('data:')) ? stored : SAMPLE_SIG_IMG;
+}
+
 function loadAppConfig() { applyConfig(); }
 
 function applyConfig() {
@@ -3129,7 +3433,7 @@ function renderTeamTables() {
           ${teamSubmit.status === 'reverted' ? `<button class="submit-btn" style="font-size:11px;padding:4px 12px;" onclick="submitTeamToManager('${escHtml(team)}','${escHtml(period)}')">↩ Resubmit</button>` : ''}
         </div>
       </div>
-      ${teamSubmit.status === 'approved' ? `<div class="esig-box" style="flex-direction:column;align-items:flex-start;gap:3px;padding:6px 12px;margin-bottom:10px;"><img src="${SAMPLE_SIG_IMG}" alt="e-signature" style="height:28px;max-width:100px;object-fit:contain;filter:contrast(1.2);opacity:.92;display:block;" /><div style="border-top:1px solid #86efac;padding-top:3px;"><div class="esig-italic">${escHtml(teamSubmit.approvedBy||'')}</div><div style="font-size:10px;color:#15803d;">${escHtml(getManagerInfo(teamSubmit.approvedBy)?.position||'Manager')} · ${escHtml(teamSubmit.approvedAt||'')}</div></div></div>` : ''}
+      ${teamSubmit.status === 'approved' ? `<div class="esig-box" style="flex-direction:column;align-items:flex-start;gap:3px;padding:6px 12px;margin-bottom:10px;"><img src="${getManagerSigImg(teamSubmit.approvedBy)}" alt="e-signature" style="height:28px;max-width:100px;object-fit:contain;filter:contrast(1.2);opacity:.92;display:block;" /><div style="border-top:1px solid #86efac;padding-top:3px;"><div class="esig-italic">${escHtml(teamSubmit.approvedBy||'')}</div><div style="font-size:10px;color:#15803d;">${escHtml(getManagerInfo(teamSubmit.approvedBy)?.position||'Manager')} · ${escHtml(teamSubmit.approvedAt||'')}</div></div></div>` : ''}
       ${teamSubmit.status === 'reverted' ? `<div style="font-size:12px;color:#bf360c;background:#fff3e0;border-radius:6px;padding:8px 12px;border:1px solid #f0c040;margin-bottom:10px;line-height:1.6;"><strong>Manager remarks:</strong> "${escHtml(teamSubmit.remarks||'')}" <span style="font-size:11px;color:var(--text-faint);">— ${escHtml(teamSubmit.approvedBy||'')}, ${escHtml(teamSubmit.approvedAt||'')}</span></div>` : ''}`;
 
     if (!rows.length) {
@@ -3481,9 +3785,15 @@ async function showPage(page){
   if(page==='export'){
     const u=getCurrentUser();
     if(u){ entries = await loadEntriesByEmail(u, null); }
+    // Show local data first
     await loadWarSubmissions();
     buildPDFPreview();
     renderWARSubmitStatus();
+    // Then refresh from cloud and rebuild preview
+    loadWarSubmissions().then(() => {
+      buildPDFPreview();
+      renderWARSubmitStatus();
+    }).catch(() => {});
   }
   if(page==='team'){
     await loadTeamDataCloud();
@@ -3588,6 +3898,70 @@ function renderDashboard(){
 }
 
 // ── PROFILE PAGE ──────────────────────────
+// ── SIGNATURE UPLOAD (managers only) ─────
+function handleSigUpload(event) {
+  const file = event.target.files[0];
+  if (file) processSigFile(file);
+  event.target.value = '';
+}
+function handleSigDrop(event) {
+  const file = event.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) processSigFile(file);
+}
+
+function processSigFile(file) {
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const dataUrl = e.target.result;
+    const u = getCurrentUser();
+    const users = getUsers();
+    const mName = users[u]?.name || u;
+    const msg = document.getElementById('sigUploadMsg');
+
+    // Show preview immediately
+    renderSigPreview(dataUrl);
+    if (msg) { msg.style.color='var(--text-muted)'; msg.textContent='Saving…'; }
+
+    await saveManagerSignature(mName, dataUrl);
+
+    if (msg) { msg.style.color='var(--accent)'; msg.textContent='✅ Signature saved! It will appear on approved PDFs.'; }
+    setTimeout(() => { if(msg) msg.textContent=''; }, 4000);
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderSigPreview(dataUrl) {
+  const img = document.getElementById('sigPreviewImg');
+  const empty = document.getElementById('sigPreviewEmpty');
+  const removeBtn = document.getElementById('sigRemoveBtn');
+  if (!img) return;
+  if (dataUrl) {
+    img.src = dataUrl;
+    img.style.display = 'block';
+    if (empty) empty.style.display = 'none';
+    if (removeBtn) removeBtn.style.display = 'block';
+  } else {
+    img.src = '';
+    img.style.display = 'none';
+    if (empty) empty.style.display = '';
+    if (removeBtn) removeBtn.style.display = 'none';
+  }
+}
+
+async function removeManagerSignature() {
+  const u = getCurrentUser();
+  const users = getUsers();
+  const mName = users[u]?.name || u;
+  const msg = document.getElementById('sigUploadMsg');
+  renderSigPreview(null);
+  if (msg) { msg.style.color='var(--text-muted)'; msg.textContent='Removing…'; }
+  await removeManagerSignature(mName).catch(()=>{});
+  const key = sigStorageKey(mName);
+  localStorage.removeItem(key);
+  if (msg) { msg.style.color='var(--text-muted)'; msg.textContent='Signature removed. Sample signature will be used.'; }
+  setTimeout(() => { if(msg) msg.textContent=''; }, 3000);
+}
+
 function loadProfilePage(){
   const u = getCurrentUser();
   const users = getUsers();
@@ -3597,21 +3971,53 @@ function loadProfilePage(){
   document.getElementById('profileNameMsg').textContent='';
   document.getElementById('profilePassMsg').textContent='';
   ['profileOldPass','profileNewPass','profileNewPass2'].forEach(id=>document.getElementById(id).value='');
-  // Show manager tag if applicable
-  const mgr = getManagerInfo(users[u].name||'');
+
+  const mName = users[u].name||'';
+  const mgr = getManagerInfo(mName);
+
+  // Show/hide manager tag
   const tag = document.getElementById('profileManagerTag');
-  if (tag) {
-    if (mgr) { tag.style.display=''; tag.title = mgr.position; }
-    else tag.style.display='none';
+  if (tag) { tag.style.display = mgr ? '' : 'none'; if(mgr) tag.title = mgr.position; }
+
+  // Show signature upload card for managers
+  const sigCard = document.getElementById('sigUploadCard');
+  if (sigCard) {
+    if (mgr) {
+      sigCard.style.display = '';
+      // Load and show current signature
+      const current = getManagerSigImg(mName);
+      const hasCurrent = current !== SAMPLE_SIG_IMG;
+      renderSigPreview(hasCurrent ? current : null);
+      // Also show sample sig if no custom one
+      if (!hasCurrent) {
+        const img = document.getElementById('sigPreviewImg');
+        const empty = document.getElementById('sigPreviewEmpty');
+        if (img) { img.src = SAMPLE_SIG_IMG; img.style.display='block'; img.style.opacity='.5'; }
+        if (empty) { empty.style.display='none'; }
+        const note = document.createElement('div');
+        note.id = 'sigSampleNote';
+        note.style.cssText='font-size:10px;color:var(--text-faint);margin-top:3px;';
+        note.textContent='Showing sample signature — upload yours above';
+        const box = document.getElementById('sigPreviewBox');
+        const existing = document.getElementById('sigSampleNote');
+        if (box && !existing) box.parentNode.insertBefore(note, box.nextSibling);
+      } else {
+        const existing = document.getElementById('sigSampleNote');
+        if (existing) existing.remove();
+      }
+    } else {
+      sigCard.style.display = 'none';
+    }
   }
-  // Show role info box on profile if manager
-  const existing = document.getElementById('profileRoleBox');
-  if (existing) existing.remove();
+
+  // Show role info box for managers
+  const existingBox = document.getElementById('profileRoleBox');
+  if (existingBox) existingBox.remove();
   if (mgr) {
     const box = document.createElement('div');
     box.id = 'profileRoleBox';
-    box.style.cssText = 'background:linear-gradient(135deg,#e8eaf6,#f0f0ff);border:1px solid #a5b4fc;border-radius:8px;padding:10px 14px;margin-top:12px;font-size:12px;color:#3949ab;line-height:1.6;';
-    box.innerHTML = `<strong>Manager role:</strong> ${escHtml(mgr.position)}<br>You have access to the <strong>Review Inbox</strong> — you can approve or return team deliverables and WARs submitted by team members.`;
+    box.style.cssText='background:linear-gradient(135deg,#e8eaf6,#f0f0ff);border:1px solid #a5b4fc;border-radius:8px;padding:10px 14px;margin-top:12px;font-size:12px;color:#3949ab;line-height:1.6;';
+    box.innerHTML=`<strong>Manager role:</strong> ${escHtml(mgr.position)}<br>You have access to the <strong>Review Inbox</strong> — you can approve or return team deliverables and WARs submitted by team members.`;
     const card = document.querySelector('#page-profile .card');
     if (card) card.appendChild(box);
   }
