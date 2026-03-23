@@ -762,11 +762,15 @@
           <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;">
             <div>
               <div class="page-title">🔔 My Notifications</div>
-              <div class="page-desc">Updates from your manager on submitted WARs and team deliverables.</div>
+              <div class="page-desc">Updates from your manager on submitted WARs and team deliverables. <span id="inboxLastUpdated" style="font-size:11px;color:var(--text-faint);"></span></div>
             </div>
-            <button class="btn" onclick="markAllNotificationsRead()" style="flex-shrink:0;margin-top:6px;font-size:12px;">
-              ✓ Mark all as read
-            </button>
+            <div style="display:flex;gap:8px;margin-top:6px;">
+              <button class="btn" id="inboxRefreshBtn" onclick="refreshStaffInbox()">
+                <svg style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;" viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                Refresh
+              </button>
+              <button class="btn" onclick="markAllNotificationsRead()">✓ Mark all read</button>
+            </div>
           </div>
         </div>
         <div id="staffInboxArea"><div class="empty-state" style="padding:3rem 0;">No notifications yet.</div></div>
@@ -1273,6 +1277,7 @@ function doLogout(){
   ['loginUser','loginPass'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('loginMsg').textContent='';
   entries=[];pendingImages=[];notifications={};
+  clearInterval(_notifPollTimer); _notifPollTimer = null;
   // Remove manager welcome card if present
   const card = document.getElementById('managerWelcomeCard');
   if (card) card.remove();
@@ -1310,51 +1315,100 @@ async function launchApp(username, fullname, email){
   document.getElementById('userLabel').textContent=fullname||username;
   document.getElementById('userAvatar').textContent=(fullname||username).charAt(0).toUpperCase();
 
-  // Show loading state
-  showSyncBadge(true);
+  // ── PHASE 1: Instant render from localStorage (zero network wait) ──────
+  loadAppConfig();
+
+  // Load everything from localStorage right now — no awaits
+  entries = JSON.parse(localStorage.getItem('fwa_entries_'+username)||'[]');
+  teamData = JSON.parse(localStorage.getItem('fwa_team_data')||'{}');
+  teamSubmissions = JSON.parse(localStorage.getItem('fwa_team_submissions')||'{}');
+  warSubmissions  = JSON.parse(localStorage.getItem('fwa_war_submissions')||'{}');
+  const notifRaw  = localStorage.getItem(notifKey(username));
+  notifications[username] = notifRaw ? JSON.parse(notifRaw) : [];
+
+  // Pre-populate reactions from localStorage
+  const reactRaw = localStorage.getItem('fwa_reactions');
+  if (reactRaw) { try { reactions = JSON.parse(reactRaw); } catch(e){} }
+
+  generateWeekOptions();
+
+  // Restore WAR header from localStorage instantly
+  const headerRaw = localStorage.getItem(getWarHeaderKey(username));
+  if (headerRaw) {
+    try {
+      const hd = JSON.parse(headerRaw);
+      const setVal = (id,val)=>{ const el=document.getElementById(id); if(el&&val!==undefined) el.value=val; };
+      setVal('hName',hd.name); setVal('hPeriod',hd.period);
+      setVal('sigSubmitted',hd.submitted); setVal('sigSubmittedPos',hd.submittedPos);
+      setVal('sigReviewed',hd.reviewed); setVal('sigReviewedPos',hd.reviewedPos);
+      if(hd.days) ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(d=>setVal('d'+d,hd.days[d]));
+    } catch(e){}
+  }
+
+  // Pre-select user name
+  const users=getUsers();
+  if(users[username]&&users[username].name){
+    const sel = document.getElementById('hName');
+    if(sel){ for(const opt of sel.options){ if(opt.value===users[username].name){sel.value=users[username].name;break;} } }
+    const sigSel = document.getElementById('sigSubmitted');
+    if(sigSel){ for(const opt of sigSel.options){ if(opt.value===users[username].name){sigSel.value=users[username].name;break;} } }
+  }
+
+  // Render UI immediately with local data
+  updateReviewBadge();
+  updateStaffInboxBadge();
+  renderRecent();
+  initMotive();
+
+  // Show login-time toast for latest unread notification
+  const myNotifs = notifications[username] || [];
+  const latestUnread = myNotifs.find(n => !n.read && ['war_approved','team_approved','war_reverted','team_reverted'].includes(n.type));
+  if (latestUnread) setTimeout(() => showApprovalToast(latestUnread), 800);
+
+  // ── PHASE 2: Background cloud sync — refresh everything silently ───────
   const badge = document.getElementById('syncBadge');
-  if(badge){ badge.textContent='⏳ Restoring data…'; badge.style.color='var(--text-muted)'; badge.style.opacity='1'; }
+  if(badge){ badge.textContent='⏳ Syncing…'; badge.style.color='var(--text-muted)'; badge.style.opacity='1'; }
 
-  await loadAppConfig();
-
-  // Load ALL data in parallel for speed
-  const [loadedEntries] = await Promise.all([
+  // Run all cloud loads in parallel — don't block UI
+  Promise.all([
     loadEntriesByEmail(username, email),
     loadTeamDataCloud(),
     loadTeamSubmissions(),
     loadWarSubmissions(),
     loadNotificationsForUser(username),
-    loadReactions()
-  ]);
-  entries = loadedEntries;
-  updateReviewBadge();
-  updateStaffInboxBadge();
-  // Show toast for most recent unread approval/revert notification
-  const myNotifs = notifications[username] || [];
-  const latestUnread = myNotifs.find(n => !n.read && (n.type === 'war_approved' || n.type === 'team_approved' || n.type === 'war_reverted' || n.type === 'team_reverted'));
-  if (latestUnread) setTimeout(() => showApprovalToast(latestUnread), 1200);
+    loadReactions(),
+    loadWarHeader()
+  ]).then(([loadedEntries]) => {
+    entries = loadedEntries;
 
-  const users=getUsers();
-  if(users[username]&&users[username].name){
-    const sel = document.getElementById('hName');
-    if(sel){
-      for(const opt of sel.options){
-        if(opt.value === users[username].name){ sel.value = users[username].name; break; }
-      }
+    // Re-render with fresh cloud data
+    updateReviewBadge();
+    updateStaffInboxBadge();
+    renderRecent();
+
+    // If staffinbox is open, refresh it
+    if(document.getElementById('page-staffinbox')?.classList.contains('active')) renderStaffInbox();
+    // If review is open, refresh it
+    if(document.getElementById('page-review')?.classList.contains('active')) renderReviewInbox();
+    // If team is open, refresh it
+    if(document.getElementById('page-team')?.classList.contains('active')){ renderTeamTabs(); renderTeamTables(); }
+
+    showSyncBadge(true);
+
+    // Show toast for any new unread notification that arrived from cloud
+    const freshNotifs = notifications[username] || [];
+    const freshUnread = freshNotifs.find(n => !n.read && ['war_approved','team_approved','war_reverted','team_reverted'].includes(n.type));
+    if (freshUnread && (!latestUnread || freshUnread.id !== latestUnread.id)) {
+      setTimeout(() => showApprovalToast(freshUnread), 400);
     }
-    const sigSel = document.getElementById('sigSubmitted');
-    if(sigSel){
-      for(const opt of sigSel.options){
-        if(opt.value === users[username].name){ sigSel.value = users[username].name; break; }
-      }
-    }
-  }
-  generateWeekOptions();
-  await loadWarHeader();
+  }).catch(err => {
+    showSyncBadge(false);
+    console.warn('Cloud sync failed, using local data:', err);
+  });
+
   document.getElementById('hnav-add').classList.add('active');
-  renderRecent();
-  initMotive();
-  showSyncBadge(true);
+  // Start background poll for new notifications while app is open
+  startNotificationPoll(username);
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
@@ -2528,38 +2582,82 @@ function closeWARReviewModal(){
 // ── STAFF NOTIFICATIONS ───────────────────
 // notifications: { username: [ { id, type, period, from, fromPosition, remarks, at, read, team? } ] }
 let notifications = {};
+let _notifPollTimer = null;
 
 function notifKey(username) { return 'fwa_notifs__' + username; }
 
 async function saveNotificationsForUser(username) {
   const data = notifications[username] || [];
   const key  = notifKey(username);
+  // Save to localStorage synchronously first (instant, always works)
   localStorage.setItem(key, JSON.stringify(data));
-  // Shared so manager writes are visible to the staff member on their next login
+  // Then push to cloud storage in parallel (don't await both — fire and forget on window.storage)
+  const gasPromise = dbSet(key, data).catch(()=>{});
   try { await window.storage.set(key, JSON.stringify(data), true); } catch(e){}
-  await dbSet(key, data);
+  await gasPromise;
 }
 
 async function loadNotificationsForUser(username) {
   const key = notifKey(username);
+  // Always start with localStorage so data is instantly available
+  const localRaw = localStorage.getItem(key);
+  const localData = localRaw ? JSON.parse(localRaw) : [];
+  if (localData.length) notifications[username] = localData; // show local immediately
+
+  // Then try cloud sources and merge (newer wins by id)
+  let cloudData = null;
+
   // 1. GAS (authoritative)
   if (isGASReady()) {
-    const v = await dbGet(key, null);
-    if (Array.isArray(v)) {
-      notifications[username] = v;
-      localStorage.setItem(key, JSON.stringify(v));
-      try { await window.storage.set(key, JSON.stringify(v), true); } catch(e){}
-      return;
-    }
+    try {
+      const v = await dbGet(key, null);
+      if (Array.isArray(v)) cloudData = v;
+    } catch(e){}
   }
-  // 2. window.storage shared
-  try {
-    const r = await window.storage.get(key, true);
-    if (r && r.value) { notifications[username] = JSON.parse(r.value); return; }
-  } catch(e){}
-  // 3. localStorage
-  const raw = localStorage.getItem(key);
-  notifications[username] = raw ? JSON.parse(raw) : [];
+  // 2. window.storage shared fallback
+  if (!cloudData) {
+    try {
+      const r = await window.storage.get(key, true);
+      if (r && r.value) cloudData = JSON.parse(r.value);
+    } catch(e){}
+  }
+
+  if (cloudData && Array.isArray(cloudData)) {
+    // Merge: take cloud data but preserve local read-states for matching IDs
+    const localReadMap = {};
+    localData.forEach(n => { localReadMap[n.id] = n.read; });
+    const merged = cloudData.map(n => ({
+      ...n,
+      read: (localReadMap[n.id] !== undefined) ? localReadMap[n.id] : n.read
+    }));
+    notifications[username] = merged;
+    localStorage.setItem(key, JSON.stringify(merged));
+  } else if (!notifications[username]) {
+    notifications[username] = [];
+  }
+}
+
+// Poll for new notifications every 15s while app is open
+function startNotificationPoll(username) {
+  clearInterval(_notifPollTimer);
+  _notifPollTimer = setInterval(async () => {
+    const before = (notifications[username]||[]).length;
+    await loadNotificationsForUser(username);
+    const after  = (notifications[username]||[]).length;
+    updateStaffInboxBadge();
+    // If new notifications arrived, re-render inbox if open and show toast
+    if (after > before) {
+      if (document.getElementById('page-staffinbox')?.classList.contains('active')) renderStaffInbox();
+      const newest = (notifications[username]||[])[0];
+      if (newest && !newest.read) showApprovalToast(newest);
+    }
+    // Also poll team/war submissions for managers
+    if (isManager()) {
+      await Promise.all([loadTeamSubmissions(), loadWarSubmissions()]).catch(()=>{});
+      updateReviewBadge();
+      if (document.getElementById('page-review')?.classList.contains('active')) renderReviewInbox();
+    }
+  }, 15000);
 }
 
 async function createNotification(username, data) {
@@ -2660,9 +2758,26 @@ async function markNotificationRead(id) {
   renderStaffInbox();
 }
 
+async function refreshStaffInbox() {
+  const btn = document.getElementById('inboxRefreshBtn');
+  if (btn) { btn.disabled=true; btn.innerHTML='<span style="display:inline-flex;align-items:center;gap:5px;"><span style="display:inline-block;width:11px;height:11px;border:2px solid rgba(0,0,0,.15);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;"></span>Syncing…</span>'; }
+  const u = getCurrentUser();
+  if (u) {
+    await loadNotificationsForUser(u);
+    updateStaffInboxBadge();
+    renderStaffInbox();
+  }
+  if (btn) { btn.disabled=false; btn.innerHTML='<svg style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;" viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg> Refresh'; }
+}
+
 function renderStaffInbox() {
   const el = document.getElementById('staffInboxArea');
   if (!el) return;
+
+  // Stamp last updated time
+  const tsEl = document.getElementById('inboxLastUpdated');
+  if (tsEl) tsEl.textContent = 'Updated ' + new Date().toLocaleTimeString('en-PH', {hour:'numeric',minute:'2-digit',second:'2-digit'});
+
   const items = getMyNotifications();
   if (!items.length) {
     el.innerHTML = '<div class="empty-state" style="padding:3rem 0;">No notifications yet. You\'ll be notified here when a manager approves or returns your submissions.</div>';
@@ -3378,15 +3493,26 @@ async function showPage(page){
   }
   if(page==='staffinbox'){
     const u = getCurrentUser();
-    if (u) await loadNotificationsForUser(u);
-    updateStaffInboxBadge();
+    // Show local data instantly
     renderStaffInbox();
+    updateStaffInboxBadge();
+    // Then silently refresh from cloud
+    if (u) {
+      loadNotificationsForUser(u).then(() => {
+        updateStaffInboxBadge();
+        renderStaffInbox();
+      }).catch(() => {});
+    }
   }
   if(page==='review'){
-    await loadTeamSubmissions();
-    await loadWarSubmissions();
+    // Show local data immediately
     updateReviewBadge();
     renderReviewInbox();
+    // Then refresh from cloud silently
+    Promise.all([loadTeamSubmissions(), loadWarSubmissions()]).then(() => {
+      updateReviewBadge();
+      renderReviewInbox();
+    }).catch(() => {});
   }
   if(page==='teamexport'){
     await loadTeamDataCloud();
