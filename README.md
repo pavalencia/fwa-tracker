@@ -24,8 +24,8 @@
 
     /* LOGIN */
     .login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);}
-    /* Hidden by default — JS shows it only when truly logged out */
-    #loginScreen{display:none;}
+    /* Visible by default — JS hides it when session is restored */
+    #loginScreen{display:flex;}
     .login-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2.5rem 2rem;width:100%;max-width:400px;box-shadow:var(--shadow);}
     .login-logo{display:flex;align-items:center;gap:10px;margin-bottom:1.75rem;}
     .login-logo-mark{width:36px;height:36px;background:var(--accent);border-radius:9px;display:flex;align-items:center;justify-content:center;}
@@ -1506,39 +1506,60 @@ async function launchApp(username, fullname, email){
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
-  // ── INSTANT SESSION RESTORE ──────────────────────────────────────────────
-  // Check localStorage immediately — no cloud wait — so the user never sees
-  // the login screen on a simple refresh if they were already logged in.
-  const u = getCurrentUser();
-  const localUsers = getUsers();
+  // Safety net: if anything throws before we reach "show login",
+  // this timeout ensures the login screen is still visible after 4 s.
+  const safetyTimer = setTimeout(() => {
+    const ls = document.getElementById('loginScreen');
+    const app = document.getElementById('app');
+    if (ls && app && app.style.display !== 'block') {
+      ls.style.display = 'flex';
+    }
+  }, 4000);
 
-  if (u && localUsers[u]) {
-    // Session found locally → launch app RIGHT NOW, sync cloud in background
-    document.getElementById('loginScreen').style.display = 'none';
-    await launchApp(u, localUsers[u].name, null);
-    // Background cloud sync (users list + notifications)
-    loadUsersFromCloud().catch(() => {});
-    return;
-  }
-
-  // No local session → need to check cloud (user may have registered on another device)
   try {
-    await loadUsersFromCloud();
-  } catch(e) {
-    // Cloud fetch failed (CORS, network, etc.) — fall through to show login
-  }
-  const u2 = getCurrentUser();
-  const users2 = getUsers();
-  if (u2 && users2[u2]) {
-    await launchApp(u2, users2[u2].name, null);
-    return;
-  }
+    // ── INSTANT SESSION RESTORE ────────────────────────────────────────────
+    // Check localStorage immediately — no cloud wait — so the user never sees
+    // the login screen on a simple refresh if they were already logged in.
+    const u = getCurrentUser();
+    const localUsers = getUsers();
 
-  // Truly not logged in → show login
-  document.getElementById('loginScreen').style.display = 'flex';
-  document.getElementById('hPeriod').addEventListener('change', () => {
-    if (document.getElementById('page-view').classList.contains('active')) renderView();
-  });
+    if (u && localUsers[u]) {
+      // Session found locally → launch app RIGHT NOW, sync cloud in background
+      document.getElementById('loginScreen').style.display = 'none';
+      await launchApp(u, localUsers[u].name, null);
+      clearTimeout(safetyTimer);
+      // Background cloud sync (users list + notifications)
+      loadUsersFromCloud().catch(() => {});
+      return;
+    }
+
+    // No local session → need to check cloud (user may have registered on another device)
+    try {
+      await loadUsersFromCloud();
+    } catch(e) {
+      // Cloud fetch failed (CORS, network, etc.) — fall through to show login
+    }
+    const u2 = getCurrentUser();
+    const users2 = getUsers();
+    if (u2 && users2[u2]) {
+      await launchApp(u2, users2[u2].name, null);
+      clearTimeout(safetyTimer);
+      return;
+    }
+
+    // Truly not logged in → show login
+    clearTimeout(safetyTimer);
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('hPeriod').addEventListener('change', () => {
+      if (document.getElementById('page-view').classList.contains('active')) renderView();
+    });
+  } catch(err) {
+    // Catch-all: something went wrong — show login so page is never blank
+    clearTimeout(safetyTimer);
+    console.error('App init error:', err);
+    const ls = document.getElementById('loginScreen');
+    if (ls) ls.style.display = 'flex';
+  }
 });
 
 // ── WEEK DROPDOWN ─────────────────────────
