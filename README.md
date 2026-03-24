@@ -1157,6 +1157,36 @@ const SAMPLE_SIG_IMG = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAASABIAAD/4Qkha
 // Setup instructions: see APPS_SCRIPT_CODE.js file included with this tracker.
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbw2-S3rThKNORRRG8SXQrdrI3LNpVTP42e74EgIFOB9sDFtJZT2pYSmqekA0523dvWIHg/exec';
 
+// ── APP CONFIG (hardcoded) ────────────────
+const APP_CONFIG = {
+  org:          'OVPDx · UP System',
+  univ:         'UNIVERSITY OF THE PHILIPPINES',
+  officeHeader: 'Office of the Vice President for Digital Transformation',
+  approverName: 'Peter A. Sy',
+  approverRole: 'Vice President for Digital Transformation',
+  ejsPublicKey: '',
+  ejsService:   '',
+  ejsTemplate:  ''
+};
+
+const TEAMS = ['Admin Team','Communications Team','Project Team','Research Team','Management Team'];
+const TEAM_MEMBERS = {
+  'Admin Team':          ['John Mark Paya','Paula Beatrize Valencia','Rozhelle Yu'],
+  'Communications Team': ['Marianne Laron','Eileen Rudi'],
+  'Project Team':        ['John Paul Cristobal','Duane Burdeos','Keith Andrei Layson'],
+  'Research Team':       ['Katheryn Hidalgo','Veronica Consolacion'],
+  'Management Team':     ['Marisha Beloro','Kristofferson Dela Cruz','Regine Pustadan']
+};
+const STATUSES = ['Completed','Ongoing Progress','Not Initiated'];
+
+// ── MANAGERS ──────────────────────────────
+const MANAGERS = [
+  { name: 'Kristofferson Dela Cruz', position: 'Senior Office Manager' },
+  { name: 'Regine C. Pustadan',      position: 'Senior Project Manager' },
+  { name: 'Marisha D. Beloro',       position: 'Senior Project Manager' },
+  { name: 'Liza Soberano',           position: 'Junior Office Manager'  }
+];
+
 function isGASReady(){ return GAS_URL && GAS_URL !== 'YOUR_APPS_SCRIPT_URL'; }
 
 let _gasCache = null;
@@ -1315,8 +1345,22 @@ async function doLogin(){
   const msg=document.getElementById('loginMsg');
   if(!user||!pass){msg.className='lmsg err';msg.textContent='Please fill in all fields.';return;}
   msg.className='lmsg ok';msg.textContent='Checking credentials…';
-  await loadUsersFromCloud();
-  const users=getUsers();
+
+  // localStorage-first: instant check, no network wait
+  let users=getUsers();
+  const localFound=!!users[user];
+
+  // Only hit cloud if user not found locally (registered on another device)
+  if(!localFound){
+    try{
+      await Promise.race([
+        loadUsersFromCloud(),
+        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),5000))
+      ]);
+      users=getUsers();
+    }catch(e){ /* cloud failed or timed out - proceed with local */ }
+  }
+
   if(!users[user]){
     msg.className='lmsg err';msg.textContent='Username not found. Please check your username or create an account.';
     return;
@@ -1325,6 +1369,8 @@ async function doLogin(){
   setCurrentUser(user);
   msg.className='lmsg ok';msg.textContent='Signing in and restoring your data…';
   await launchApp(user,users[user].name,null);
+  // Background cloud sync - non-blocking
+  loadUsersFromCloud().catch(()=>{});
 }
 
 async function doRegister(){
@@ -1339,7 +1385,7 @@ async function doRegister(){
   const users=getUsers();
   if(users[user]){msg.className='lmsg err';msg.textContent='Username already taken.';return;}
   users[user]={name, password:btoa(pass)};
-  saveUsers(users);
+  await saveUsers(users);
   msg.className='lmsg ok';msg.textContent='Account created!';
 
   showModal(
@@ -1535,9 +1581,12 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     // No local session → need to check cloud (user may have registered on another device)
     try {
-      await loadUsersFromCloud();
+      await Promise.race([
+        loadUsersFromCloud(),
+        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),5000))
+      ]);
     } catch(e) {
-      // Cloud fetch failed (CORS, network, etc.) — fall through to show login
+      // Cloud fetch failed, timed out, or CORS error — fall through to show login
     }
     const u2 = getCurrentUser();
     const users2 = getUsers();
@@ -2383,17 +2432,6 @@ async function exportPDF(){
   doc.save(`WAR_${(h.name||'Report').replace(/\s+/g,'_')}_${(h.period||'Period').replace(/[^a-z0-9]/gi,'_')}.pdf`);
 }
 
-// ── APP CONFIG (hardcoded) ────────────────
-const APP_CONFIG = {
-  org:          'OVPDx · UP System',
-  univ:         'UNIVERSITY OF THE PHILIPPINES',
-  officeHeader: 'Office of the Vice President for Digital Transformation',
-  approverName: 'Peter A. Sy',
-  approverRole: 'Vice President for Digital Transformation',
-  ejsPublicKey: '',
-  ejsService:   '',
-  ejsTemplate:  ''
-};
 
 // ── WAR APPROVAL HELPER ───────────────────
 // Returns the WAR approval record for the current user + period (or null)
@@ -2405,15 +2443,6 @@ function getWARApprovalForPeriod(period) {
   return null;
 }
 
-const TEAMS = ['Admin Team','Communications Team','Project Team','Research Team','Management Team'];
-const TEAM_MEMBERS = {
-  'Admin Team':          ['John Mark Paya','Paula Beatrize Valencia','Rozhelle Yu'],
-  'Communications Team': ['Marianne Laron','Eileen Rudi'],
-  'Project Team':        ['John Paul Cristobal','Duane Burdeos','Keith Andrei Layson'],
-  'Research Team':       ['Katheryn Hidalgo','Veronica Consolacion'],
-  'Management Team':     ['Marisha Beloro','Kristofferson Dela Cruz','Regine Pustadan']
-};
-const STATUSES = ['Completed','Ongoing Progress','Not Initiated'];
 
 // ── SUBMISSION STORES ────────────────────
 // teamSubmissions: { period: { teamName: { status, submittedBy, submittedAt, approvedBy, approvedAt, remarks } } }
@@ -3280,13 +3309,6 @@ function renderReviewInbox() {
   el.innerHTML = html;
 }
 
-// ── MANAGERS ──────────────────────────────
-const MANAGERS = [
-  { name: 'Kristofferson Dela Cruz', position: 'Senior Office Manager' },
-  { name: 'Regine C. Pustadan',      position: 'Senior Project Manager' },
-  { name: 'Marisha D. Beloro',       position: 'Senior Project Manager' },
-  { name: 'Liza Soberano',           position: 'Junior Office Manager'  }
-];
 
 // ── MANAGER HELPERS ───────────────────────
 function isManager() {
