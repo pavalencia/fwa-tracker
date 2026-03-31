@@ -24,8 +24,8 @@
 
     /* LOGIN */
     .login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);}
-    /* Visible by default — JS hides it when session is restored */
-    #loginScreen{display:flex;}
+    /* Hidden by default — JS shows it only when truly logged out */
+    #loginScreen{display:none;}
     .login-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2.5rem 2rem;width:100%;max-width:400px;box-shadow:var(--shadow);}
     .login-logo{display:flex;align-items:center;gap:10px;margin-bottom:1.75rem;}
     .login-logo-mark{width:36px;height:36px;background:var(--accent);border-radius:9px;display:flex;align-items:center;justify-content:center;}
@@ -74,16 +74,6 @@
     .approval-toast{position:fixed;bottom:80px;right:24px;background:var(--surface);border:1px solid #86efac;border-radius:12px;padding:14px 16px;box-shadow:0 8px 32px rgba(0,0,0,.15);z-index:9999;display:none;flex-direction:column;gap:6px;max-width:320px;animation:slideInRight .3s ease;}
     .approval-toast.show{display:flex;}
     @keyframes slideInRight{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
-    /* WAR PREVIEW MODAL */
-    .war-preview-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9500;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 16px;}
-    .war-preview-modal.open{display:flex;}
-    .war-preview-inner{background:var(--surface);border-radius:14px;width:100%;max-width:860px;box-shadow:0 16px 60px rgba(0,0,0,.22);padding:0;overflow:hidden;margin:auto;}
-    .war-preview-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--surface2);}
-    .war-preview-body{padding:20px;max-height:70vh;overflow-y:auto;}
-    .war-preview-footer{display:flex;gap:8px;padding:14px 20px;border-top:1px solid var(--border);justify-content:flex-end;background:var(--surface2);}
-    /* SIG UPLOAD compact inline */
-    .sig-upload-inline{border:1.5px dashed var(--border-strong);border-radius:6px;padding:10px 12px;background:var(--surface2);cursor:pointer;transition:all .15s;text-align:center;font-size:11px;color:var(--text-muted);}
-    .sig-upload-inline:hover{border-color:var(--accent);background:var(--accent-light);color:var(--accent);}
 
     /* LAYOUT */
     .layout{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 60px);}
@@ -216,6 +206,76 @@
     .export-note{font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.7;}
     pre{white-space:pre-wrap;word-break:break-word;font-family:'Courier New',monospace;font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:1rem;margin:1rem 0;max-height:360px;overflow-y:auto;color:var(--text);line-height:1.6;}
     .btn-group{display:flex;gap:8px;flex-wrap:wrap;}
+    /* ROTATION CALENDAR — MONTHLY GRID */
+    .rot-monthly-cal{display:flex;flex-direction:column;gap:1.5rem;}
+    .rot-month-block{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);}
+    .rot-month-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:10px 14px;background:var(--accent);color:#fff;}
+    .rot-month-title{font-family:'DM Serif Display',serif;font-size:17px;font-weight:400;letter-spacing:-.01em;}
+    .rot-month-legend{display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+    .rot-month-legend .rot-pill{font-size:10px;}
+    .rot-cal-scroll{overflow-x:auto;}
+    .rot-cal-grid{border-collapse:collapse;font-size:11px;width:100%;min-width:600px;}
+    .rot-cal-grid th{background:var(--surface2);border:1px solid var(--border);padding:0;text-align:center;vertical-align:top;}
+    .rot-cal-grid td{border:1px solid var(--border);padding:0;vertical-align:middle;}
+    .rot-cal-name-col{min-width:80px;max-width:90px;width:80px;background:var(--surface2) !important;border-right:2px solid var(--border-strong) !important;position:sticky;left:0;z-index:2;}
+    .rot-week-header{padding:4px 2px 2px;min-width:100px;}
+    .rot-week-label{font-size:10px;font-weight:700;color:var(--text);letter-spacing:.02em;padding:0 2px;}
+    .rot-hol-note{font-size:9px;color:#92400e;background:#fef3c7;border-radius:3px;padding:1px 4px;margin:2px auto 0;display:inline-block;max-width:95%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .rot-mon-note{font-size:9px;color:#6b7280;padding:1px 2px;margin-top:1px;}
+    .rot-mon-onsite{color:var(--accent) !important;font-weight:600;}
+    .rot-day-row{display:grid;grid-template-columns:repeat(5,1fr);margin-top:2px;border-top:1px solid var(--border);}
+    .rot-day-row span{font-size:9px;font-weight:700;color:var(--text-muted);text-align:center;padding:2px 0;letter-spacing:.02em;}
+    /* Staff name cell */
+    .rot-staff-name{font-size:11px;font-weight:600;color:var(--text);padding:6px 8px;line-height:1.3;cursor:default;}
+    .rot-staff-full{font-size:9px;color:var(--text-muted);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px;}
+    /* Day cells */
+    .rot-day-cell{width:20px;min-width:18px;max-width:24px;text-align:center;padding:4px 2px;cursor:default;transition:background .1s;}
+    .rot-day-cell:hover{filter:brightness(.95);}
+    .rot-empty-cell{background:#fafafa;}
+    .rot-cell-surp{background:#eff6ff;}
+    .rot-cell-itdc{background:#fdf2f8;}
+    .rot-cell-wfh{background:#f0f9ff;}
+    .rot-cell-noonsite{background:#f9fafb;}
+    .rot-cell-holiday{background:#fffbeb;}
+    .rot-cell-leave{background:#f0fdf4;}
+    /* Dot indicators */
+    .rot-day-dot{width:10px;height:10px;border-radius:50%;display:inline-block;vertical-align:middle;}
+    .rot-dot-surp{background:#3b82f6;box-shadow:0 0 0 2px #bfdbfe;}
+    .rot-dot-itdc{background:#ec4899;box-shadow:0 0 0 2px #fbcfe8;}
+    .rot-dot-wfh{background:#0ea5e9;box-shadow:0 0 0 2px #bae6fd;}
+    .rot-dot-noonsite{background:#9ca3af;box-shadow:0 0 0 2px #e5e7eb;}
+    .rot-dot-holiday{background:#f59e0b;box-shadow:0 0 0 2px #fde68a;}
+    .rot-dot-leave{background:#22c55e;box-shadow:0 0 0 2px #bbf7d0;}
+    .rot-dot-empty{background:#e5e7eb;box-shadow:none;}
+    /* Row alternating */
+    .rot-row-even td{background-color:transparent;}
+    .rot-row-odd td:not(.rot-cal-name-col){background-color:rgba(0,0,0,.018);}
+    /* Full legend bar */
+    .rot-cal-full-legend{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:10px 0;font-size:11px;color:var(--text-muted);margin-top:4px;}
+    .rot-cal-full-legend span{display:flex;align-items:center;gap:5px;}
+
+    .rot-table{width:100%;border-collapse:collapse;font-size:12px;}
+    .rot-table th{background:#f7f6f2;border-bottom:2px solid var(--border);padding:8px 10px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--text-muted);white-space:nowrap;}
+    .rot-table td{border-bottom:1px solid var(--border);padding:7px 10px;vertical-align:middle;}
+    .rot-table tr:last-child td{border-bottom:none;}
+    .rot-table tr:hover td{background:var(--surface2);}
+    .rot-pill{font-size:10px;font-weight:600;padding:2px 9px;border-radius:99px;white-space:nowrap;display:inline-block;}
+    .rot-surp{background:#dbeafe;color:#1e40af;}
+    .rot-itdc{background:#fce7f3;color:#9d174d;}
+    .rot-wfh{background:#e0f2fe;color:#0369a1;}
+    .rot-noonsite{background:#f3f4f6;color:#6b7280;}
+    .rot-holiday{background:#fef3c7;color:#92400e;}
+    .rot-leave{background:#f0fdf4;color:#166534;}
+    /* Calendar grid view */
+    .rot-cal{overflow-x:auto;margin-top:8px;}
+    .rot-cal-table{border-collapse:collapse;font-size:11px;min-width:680px;width:100%;}
+    .rot-cal-table th{background:var(--surface2);border:1px solid var(--border);padding:6px 8px;text-align:center;font-weight:600;font-size:10px;letter-spacing:.04em;color:var(--text-muted);}
+    .rot-cal-table td{border:1px solid var(--border);padding:5px 6px;vertical-align:top;min-width:80px;}
+    .rot-cal-staff{font-size:11px;font-weight:600;color:var(--text);padding:6px 8px;background:var(--accent-light);border:1px solid var(--border);white-space:nowrap;}
+    .rot-cal-noonsite{background:#f9fafb;color:#9ca3af;font-size:10px;font-style:italic;text-align:center;}
+    .rot-del-btn{background:none;border:none;color:var(--text-faint);font-size:13px;cursor:pointer;padding:0 2px;line-height:1;float:right;}
+    .rot-del-btn:hover{color:#c0392b;}
+
     @media(max-width:768px){
       .layout{grid-template-columns:1fr;}.sidebar{display:none;}
       .main{padding:1rem;}.stats-row{grid-template-columns:repeat(3,1fr);}
@@ -224,7 +284,9 @@
       .hnav-btn{font-size:10.5px;padding:4px 7px;}
       .logout-btn{font-size:11px;padding:4px 8px;}
       .user-name{display:none;}
+      .rot-cal-table{min-width:500px;}
     }
+
     /* MODAL */
     .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;align-items:center;justify-content:center;}
     .modal-overlay.open{display:flex;}
@@ -469,6 +531,10 @@
         <div class="sidebar-item" onclick="showPage('team')" id="nav-team">
           <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
           Team deliverables
+        </div>
+        <div class="sidebar-item" onclick="showPage('rotation')" id="nav-rotation">
+          <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Work Rotation
         </div>
       </div>
       <div class="sidebar-section">
@@ -882,6 +948,178 @@
         </div>
       </div>
 
+      <!-- WORK ROTATION PAGE -->
+      <div class="page" id="page-rotation">
+        <div class="page-header">
+          <div class="page-title">Work Rotation Schedule</div>
+          <div class="page-desc">Set and view staff work location rotation (SURP Office, ITDC, WFH) for April 2026 – December 2027. Mondays are No Work Onsite per memo (or the week with a holiday).</div>
+        </div>
+
+        <!-- Info banner -->
+        <div id="rotBanner" style="background:linear-gradient(135deg,#eaf2e0,#f0f7e8);border:1px solid #c5dba8;border-radius:var(--radius);padding:12px 18px;margin-bottom:1.25rem;display:flex;align-items:flex-start;gap:12px;">
+          <span style="font-size:18px;flex-shrink:0;margin-top:1px;">📋</span>
+          <div style="font-size:12px;color:var(--accent);line-height:1.7;">
+            <strong>Rotation Policy Memo:</strong> Every <strong>Monday</strong> is <em>No Work Onsite</em> — <em>unless</em> a holiday falls on <strong>Tue–Fri</strong> that week, in which case the holiday day is the no-onsite day and <strong>Monday becomes a regular onsite day</strong>. If the holiday falls on Monday itself, Monday is marked as Holiday. Color codes: <span style="background:#dbeafe;color:#1e40af;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600;">SURP</span> <span style="background:#fce7f3;color:#9d174d;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600;">ITDC</span> <span style="background:#e0f2fe;color:#0369a1;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600;">WFH</span> <span style="background:#f3f4f6;color:#6b7280;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600;">No Onsite</span> <span style="background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600;">Holiday</span>
+          </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="card" style="margin-bottom:1rem;">
+          <div class="card-title">Assign rotation for a staff member</div>
+          <div class="form-grid three" style="margin-bottom:12px;">
+            <div class="field">
+              <label>Staff Member</label>
+              <select id="rotStaff">
+                <option value="">Select staff...</option>
+                <option>Marisha D. Beloro</option>
+                <option>Duane Albert J. Burdeos</option>
+                <option>Veronica Marie B. Consolacion</option>
+                <option>John Paul S. Cristobal</option>
+                <option>Kristofferson Dela Cruz</option>
+                <option>Katheryn H. Hidalgo</option>
+                <option>Marianne Yzabelle P. Laron</option>
+                <option>Keith Andrei A. Layson</option>
+                <option>John Mark S. Paya</option>
+                <option>Regine C. Pustadan</option>
+                <option>Eileen Claire J. Rudi</option>
+                <option>Paula Beatrize A. Valencia</option>
+                <option>Rozhelle Sophia L. Yu</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Week</label>
+              <select id="rotWeek">
+                <option value="">Select week...</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Location (Tue–Fri default)</label>
+              <select id="rotLocation">
+                <option value="">Select location...</option>
+                <option value="SURP">SURP Office</option>
+                <option value="ITDC">ITDC</option>
+                <option value="WFH">WFH</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-grid" style="margin-bottom:12px;" id="rotDayOverrideGrid">
+            <div style="font-size:11px;color:var(--text-muted);grid-column:span 2;">
+              <strong>Per-day overrides</strong> — Monday is auto-set to <em>No Work Onsite</em>. Adjust Tue–Fri individually if needed.
+            </div>
+            <div class="field" id="rotDayTue">
+              <label>Tuesday</label>
+              <select class="rot-day-sel" data-day="Tue"><option value="">Use default</option><option value="SURP">SURP Office</option><option value="ITDC">ITDC</option><option value="WFH">WFH</option><option value="Leave">Leave</option><option value="Holiday">Holiday</option></select>
+            </div>
+            <div class="field" id="rotDayWed">
+              <label>Wednesday</label>
+              <select class="rot-day-sel" data-day="Wed"><option value="">Use default</option><option value="SURP">SURP Office</option><option value="ITDC">ITDC</option><option value="WFH">WFH</option><option value="Leave">Leave</option><option value="Holiday">Holiday</option></select>
+            </div>
+            <div class="field" id="rotDayThu">
+              <label>Thursday</label>
+              <select class="rot-day-sel" data-day="Thu"><option value="">Use default</option><option value="SURP">SURP Office</option><option value="ITDC">ITDC</option><option value="WFH">WFH</option><option value="Leave">Leave</option><option value="Holiday">Holiday</option></select>
+            </div>
+            <div class="field" id="rotDayFri">
+              <label>Friday</label>
+              <select class="rot-day-sel" data-day="Fri"><option value="">Use default</option><option value="SURP">SURP Office</option><option value="ITDC">ITDC</option><option value="WFH">WFH</option><option value="Leave">Leave</option><option value="Holiday">Holiday</option></select>
+            </div>
+          </div>
+          <div class="field" style="margin-bottom:12px;max-width:360px;">
+            <label>Holiday this week? (enter holiday name, leave blank if none)</label>
+            <input type="text" id="rotHoliday" placeholder="e.g. Labor Day — makes Mon auto No Onsite" />
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-primary" onclick="saveRotationEntry()">💾 Save rotation</button>
+            <button class="btn" onclick="clearRotationForm()">Clear</button>
+          </div>
+          <div id="rotSaveMsg" style="font-size:12px;margin-top:8px;min-height:16px;"></div>
+        </div>
+
+        <!-- Bulk assign -->
+        <div class="card" style="margin-bottom:1rem;">
+          <div class="card-title">Bulk assign rotation pattern</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.65;">Apply a repeating pattern for a staff member across a date range. The pattern cycles through the locations you specify (e.g. SURP → ITDC → WFH → repeat).</div>
+          <div class="form-grid three" style="margin-bottom:12px;">
+            <div class="field">
+              <label>Staff Member</label>
+              <select id="bulkRotStaff">
+                <option value="">Select staff...</option>
+                <option>Marisha D. Beloro</option>
+                <option>Duane Albert J. Burdeos</option>
+                <option>Veronica Marie B. Consolacion</option>
+                <option>John Paul S. Cristobal</option>
+                <option>Kristofferson Dela Cruz</option>
+                <option>Katheryn H. Hidalgo</option>
+                <option>Marianne Yzabelle P. Laron</option>
+                <option>Keith Andrei A. Layson</option>
+                <option>John Mark S. Paya</option>
+                <option>Regine C. Pustadan</option>
+                <option>Eileen Claire J. Rudi</option>
+                <option>Paula Beatrize A. Valencia</option>
+                <option>Rozhelle Sophia L. Yu</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>From week</label>
+              <select id="bulkRotFrom"><option value="">Start week...</option></select>
+            </div>
+            <div class="field">
+              <label>To week</label>
+              <select id="bulkRotTo"><option value="">End week...</option></select>
+            </div>
+          </div>
+          <div class="form-grid" style="margin-bottom:12px;">
+            <div class="field">
+              <label>Rotation pattern (cycle order, comma-separated)</label>
+              <input type="text" id="bulkRotPattern" placeholder="e.g. SURP, ITDC, WFH" value="SURP, ITDC, WFH" />
+            </div>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-primary" onclick="applyBulkRotation()">⚡ Apply bulk rotation</button>
+          </div>
+          <div id="bulkRotMsg" style="font-size:12px;margin-top:8px;min-height:16px;"></div>
+        </div>
+
+        <!-- View/Filter -->
+        <div class="card" style="margin-bottom:1rem;">
+          <div class="card-title">View rotation schedule</div>
+          <div class="form-grid three" style="margin-bottom:12px;">
+            <div class="field">
+              <label>Filter by staff</label>
+              <select id="rotFilterStaff" onchange="renderRotationTable()">
+                <option value="">All staff</option>
+                <option>Marisha D. Beloro</option>
+                <option>Duane Albert J. Burdeos</option>
+                <option>Veronica Marie B. Consolacion</option>
+                <option>John Paul S. Cristobal</option>
+                <option>Kristofferson Dela Cruz</option>
+                <option>Katheryn H. Hidalgo</option>
+                <option>Marianne Yzabelle P. Laron</option>
+                <option>Keith Andrei A. Layson</option>
+                <option>John Mark S. Paya</option>
+                <option>Regine C. Pustadan</option>
+                <option>Eileen Claire J. Rudi</option>
+                <option>Paula Beatrize A. Valencia</option>
+                <option>Rozhelle Sophia L. Yu</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Filter by month</label>
+              <select id="rotFilterMonth" onchange="renderRotationTable()">
+                <option value="">All months</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>View mode</label>
+              <select id="rotViewMode" onchange="renderRotationTable()">
+                <option value="calendar">Calendar grid</option>
+                <option value="list">List view</option>
+              </select>
+            </div>
+          </div>
+          <div id="rotationTableArea"></div>
+        </div>
+      </div>
+
       <!-- PROFILE PAGE -->
       <div class="page" id="page-profile">
         <div class="page-header">
@@ -1022,13 +1260,6 @@
     <div class="modal-title" id="warReviewTitle">Review WAR Submission</div>
     <div class="modal-desc" id="warReviewDesc"></div>
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:12px;line-height:1.8;margin-bottom:12px;max-height:200px;overflow-y:auto;" id="warReviewDetail"></div>
-    <!-- View full WAR button -->
-    <div style="margin-bottom:12px;">
-      <button id="viewWARFromModalBtn" class="btn" onclick="openWARPreviewFromModal()" style="width:100%;justify-content:center;gap:6px;">
-        <svg style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        👁 View Full WAR Before Deciding
-      </button>
-    </div>
     <div style="margin-top:12px;">
       <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">Your decision</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -1052,49 +1283,6 @@
   </div>
 </div>
 
-
-<!-- WAR Preview Modal (manager views full WAR before approving) -->
-<div class="war-preview-modal" id="warPreviewModal">
-  <div class="war-preview-inner">
-    <div class="war-preview-header">
-      <div>
-        <div style="font-size:14px;font-weight:700;color:var(--text);" id="warPreviewTitle">WAR Preview</div>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:1px;" id="warPreviewSubtitle"></div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <button onclick="closeWARPreview()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;color:var(--text-muted);">Close</button>
-        <button id="warPreviewApproveBtn" onclick="approveFromPreview()" class="btn btn-primary" style="background:#15803d;border-color:#15803d;">
-          <svg style="width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2.5;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-          Approve WAR
-        </button>
-      </div>
-    </div>
-    <div class="war-preview-body" id="warPreviewBody">
-      <div class="empty-state">Loading WAR…</div>
-    </div>
-    <div class="war-preview-footer">
-      <!-- Signature upload quick-access for managers -->
-      <div style="flex:1;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        <div style="font-size:11px;color:var(--text-muted);">Your e-signature for this approval:</div>
-        <div id="warPreviewSigThumb" style="display:flex;align-items:center;gap:8px;">
-          <div style="width:80px;height:28px;border:1px solid var(--border);border-radius:4px;background:#fff;overflow:hidden;display:flex;align-items:center;justify-content:center;">
-            <img id="warPreviewSigImg" style="max-width:100%;max-height:100%;object-fit:contain;filter:contrast(1.2);" />
-          </div>
-          <label class="sig-upload-inline" style="cursor:pointer;margin:0;">
-            <input type="file" accept="image/*" style="display:none;" onchange="handleSigUploadFromPreview(event)" />
-            ✏ Change
-          </label>
-        </div>
-      </div>
-      <button onclick="closeWARPreview()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;color:var(--text-muted);">Close</button>
-      <button id="warPreviewReturnBtn" onclick="returnFromPreview()" style="border:1px solid #bf360c;background:none;color:#bf360c;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;">↩ Return with Remarks</button>
-      <button id="warPreviewApproveBtn2" onclick="approveFromPreview()" style="background:#15803d;color:#fff;border:none;border-radius:6px;padding:6px 16px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">
-        <svg style="width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2.5;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-        Approve WAR
-      </button>
-    </div>
-  </div>
-</div>
 
 <!-- Undo Toast -->
 <div class="undo-toast" id="undoToast">
@@ -1156,36 +1344,6 @@ const SAMPLE_SIG_IMG = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAASABIAAD/4Qkha
 // Paste your deployed Apps Script Web App URL below after setup.
 // Setup instructions: see APPS_SCRIPT_CODE.js file included with this tracker.
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbw2-S3rThKNORRRG8SXQrdrI3LNpVTP42e74EgIFOB9sDFtJZT2pYSmqekA0523dvWIHg/exec';
-
-// ── APP CONFIG (hardcoded) ────────────────
-const APP_CONFIG = {
-  org:          'OVPDx · UP System',
-  univ:         'UNIVERSITY OF THE PHILIPPINES',
-  officeHeader: 'Office of the Vice President for Digital Transformation',
-  approverName: 'Peter A. Sy',
-  approverRole: 'Vice President for Digital Transformation',
-  ejsPublicKey: '',
-  ejsService:   '',
-  ejsTemplate:  ''
-};
-
-const TEAMS = ['Admin Team','Communications Team','Project Team','Research Team','Management Team'];
-const TEAM_MEMBERS = {
-  'Admin Team':          ['John Mark Paya','Paula Beatrize Valencia','Rozhelle Yu'],
-  'Communications Team': ['Marianne Laron','Eileen Rudi'],
-  'Project Team':        ['John Paul Cristobal','Duane Burdeos','Keith Andrei Layson'],
-  'Research Team':       ['Katheryn Hidalgo','Veronica Consolacion'],
-  'Management Team':     ['Marisha Beloro','Kristofferson Dela Cruz','Regine Pustadan']
-};
-const STATUSES = ['Completed','Ongoing Progress','Not Initiated'];
-
-// ── MANAGERS ──────────────────────────────
-const MANAGERS = [
-  { name: 'Kristofferson Dela Cruz', position: 'Senior Office Manager' },
-  { name: 'Regine C. Pustadan',      position: 'Senior Project Manager' },
-  { name: 'Marisha D. Beloro',       position: 'Senior Project Manager' },
-  { name: 'Liza Soberano',           position: 'Junior Office Manager'  }
-];
 
 function isGASReady(){ return GAS_URL && GAS_URL !== 'YOUR_APPS_SCRIPT_URL'; }
 
@@ -1298,7 +1456,7 @@ function showModal(title, desc, bodyHTML='', footerHTML=''){
   document.getElementById('modalOverlay').classList.add('open');
 }
 function closeModal(){ document.getElementById('modalOverlay').classList.remove('open'); }
-document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeModal(); closeTeamReviewModal(); closeWARReviewModal(); closeWARPreview(); } });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeModal(); closeTeamReviewModal(); closeWARReviewModal(); } });
 
 // ── EMAILJS ───────────────────────────────
 function getEjsConfig(){
@@ -1345,22 +1503,8 @@ async function doLogin(){
   const msg=document.getElementById('loginMsg');
   if(!user||!pass){msg.className='lmsg err';msg.textContent='Please fill in all fields.';return;}
   msg.className='lmsg ok';msg.textContent='Checking credentials…';
-
-  // localStorage-first: instant check, no network wait
-  let users=getUsers();
-  const localFound=!!users[user];
-
-  // Only hit cloud if user not found locally (registered on another device)
-  if(!localFound){
-    try{
-      await Promise.race([
-        loadUsersFromCloud(),
-        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),5000))
-      ]);
-      users=getUsers();
-    }catch(e){ /* cloud failed or timed out - proceed with local */ }
-  }
-
+  await loadUsersFromCloud();
+  const users=getUsers();
   if(!users[user]){
     msg.className='lmsg err';msg.textContent='Username not found. Please check your username or create an account.';
     return;
@@ -1369,8 +1513,6 @@ async function doLogin(){
   setCurrentUser(user);
   msg.className='lmsg ok';msg.textContent='Signing in and restoring your data…';
   await launchApp(user,users[user].name,null);
-  // Background cloud sync - non-blocking
-  loadUsersFromCloud().catch(()=>{});
 }
 
 async function doRegister(){
@@ -1385,7 +1527,7 @@ async function doRegister(){
   const users=getUsers();
   if(users[user]){msg.className='lmsg err';msg.textContent='Username already taken.';return;}
   users[user]={name, password:btoa(pass)};
-  await saveUsers(users);
+  saveUsers(users);
   msg.className='lmsg ok';msg.textContent='Account created!';
 
   showModal(
@@ -1459,12 +1601,6 @@ async function launchApp(username, fullname, email){
   const notifRaw  = localStorage.getItem(notifKey(username));
   notifications[username] = notifRaw ? JSON.parse(notifRaw) : [];
 
-  // Pre-load all manager signatures from localStorage for fast access
-  MANAGERS.forEach(m => {
-    const k = sigStorageKey(m.name);
-    // Already in localStorage — getManagerSigImg reads localStorage directly
-  });
-
   // Pre-populate reactions from localStorage
   const reactRaw = localStorage.getItem('fwa_reactions');
   if (reactRaw) { try { reactions = JSON.parse(reactRaw); } catch(e){} }
@@ -1516,8 +1652,7 @@ async function launchApp(username, fullname, email){
     loadWarSubmissions(),
     loadNotificationsForUser(username),
     loadReactions(),
-    loadWarHeader(),
-    loadAllManagerSignatures()
+    loadWarHeader()
   ]).then(([loadedEntries]) => {
     entries = loadedEntries;
 
@@ -1552,63 +1687,35 @@ async function launchApp(username, fullname, email){
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
-  // Safety net: if anything throws before we reach "show login",
-  // this timeout ensures the login screen is still visible after 4 s.
-  const safetyTimer = setTimeout(() => {
-    const ls = document.getElementById('loginScreen');
-    const app = document.getElementById('app');
-    if (ls && app && app.style.display !== 'block') {
-      ls.style.display = 'flex';
-    }
-  }, 4000);
+  // ── INSTANT SESSION RESTORE ──────────────────────────────────────────────
+  // Check localStorage immediately — no cloud wait — so the user never sees
+  // the login screen on a simple refresh if they were already logged in.
+  const u = getCurrentUser();
+  const localUsers = getUsers();
 
-  try {
-    // ── INSTANT SESSION RESTORE ────────────────────────────────────────────
-    // Check localStorage immediately — no cloud wait — so the user never sees
-    // the login screen on a simple refresh if they were already logged in.
-    const u = getCurrentUser();
-    const localUsers = getUsers();
-
-    if (u && localUsers[u]) {
-      // Session found locally → launch app RIGHT NOW, sync cloud in background
-      document.getElementById('loginScreen').style.display = 'none';
-      await launchApp(u, localUsers[u].name, null);
-      clearTimeout(safetyTimer);
-      // Background cloud sync (users list + notifications)
-      loadUsersFromCloud().catch(() => {});
-      return;
-    }
-
-    // No local session → need to check cloud (user may have registered on another device)
-    try {
-      await Promise.race([
-        loadUsersFromCloud(),
-        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),5000))
-      ]);
-    } catch(e) {
-      // Cloud fetch failed, timed out, or CORS error — fall through to show login
-    }
-    const u2 = getCurrentUser();
-    const users2 = getUsers();
-    if (u2 && users2[u2]) {
-      await launchApp(u2, users2[u2].name, null);
-      clearTimeout(safetyTimer);
-      return;
-    }
-
-    // Truly not logged in → show login
-    clearTimeout(safetyTimer);
-    document.getElementById('loginScreen').style.display = 'flex';
-    document.getElementById('hPeriod').addEventListener('change', () => {
-      if (document.getElementById('page-view').classList.contains('active')) renderView();
-    });
-  } catch(err) {
-    // Catch-all: something went wrong — show login so page is never blank
-    clearTimeout(safetyTimer);
-    console.error('App init error:', err);
-    const ls = document.getElementById('loginScreen');
-    if (ls) ls.style.display = 'flex';
+  if (u && localUsers[u]) {
+    // Session found locally → launch app RIGHT NOW, sync cloud in background
+    document.getElementById('loginScreen').style.display = 'none';
+    await launchApp(u, localUsers[u].name, null);
+    // Background cloud sync (users list + notifications)
+    loadUsersFromCloud().catch(() => {});
+    return;
   }
+
+  // No local session → need to check cloud (user may have registered on another device)
+  await loadUsersFromCloud();
+  const u2 = getCurrentUser();
+  const users2 = getUsers();
+  if (u2 && users2[u2]) {
+    await launchApp(u2, users2[u2].name, null);
+    return;
+  }
+
+  // Truly not logged in → show login
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('hPeriod').addEventListener('change', () => {
+    if (document.getElementById('page-view').classList.contains('active')) renderView();
+  });
 });
 
 // ── WEEK DROPDOWN ─────────────────────────
@@ -2432,6 +2539,17 @@ async function exportPDF(){
   doc.save(`WAR_${(h.name||'Report').replace(/\s+/g,'_')}_${(h.period||'Period').replace(/[^a-z0-9]/gi,'_')}.pdf`);
 }
 
+// ── APP CONFIG (hardcoded) ────────────────
+const APP_CONFIG = {
+  org:          'OVPDx · UP System',
+  univ:         'UNIVERSITY OF THE PHILIPPINES',
+  officeHeader: 'Office of the Vice President for Digital Transformation',
+  approverName: 'Peter A. Sy',
+  approverRole: 'Vice President for Digital Transformation',
+  ejsPublicKey: '',
+  ejsService:   '',
+  ejsTemplate:  ''
+};
 
 // ── WAR APPROVAL HELPER ───────────────────
 // Returns the WAR approval record for the current user + period (or null)
@@ -2443,6 +2561,15 @@ function getWARApprovalForPeriod(period) {
   return null;
 }
 
+const TEAMS = ['Admin Team','Communications Team','Project Team','Research Team','Management Team'];
+const TEAM_MEMBERS = {
+  'Admin Team':          ['John Mark Paya','Paula Beatrize Valencia','Rozhelle Yu'],
+  'Communications Team': ['Marianne Laron','Eileen Rudi'],
+  'Project Team':        ['John Paul Cristobal','Duane Burdeos','Keith Andrei Layson'],
+  'Research Team':       ['Katheryn Hidalgo','Veronica Consolacion'],
+  'Management Team':     ['Marisha Beloro','Kristofferson Dela Cruz','Regine Pustadan']
+};
+const STATUSES = ['Completed','Ongoing Progress','Not Initiated'];
 
 // ── SUBMISSION STORES ────────────────────
 // teamSubmissions: { period: { teamName: { status, submittedBy, submittedAt, approvedBy, approvedAt, remarks } } }
@@ -2607,147 +2734,7 @@ async function submitTeamToManager(team, period) {
 // ── TEAM REVIEW MODAL ─────────────────────
 let _teamReviewTarget = null;
 
-function openWARPreviewFromModal() {
-  if (!_warReviewTarget) return;
-  openWARPreview(_warReviewTarget.username, _warReviewTarget.period);
-}
-
-let _warPreviewTarget = null;
-
-function openWARPreview(username, period) {
-  _warPreviewTarget = { username, period };
-
-  const sub = warSubmissions[period]?.[username] || {};
-  const u = getCurrentUser(); const users = getUsers(); const mName = users[u]?.name||u;
-  const mgr = getManagerInfo(mName);
-
-  document.getElementById('warPreviewTitle').textContent = `WAR: ${escHtml(sub.name||username)}`;
-  document.getElementById('warPreviewSubtitle').textContent = `Period: ${escHtml(period)} · Submitted by ${escHtml(sub.name||username)} → ${escHtml(sub.submittedTo||'')} on ${escHtml(sub.submittedAt||'')}`;
-
-  // Build WAR preview from the submitter's entries
-  const allEntries = JSON.parse(localStorage.getItem('fwa_entries_'+username)||'[]');
-  const periodEntries = allEntries.filter(e => e.period === period);
-
-  // Also try to get header data
-  const headerRaw = localStorage.getItem('fwa_header__'+username);
-  const hd = headerRaw ? JSON.parse(headerRaw) : {};
-
-  // Signature
-  const sigImg = getManagerSigImg(mName);
-  document.getElementById('warPreviewSigImg').src = sigImg;
-
-  // Build preview HTML
-  let html = '';
-
-  // Header info
-  html += `<div style="border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:16px;background:var(--surface2);">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
-      <div><span style="color:var(--text-muted);">Name:</span> <strong>${escHtml(sub.name||username)}</strong></div>
-      <div><span style="color:var(--text-muted);">Office:</span> Office of the VP for Digital Transformation</div>
-      <div><span style="color:var(--text-muted);">Period:</span> <strong>${escHtml(period)}</strong></div>
-      <div><span style="color:var(--text-muted);">Submitted to:</span> ${escHtml(sub.submittedTo||'')}</div>
-    </div>
-    ${hd.days ? `<div style="margin-top:10px;display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:10px;">
-      ${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d=>`<div><div style="font-weight:600;color:var(--text-muted);text-transform:uppercase;">${d}</div><div style="color:var(--text);margin-top:2px;">${escHtml(hd.days[d]||'—')}</div></div>`).join('')}
-    </div>` : ''}
-  </div>`;
-
-  // Entries table
-  if (periodEntries.length) {
-    html += `<table class="preview-table" style="margin-bottom:16px;">
-      <thead><tr>
-        <th style="width:70px;">Date</th>
-        <th>Activity / Task</th>
-        <th style="width:28px;text-align:center;">O</th>
-        <th style="width:28px;text-align:center;">C</th>
-        <th style="width:28px;text-align:center;">R</th>
-        <th>Remarks / MOV</th>
-      </tr></thead><tbody>`;
-    periodEntries.forEach(e => {
-      const imgs = (e.images||[]);
-      const thumbs = imgs.map(img=>`<img src="${img.dataUrl}" style="width:52px;height:39px;object-fit:cover;border-radius:3px;margin:2px;display:inline-block;" />`).join('');
-      html += `<tr>
-        <td style="font-size:11px;">${escHtml(e.date||'')}</td>
-        <td style="font-size:11px;">${e.project?`<span style="color:#888;font-size:10px;">[${escHtml(e.project)}]</span><br>`:''}${escHtml(e.desc)}</td>
-        <td style="text-align:center;">${e.status==='ongoing'?'x':''}</td>
-        <td style="text-align:center;">${e.status==='completed'?'x':''}</td>
-        <td style="text-align:center;">${e.status==='recurring'?'x':''}</td>
-        <td style="font-size:11px;">${escHtml(e.notes||'')}${thumbs?`<div style="margin-top:4px;">${thumbs}</div>`:''}</td>
-      </tr>`;
-    });
-    html += `</tbody></table>`;
-  } else {
-    html += `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:12px;font-size:12px;color:#92400e;margin-bottom:16px;">
-      ⚠ No entries found for this period in local storage. The submitter's entries may only be available on their device.
-    </div>`;
-  }
-
-  // Signature block preview
-  html += `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;font-size:11px;border-top:1px solid var(--border);padding-top:14px;margin-top:4px;">
-    <div>
-      <div style="color:var(--text-muted);margin-bottom:22px;">Submitted by:</div>
-      <div style="border-top:1px solid var(--text);padding-top:4px;font-weight:600;">${escHtml(hd.submitted||sub.name||username)}</div>
-      <div style="color:var(--text-muted);font-size:10px;">${escHtml(hd.submittedPos||'')}</div>
-    </div>
-    <div>
-      <div style="color:var(--text-muted);margin-bottom:8px;">Reviewed by <em style="color:#15803d;">(your signature will appear here)</em>:</div>
-      <img src="${sigImg}" style="height:32px;max-width:120px;object-fit:contain;filter:contrast(1.2);display:block;opacity:.9;margin-bottom:4px;" />
-      <div style="border-top:2px solid #15803d;padding-top:3px;font-weight:600;color:#15803d;">${escHtml(mName)}</div>
-      <div style="font-size:10px;color:#15803d;">${escHtml(mgr?.position||'Manager')}</div>
-    </div>
-    <div>
-      <div style="color:var(--text-muted);margin-bottom:22px;">Approved by:</div>
-      <div style="border-top:1px solid var(--text);padding-top:4px;font-weight:600;">Peter A. Sy</div>
-      <div style="color:var(--text-muted);font-size:10px;">Vice President for Digital Transformation</div>
-    </div>
-  </div>`;
-
-  document.getElementById('warPreviewBody').innerHTML = html;
-  document.getElementById('warPreviewModal').classList.add('open');
-}
-
-function closeWARPreview() {
-  document.getElementById('warPreviewModal').classList.remove('open');
-  _warPreviewTarget = null;
-}
-
-async function approveFromPreview() {
-  if (!_warPreviewTarget) return;
-  const { username, period } = _warPreviewTarget;
-  closeWARPreview();
-  // Set target and approve
-  _warReviewTarget = { username, period };
-  await doApproveWAR();
-}
-
-async function returnFromPreview() {
-  if (!_warPreviewTarget) return;
-  const { username, period } = _warPreviewTarget;
-  closeWARPreview();
-  // Open the review modal for the return flow
-  _warReviewTarget = { username, period };
-  openWARReviewModal(username, period);
-  // Expand the remarks area automatically
-  setTimeout(() => toggleWARReviewRemarks(), 100);
-}
-
-async function handleSigUploadFromPreview(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-    const dataUrl = e.target.result;
-    const u = getCurrentUser(); const users = getUsers(); const mName = users[u]?.name||u;
-    await saveManagerSignature(mName, dataUrl);
-    // Update preview sig thumb
-    const img = document.getElementById('warPreviewSigImg');
-    if (img) img.src = dataUrl;
-    // Also update signature block in the preview body
-    if (_warPreviewTarget) openWARPreview(_warPreviewTarget.username, _warPreviewTarget.period);
-  };
-  reader.readAsDataURL(file);
-  event.target.value='';
-}
+function openTeamReviewModal(team, period) {
   _teamReviewTarget = { team, period };
   const sub = teamSubmissions[period]?.[team] || {};
   const u = getCurrentUser();
@@ -3250,7 +3237,6 @@ function renderReviewInbox() {
             ${isPending?`<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;background:#e8eaf6;color:#3949ab;">📤 Pending</span>`:''}
             ${sub.status==='approved'?`<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;background:#e8f5e9;color:#1b5e20;">✅ Approved</span>`:''}
             ${sub.status==='reverted'?`<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;background:#fff3e0;color:#bf360c;">↩ Returned</span>`:''}
-            ${isPending?`<button class="btn" onclick="openWARPreview('${escHtml(username)}','${escHtml(period)}')" style="font-size:11px;padding:4px 10px;">👁 View WAR</button>`:''}
             ${isPending?`<button class="review-btn" onclick="openWARReviewModal('${escHtml(username)}','${escHtml(period)}')">Review →</button>`:''}
           </div>
         </div>
@@ -3309,6 +3295,13 @@ function renderReviewInbox() {
   el.innerHTML = html;
 }
 
+// ── MANAGERS ──────────────────────────────
+const MANAGERS = [
+  { name: 'Kristofferson Dela Cruz', position: 'Senior Office Manager' },
+  { name: 'Regine C. Pustadan',      position: 'Senior Project Manager' },
+  { name: 'Marisha D. Beloro',       position: 'Senior Project Manager' },
+  { name: 'Liza Soberano',           position: 'Junior Office Manager'  }
+];
 
 // ── MANAGER HELPERS ───────────────────────
 function isManager() {
@@ -3323,28 +3316,23 @@ function getManagerInfo(name) {
   return MANAGERS.find(m => m.name === name) || null;
 }
 
-// ── MANAGER SIGNATURES ────────────────────
-// Per-manager signature storage. Key: 'fwa_sig__<name>' — same key used by both sigKey and sigStorageKey
-let managerSignatures = {}; // in-memory cache { [managerName]: dataUrl }
+// ── MANAGER SIGNATURE STORAGE ─────────────
+// Signatures are stored per manager name, shared across all users
+let managerSignatures = {}; // { [managerName]: dataUrl }
 
-function sigStorageKey(managerName) {
-  return 'fwa_sig__' + managerName.replace(/\s+/g,'_').toLowerCase();
-}
-// alias for compatibility
-const sigKey = sigStorageKey;
+function sigKey(managerName) { return 'fwa_sig__' + managerName.replace(/\s+/g,'_').toLowerCase(); }
 
 async function saveManagerSignature(managerName, dataUrl) {
   managerSignatures[managerName] = dataUrl;
-  const key = sigStorageKey(managerName);
+  const key = sigKey(managerName);
   localStorage.setItem(key, dataUrl);
   try { await window.storage.set(key, dataUrl, true); } catch(e){}
-  await dbSet(key, dataUrl).catch(()=>{});
+  await dbSet(key, dataUrl);
 }
 
 async function loadManagerSignature(managerName) {
-  // Return cached value instantly
   if (managerSignatures[managerName]) return managerSignatures[managerName];
-  const key = sigStorageKey(managerName);
+  const key = sigKey(managerName);
   // 1. GAS
   if (isGASReady()) {
     try {
@@ -3373,27 +3361,17 @@ async function loadManagerSignature(managerName) {
 }
 
 async function loadAllManagerSignatures() {
-  await Promise.all(MANAGERS.map(async m => {
-    try {
-      const sig = await loadManagerSignature(m.name);
-      if (sig) managerSignatures[m.name] = sig;
-    } catch(e){}
-  }));
+  await Promise.all(MANAGERS.map(m => loadManagerSignature(m.name)));
 }
 
-function getManagerSigImg(managerName) {
-  if (!managerName) return SAMPLE_SIG_IMG;
-  // Check in-memory cache first, then localStorage
-  const cached = managerSignatures[managerName];
-  if (cached && cached.startsWith('data:')) return cached;
-  const key = sigStorageKey(managerName);
-  const stored = localStorage.getItem(key);
-  return (stored && stored.startsWith('data:')) ? stored : SAMPLE_SIG_IMG;
+function getManagerSignature(managerName) {
+  // Returns uploaded sig if exists, otherwise the sample sig image
+  return managerSignatures[managerName] || SAMPLE_SIG_IMG;
 }
 
 async function deleteManagerSignature(managerName) {
   delete managerSignatures[managerName];
-  const key = sigStorageKey(managerName);
+  const key = sigKey(managerName);
   localStorage.removeItem(key);
   try { await window.storage.delete(key, true); } catch(e){}
   try { await dbSet(key, null); } catch(e){}
@@ -3405,28 +3383,36 @@ function handleSignatureUpload(event) {
   if (!file) return;
   if (!file.type.startsWith('image/')) { showSigMsg('Please upload an image file.', true); return; }
   if (file.size > 2 * 1024 * 1024) { showSigMsg('Image too large — please use an image under 2MB.', true); return; }
+
   const reader = new FileReader();
   reader.onload = async (e) => {
+    // Process: convert to transparent-friendly PNG, crop to content
     const img = new Image();
     img.onload = async () => {
       const canvas = document.createElement('canvas');
+      // Scale down if needed, max 400×200
       const maxW = 400, maxH = 200;
       let w = img.width, h = img.height;
       if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
       if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; }
       canvas.width = w; canvas.height = h;
       const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, w, h);
       ctx.drawImage(img, 0, 0, w, h);
       const dataUrl = canvas.toDataURL('image/png', 0.95);
-      const u = getCurrentUser(); const users = getUsers();
+
+      const u = getCurrentUser();
+      const users = getUsers();
       const managerName = users[u]?.name || u;
+
       showSigMsg('⏳ Saving signature…');
       await saveManagerSignature(managerName, dataUrl);
-      renderSigPreview(dataUrl);
       renderSignaturePreview(managerName, dataUrl);
       showSigMsg('✅ Signature saved successfully!');
       setTimeout(() => showSigMsg(''), 3000);
+
+      // Reset file input
       event.target.value = '';
     };
     img.src = e.target.result;
@@ -3442,20 +3428,85 @@ function showSigMsg(msg, isErr=false) {
 }
 
 function renderSignaturePreview(managerName, dataUrl) {
-  // Update profile page preview elements
-  renderSigPreview(dataUrl);
-  const byEl = document.getElementById('sigUploadedBy');
-  if (byEl) byEl.textContent = dataUrl ? `Uploaded for: ${managerName}` : '';
+  const previewEl  = document.getElementById('sigCurrentPreview');
+  const imgEl      = document.getElementById('sigPreviewImg');
+  const byEl       = document.getElementById('sigUploadedBy');
+  const uploadZone = document.getElementById('sigUploadZone');
+  if (!previewEl || !imgEl) return;
+  if (dataUrl) {
+    imgEl.src = dataUrl;
+    if (byEl) byEl.textContent = `Uploaded for: ${managerName}`;
+    previewEl.style.display = 'block';
+    if (uploadZone) uploadZone.querySelector('.upload-zone-text').innerHTML =
+      '<svg style="width:16px;height:16px;stroke:var(--text-faint);fill:none;stroke-width:1.5;display:block;margin:0 auto 4px;" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Upload a different signature';
+  } else {
+    previewEl.style.display = 'none';
+    if (uploadZone) uploadZone.querySelector('.upload-zone-text').innerHTML =
+      '<svg style="width:20px;height:20px;stroke:var(--text-faint);fill:none;stroke-width:1.5;display:block;margin:0 auto 6px;" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Click to upload or drag &amp; drop · <strong>PNG, JPG, WEBP</strong> · Recommended: white background, clear strokes';
+  }
 }
 
 async function clearManagerSignature() {
-  const u = getCurrentUser(); const users = getUsers();
+  const u = getCurrentUser();
+  const users = getUsers();
   const managerName = users[u]?.name || u;
   if (!confirm('Remove your uploaded signature? The default sample signature will be used instead.')) return;
   await deleteManagerSignature(managerName);
-  renderSigPreview(null);
+  renderSignaturePreview(managerName, null);
   showSigMsg('Signature removed.');
   setTimeout(() => showSigMsg(''), 3000);
+}
+
+// ── MANAGER SIGNATURES ────────────────────
+// Stored per manager name: 'fwa_sig__<managerName>' → base64 dataUrl
+function sigStorageKey(managerName) {
+  return 'fwa_sig__' + managerName.replace(/\s+/g,'_').toLowerCase();
+}
+
+async function saveManagerSignature(managerName, dataUrl) {
+  const key = sigStorageKey(managerName);
+  localStorage.setItem(key, dataUrl);
+  try { await window.storage.set(key, dataUrl, true); } catch(e){}
+  await dbSet(key, dataUrl).catch(()=>{});
+}
+
+async function loadManagerSignature(managerName) {
+  const key = sigStorageKey(managerName);
+  // 1. GAS
+  if (isGASReady()) {
+    try {
+      const v = await dbGet(key, null);
+      if (v && typeof v === 'string' && v.startsWith('data:')) {
+        localStorage.setItem(key, v);
+        try { await window.storage.set(key, v, true); } catch(e){}
+        return v;
+      }
+    } catch(e){}
+  }
+  // 2. window.storage shared
+  try {
+    const r = await window.storage.get(key, true);
+    if (r && r.value && r.value.startsWith('data:')) return r.value;
+  } catch(e){}
+  // 3. localStorage
+  const local = localStorage.getItem(key);
+  if (local && local.startsWith('data:')) return local;
+  return null;
+}
+
+async function removeManagerSignature(managerName) {
+  const key = sigStorageKey(managerName);
+  localStorage.removeItem(key);
+  try { await window.storage.delete(key, true); } catch(e){}
+  await dbSet(key, null).catch(()=>{});
+}
+
+// Get the right signature for a given manager name (their custom one or fallback to sample)
+function getManagerSigImg(managerName) {
+  if (!managerName) return SAMPLE_SIG_IMG;
+  const key = sigStorageKey(managerName);
+  const stored = localStorage.getItem(key);
+  return (stored && stored.startsWith('data:')) ? stored : SAMPLE_SIG_IMG;
 }
 
 function loadAppConfig() { applyConfig(); }
@@ -4028,6 +4079,7 @@ async function showPage(page){
     previewExport();
   }
   if(page==='profile'){ loadProfilePage(); }
+  if(page==='rotation'){ await loadRotationFromCloud(); initRotationPage(); }
 }
 
 // ── DASHBOARD ─────────────────────────────
@@ -4176,18 +4228,35 @@ function loadProfilePage(){
   const tag = document.getElementById('profileManagerTag');
   if (tag) { tag.style.display = mgr ? '' : 'none'; if(mgr) tag.title = mgr.position; }
 
-  // Show signature upload card for managers only
+  // Show signature upload card for managers
   const sigCard = document.getElementById('sigUploadCard');
-  if (sigCard) sigCard.style.display = mgr ? '' : 'none';
-
-  if (mgr) {
-    // Show from in-memory first (instant)
-    const cachedSig = managerSignatures[mName] || null;
-    renderSignaturePreview(mName, cachedSig);
-    // Then load fresh from cloud
-    loadManagerSignature(mName).then(sig => {
-      renderSignaturePreview(mName, sig || null);
-    }).catch(() => {});
+  if (sigCard) {
+    if (mgr) {
+      sigCard.style.display = '';
+      // Load and show current signature
+      const current = getManagerSigImg(mName);
+      const hasCurrent = current !== SAMPLE_SIG_IMG;
+      renderSigPreview(hasCurrent ? current : null);
+      // Also show sample sig if no custom one
+      if (!hasCurrent) {
+        const img = document.getElementById('sigPreviewImg');
+        const empty = document.getElementById('sigPreviewEmpty');
+        if (img) { img.src = SAMPLE_SIG_IMG; img.style.display='block'; img.style.opacity='.5'; }
+        if (empty) { empty.style.display='none'; }
+        const note = document.createElement('div');
+        note.id = 'sigSampleNote';
+        note.style.cssText='font-size:10px;color:var(--text-faint);margin-top:3px;';
+        note.textContent='Showing sample signature — upload yours above';
+        const box = document.getElementById('sigPreviewBox');
+        const existing = document.getElementById('sigSampleNote');
+        if (box && !existing) box.parentNode.insertBefore(note, box.nextSibling);
+      } else {
+        const existing = document.getElementById('sigSampleNote');
+        if (existing) existing.remove();
+      }
+    } else {
+      sigCard.style.display = 'none';
+    }
   }
 
   // Show role info box for managers
@@ -4234,6 +4303,490 @@ function saveProfilePassword(){
   msg.style.color='var(--accent)'; msg.textContent='✓ Password changed successfully.';
   setTimeout(()=>msg.textContent='',3000);
 }
-</script>
+
+// ══════════════════════════════════════════════════════════════════
+//  WORK ROTATION SCHEDULE
+// ══════════════════════════════════════════════════════════════════
+
+// Philippine public holidays Apr 2026 – Dec 2027 (fixed + declared)
+const PH_HOLIDAYS = {
+  // 2026
+  '2026-04-02': 'Maundy Thursday',
+  '2026-04-03': 'Good Friday',
+  '2026-04-04': 'Black Saturday',
+  '2026-04-09': 'Araw ng Kagitingan',
+  '2026-05-01': 'Labor Day',
+  '2026-06-12': 'Independence Day',
+  '2026-08-21': 'Ninoy Aquino Day',
+  '2026-08-31': 'National Heroes Day',
+  '2026-11-01': 'All Saints Day',
+  '2026-11-02': 'All Souls Day',
+  '2026-11-30': 'Bonifacio Day',
+  '2026-12-08': 'Feast of the Immaculate Conception',
+  '2026-12-24': 'Christmas Eve',
+  '2026-12-25': 'Christmas Day',
+  '2026-12-30': 'Rizal Day',
+  '2026-12-31': 'New Year\'s Eve',
+  // 2027
+  '2027-01-01': 'New Year\'s Day',
+  '2027-02-25': 'EDSA People Power',
+  '2027-03-25': 'Maundy Thursday',
+  '2027-03-26': 'Good Friday',
+  '2027-03-27': 'Black Saturday',
+  '2027-04-09': 'Araw ng Kagitingan',
+  '2027-05-01': 'Labor Day',
+  '2027-06-12': 'Independence Day',
+  '2027-08-21': 'Ninoy Aquino Day',
+  '2027-08-30': 'National Heroes Day',
+  '2027-11-01': 'All Saints Day',
+  '2027-11-02': 'All Souls Day',
+  '2027-11-30': 'Bonifacio Day',
+  '2027-12-08': 'Feast of the Immaculate Conception',
+  '2027-12-24': 'Christmas Eve',
+  '2027-12-25': 'Christmas Day',
+  '2027-12-30': 'Rizal Day',
+  '2027-12-31': 'New Year\'s Eve',
+};
+
+// Storage helpers
+function getRotationData(){
+  try { return JSON.parse(localStorage.getItem('ovpdx_rotation')||'{}'); } catch(e){ return {}; }
+}
+function saveRotationData(data){
+  localStorage.setItem('ovpdx_rotation', JSON.stringify(data));
+  try { window.storage && window.storage.set('ovpdx_rotation', JSON.stringify(data), true); } catch(e){}
+}
+
+// Returns ISO date string for a given Date object  e.g. "2026-04-06"
+function toISO(d){ return d.toISOString().split('T')[0]; }
+
+// Returns the Monday of the week containing date d
+function getMondayOf(d){
+  const day = d.getDay(); // 0=Sun..6=Sat
+  const diff = day === 0 ? -6 : 1 - day;
+  const m = new Date(d);
+  m.setDate(m.getDate() + diff);
+  return m;
+}
+
+// Check if any day Mon–Fri in the same week as monDate is a PH holiday
+function weekHasHoliday(monDate){
+  for(let i=0;i<5;i++){
+    const d = new Date(monDate);
+    d.setDate(d.getDate()+i);
+    if(PH_HOLIDAYS[toISO(d)]) return PH_HOLIDAYS[toISO(d)];
+  }
+  return null;
+}
+
+// Rotation pill HTML
+function rotPill(loc){
+  if(!loc) return '<span style="color:var(--text-faint);font-size:11px;">—</span>';
+  const map = {
+    'SURP':'rot-surp','SURP Office':'rot-surp',
+    'ITDC':'rot-itdc',
+    'WFH':'rot-wfh',
+    'No Onsite':'rot-noonsite','No Work Onsite':'rot-noonsite',
+    'Holiday':'rot-holiday',
+    'Leave':'rot-leave'
+  };
+  const cls = map[loc]||'rot-noonsite';
+  const lbl = loc==='SURP'?'SURP Office':loc==='No Onsite'?'No Work Onsite':loc;
+  return `<span class="rot-pill ${cls}">${lbl}</span>`;
+}
+
+// Generate week options for rotation selects (Apr 2026 – Dec 2027)
+function generateRotationWeekOptions(){
+  const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const options=[];
+  const start = new Date(2026,3,1); // Apr 1 2026
+  const end   = new Date(2027,11,31);
+  let d = new Date(start);
+  const day=d.getDay();
+  if(day!==1) d.setDate(d.getDate()+((1-day+7)%7));
+  while(d<=end){
+    const mon=new Date(d), fri=new Date(d); fri.setDate(fri.getDate()+4);
+    let label;
+    if(mon.getMonth()===fri.getMonth())
+      label=`${MONTHS[mon.getMonth()]} ${mon.getDate()}–${fri.getDate()}, ${fri.getFullYear()}`;
+    else
+      label=`${MONTHS[mon.getMonth()]} ${mon.getDate()} – ${MONTHS[fri.getMonth()]} ${fri.getDate()}, ${fri.getFullYear()}`;
+    options.push({label, monISO: toISO(mon)});
+    d.setDate(d.getDate()+7);
+  }
+  ['rotWeek','bulkRotFrom','bulkRotTo'].forEach(id=>{
+    const sel=document.getElementById(id);
+    if(!sel) return;
+    const cur=sel.value;
+    sel.innerHTML='<option value="">Select week...</option>'+
+      options.map(o=>`<option value="${o.monISO}"${o.monISO===cur?' selected':''}>${o.label}</option>`).join('');
+  });
+  // Month filter
+  const monthSel=document.getElementById('rotFilterMonth');
+  if(monthSel){
+    const months=[];
+    const MONTHS2=['January','February','March','April','May','June','July','August','September','October','November','December'];
+    for(let y=2026;y<=2027;y++){
+      const startM=(y===2026)?3:0;
+      const endM=11;
+      for(let m=startM;m<=endM;m++) months.push({val:`${y}-${String(m+1).padStart(2,'0')}`,label:`${MONTHS2[m]} ${y}`});
+    }
+    monthSel.innerHTML='<option value="">All months</option>'+months.map(m=>`<option value="${m.val}">${m.label}</option>`).join('');
+  }
+}
+
+// Given a week monISO string, compute the effective location per day
+// taking into account the No Work Onsite Monday rule and any saved overrides
+function computeWeekSchedule(monISO, defaultLoc, overrides, holidayNote){
+  const mon = new Date(monISO+'T00:00:00');
+  const days = ['Mon','Tue','Wed','Thu','Fri'];
+  const result = {};
+
+  // Determine which days have PH holidays this week
+  const holidayDays = {}; // day key -> holiday name
+  days.forEach((day,i)=>{
+    const dt = new Date(mon); dt.setDate(dt.getDate()+i);
+    const iso = toISO(dt);
+    if(PH_HOLIDAYS[iso]) holidayDays[day] = PH_HOLIDAYS[iso];
+  });
+  // Also handle user-entered custom holiday note (marks Monday as the no-onsite day only if no PH holiday exists)
+  const hasAnyHoliday = Object.keys(holidayDays).length > 0 || (holidayNote && holidayNote.trim());
+
+  // RULE:
+  // - If NO holiday this week → Monday = No Work Onsite, Tue–Fri = normal rotation
+  // - If holiday falls ON Monday → Monday = Holiday (counts as the no-onsite day), Tue–Fri = normal rotation
+  // - If holiday falls on Tue–Fri → that day = Holiday (serves as no-onsite day), Monday = normal rotation (onsite)
+  // - If multiple holidays in week → each holiday day is marked; Monday is only No Onsite if NO holiday falls Tue–Fri
+
+  const holOnTueToFri = ['Tue','Wed','Thu','Fri'].some(d => holidayDays[d]);
+
+  days.forEach((day,i)=>{
+    if(holidayDays[day]){
+      // This day is a PH holiday — it is the "no onsite" day for this week
+      result[day] = 'Holiday';
+    } else if(day === 'Mon'){
+      if(holOnTueToFri){
+        // Holiday falls Tue–Fri → Monday is a regular workday (onsite per rotation)
+        result[day] = (overrides&&overrides['Mon']&&overrides['Mon']!=='') ? overrides['Mon'] : (defaultLoc||'');
+      } else {
+        // No holiday Tue–Fri (and Mon itself isn't a holiday) → Monday = No Work Onsite
+        result[day] = 'No Onsite';
+      }
+    } else if(overrides&&overrides[day]&&overrides[day]!==''){
+      result[day] = overrides[day];
+    } else {
+      result[day] = defaultLoc||'';
+    }
+  });
+  return result;
+}
+
+function saveRotationEntry(){
+  const staff=document.getElementById('rotStaff').value;
+  const weekISO=document.getElementById('rotWeek').value;
+  const loc=document.getElementById('rotLocation').value;
+  const holiday=document.getElementById('rotHoliday').value.trim();
+  const msg=document.getElementById('rotSaveMsg');
+
+  if(!staff){msg.style.color='#c0392b';msg.textContent='Please select a staff member.';return;}
+  if(!weekISO){msg.style.color='#c0392b';msg.textContent='Please select a week.';return;}
+  if(!loc){msg.style.color='#c0392b';msg.textContent='Please select a location.';return;}
+
+  const overrides={};
+  document.querySelectorAll('.rot-day-sel').forEach(sel=>{
+    if(sel.value) overrides[sel.dataset.day]=sel.value;
+  });
+
+  const data=getRotationData();
+  if(!data[staff]) data[staff]={};
+  data[staff][weekISO]={location:loc, overrides, holiday};
+  saveRotationData(data);
+
+  msg.style.color='var(--accent)';
+  msg.textContent=`✓ Rotation saved for ${staff} on week of ${weekISO}.`;
+  setTimeout(()=>msg.textContent='',3000);
+  renderRotationTable();
+}
+
+function clearRotationForm(){
+  document.getElementById('rotStaff').value='';
+  document.getElementById('rotWeek').value='';
+  document.getElementById('rotLocation').value='';
+  document.getElementById('rotHoliday').value='';
+  document.querySelectorAll('.rot-day-sel').forEach(s=>s.value='');
+  document.getElementById('rotSaveMsg').textContent='';
+}
+
+function applyBulkRotation(){
+  const staff=document.getElementById('bulkRotStaff').value;
+  const from=document.getElementById('bulkRotFrom').value;
+  const to=document.getElementById('bulkRotTo').value;
+  const patRaw=document.getElementById('bulkRotPattern').value;
+  const msg=document.getElementById('bulkRotMsg');
+
+  if(!staff){msg.style.color='#c0392b';msg.textContent='Please select a staff member.';return;}
+  if(!from||!to){msg.style.color='#c0392b';msg.textContent='Please select a date range.';return;}
+  if(from>to){msg.style.color='#c0392b';msg.textContent='From week must be before To week.';return;}
+  const pattern=patRaw.split(',').map(s=>s.trim()).filter(Boolean);
+  if(!pattern.length){msg.style.color='#c0392b';msg.textContent='Please enter a rotation pattern.';return;}
+
+  const data=getRotationData();
+  if(!data[staff]) data[staff]={};
+
+  let d=new Date(from+'T00:00:00');
+  const end=new Date(to+'T00:00:00');
+  let idx=0;
+  let count=0;
+  while(d<=end){
+    const iso=toISO(d);
+    data[staff][iso]={location:pattern[idx%pattern.length], overrides:{}, holiday:''};
+    idx++;count++;
+    d.setDate(d.getDate()+7);
+  }
+  saveRotationData(data);
+  msg.style.color='var(--accent)';
+  msg.textContent=`✓ Applied bulk rotation for ${count} week(s) for ${staff}.`;
+  setTimeout(()=>msg.textContent='',4000);
+  renderRotationTable();
+}
+
+function deleteRotationEntry(staff, weekISO){
+  const data=getRotationData();
+  if(data[staff]&&data[staff][weekISO]){
+    delete data[staff][weekISO];
+    if(!Object.keys(data[staff]).length) delete data[staff];
+    saveRotationData(data);
+  }
+  renderRotationTable();
+}
+
+function renderRotationTable(){
+  const area=document.getElementById('rotationTableArea');
+  if(!area) return;
+  const filterStaff=document.getElementById('rotFilterStaff').value;
+  const filterMonth=document.getElementById('rotFilterMonth').value;
+  const viewMode=document.getElementById('rotViewMode').value;
+  const data=getRotationData();
+
+  // Collect all entries
+  let rows=[];
+  Object.keys(data).forEach(staff=>{
+    if(filterStaff&&staff!==filterStaff) return;
+    Object.keys(data[staff]).sort().forEach(weekISO=>{
+      if(filterMonth&&!weekISO.startsWith(filterMonth.replace('-','').substring(0,4)+'-'+filterMonth.substring(5))) {
+        // filter by month
+        const [y,m]=filterMonth.split('-');
+        if(!weekISO.startsWith(`${y}-${m}`)) return;
+      }
+      const entry=data[staff][weekISO];
+      const sched=computeWeekSchedule(weekISO, entry.location, entry.overrides, entry.holiday);
+      rows.push({staff, weekISO, entry, sched});
+    });
+  });
+
+  if(!rows.length){
+    area.innerHTML='<div class="empty-state" style="padding:2rem 0;">No rotation entries found. Save a rotation above to get started.</div>';
+    return;
+  }
+
+  if(viewMode==='calendar'){
+    renderRotationCalendar(area, rows);
+  } else {
+    renderRotationList(area, rows);
+  }
+}
+
+function renderRotationList(area, rows){
+  const DAYS=['Mon','Tue','Wed','Thu','Fri'];
+  let html=`<div style="overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius-sm);">
+  <table class="rot-table">
+    <thead><tr>
+      <th>Staff</th><th>Week of</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Holiday</th><th style="width:32px;"></th>
+    </tr></thead>
+    <tbody>`;
+  rows.forEach(r=>{
+    const phHol=weekHasHoliday(new Date(r.weekISO+'T00:00:00'));
+    const holDisplay=r.entry.holiday||(phHol?phHol:'')||'—';
+    html+=`<tr>
+      <td style="font-weight:500;white-space:nowrap;">${escHtml(r.staff)}</td>
+      <td style="white-space:nowrap;color:var(--text-muted);font-size:11px;">${formatRotWeekLabel(r.weekISO)}</td>
+      ${DAYS.map(d=>`<td>${rotPill(r.sched[d])}</td>`).join('')}
+      <td style="font-size:11px;color:var(--text-muted);">${holDisplay!=='—'?`<span class="rot-pill rot-holiday">${escHtml(holDisplay)}</span>`:'<span style="color:var(--text-faint);">—</span>'}</td>
+      <td><button class="rot-del-btn" onclick="deleteRotationEntry(${JSON.stringify(r.staff)},${JSON.stringify(r.weekISO)})" title="Delete">×</button></td>
+    </tr>`;
+  });
+  html+=`</tbody></table></div>`;
+  area.innerHTML=html;
+}
+
+function renderRotationCalendar(area, rows){
+  // Build a lookup: staff -> weekISO -> sched
+  const lookup = {}; // lookup[staff][weekISO] = sched
+  rows.forEach(r=>{
+    if(!lookup[r.staff]) lookup[r.staff]={};
+    lookup[r.staff][r.weekISO]=r;
+  });
+  const allStaff = [...new Set(rows.map(r=>r.staff))].sort();
+  if(!allStaff.length){ area.innerHTML='<div class="empty-state" style="padding:2rem 0;">No data to show.</div>'; return; }
+
+  // Group rows by month (YYYY-MM)
+  const byMonth={};
+  rows.forEach(r=>{
+    // A week may straddle two months — attribute to the month of Monday
+    const m=r.weekISO.substring(0,7);
+    if(!byMonth[m]) byMonth[m]=new Set();
+    byMonth[m].add(r.weekISO);
+  });
+  const months=Object.keys(byMonth).sort();
+
+  const MONTH_NAMES=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const DAYS=['Mon','Tue','Wed','Thu','Fri'];
+  const DAY_ABBR=['M','T','W','Th','F'];
+
+  let html=`<div class="rot-monthly-cal">`;
+
+  months.forEach(monthKey=>{
+    const [yr,mo]=monthKey.split('-').map(Number);
+    const monthLabel=`${MONTH_NAMES[mo-1]} ${yr}`;
+    const weeks=[...byMonth[monthKey]].sort();
+
+    html+=`<div class="rot-month-block">
+      <div class="rot-month-header">
+        <span class="rot-month-title">📅 ${monthLabel}</span>
+        <span class="rot-month-legend">
+          <span class="rot-pill rot-noonsite" style="font-size:10px;">No Onsite Mon</span>
+          <span class="rot-pill rot-holiday" style="font-size:10px;">Holiday</span>
+          <span class="rot-pill rot-surp" style="font-size:10px;">SURP</span>
+          <span class="rot-pill rot-itdc" style="font-size:10px;">ITDC</span>
+          <span class="rot-pill rot-wfh" style="font-size:10px;">WFH</span>
+        </span>
+      </div>
+      <div class="rot-cal-scroll"><table class="rot-cal-grid">
+        <thead><tr>
+          <th class="rot-cal-name-col">Staff</th>`;
+
+    // Column headers: week label + day sub-headers
+    weeks.forEach(weekISO=>{
+      const phHol=weekHasHoliday(new Date(weekISO+'T00:00:00'));
+      const holOnTueToFri=['Tue','Wed','Thu','Fri'].some(d=>{
+        const days2=['Mon','Tue','Wed','Thu','Fri'];
+        const idx=days2.indexOf(d);
+        const dt=new Date(weekISO+'T00:00:00'); dt.setDate(dt.getDate()+idx);
+        return PH_HOLIDAYS[toISO(dt)];
+      });
+      const weekLabel=formatRotWeekLabelShort(weekISO);
+      const holNote=phHol?`<div class="rot-hol-note">🎌 ${phHol}</div>`:'';
+      const monNote=holOnTueToFri
+        ?'<div class="rot-mon-note rot-mon-onsite">Mon = Onsite</div>'
+        :'<div class="rot-mon-note">Mon = No Onsite</div>';
+      html+=`<th class="rot-week-header" colspan="5">
+        <div class="rot-week-label">${weekLabel}</div>
+        ${holNote}
+        ${monNote}
+        <div class="rot-day-row">${DAY_ABBR.map(d=>`<span>${d}</span>`).join('')}</div>
+      </th>`;
+    });
+
+    html+=`</tr></thead><tbody>`;
+
+    allStaff.forEach((staff,si)=>{
+      const rowClass=si%2===0?'rot-row-even':'rot-row-odd';
+      html+=`<tr class="${rowClass}"><td class="rot-cal-name-col rot-staff-name">${escHtml(staff.split(' ').slice(-1)[0])}<div class="rot-staff-full">${escHtml(staff)}</div></td>`;
+
+      weeks.forEach(weekISO=>{
+        const entry=lookup[staff]&&lookup[staff][weekISO];
+        if(!entry){
+          // No schedule entered for this staff+week
+          DAYS.forEach(()=>{ html+=`<td class="rot-day-cell rot-empty-cell"><span class="rot-day-dot rot-dot-empty"></span></td>`; });
+        } else {
+          const sched=entry.sched;
+          DAYS.forEach(day=>{
+            const loc=sched[day]||'';
+            const dotClass=getRotDotClass(loc,day);
+            const title=loc||'Not set';
+            html+=`<td class="rot-day-cell ${getCellBg(loc,day)}" title="${escHtml(title)}"><span class="rot-day-dot ${dotClass}"></span></td>`;
+          });
+        }
+      });
+      html+=`</tr>`;
+    });
+
+    html+=`</tbody></table></div></div>`;
+  });
+
+  html+=`</div>`;
+
+  // Legend at bottom
+  html+=`<div class="rot-cal-full-legend">
+    <strong style="font-size:11px;color:var(--text-muted);">Legend:</strong>
+    <span><span class="rot-day-dot rot-dot-surp"></span> SURP Office</span>
+    <span><span class="rot-day-dot rot-dot-itdc"></span> ITDC</span>
+    <span><span class="rot-day-dot rot-dot-wfh"></span> WFH</span>
+    <span><span class="rot-day-dot rot-dot-noonsite"></span> No Work Onsite (Mon)</span>
+    <span><span class="rot-day-dot rot-dot-holiday"></span> Holiday</span>
+    <span><span class="rot-day-dot rot-dot-leave"></span> Leave</span>
+    <span><span class="rot-day-dot rot-dot-empty"></span> Not assigned</span>
+  </div>`;
+
+  area.innerHTML=html;
+}
+
+function formatRotWeekLabelShort(monISO){
+  const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const mon=new Date(monISO+'T00:00:00');
+  const fri=new Date(mon); fri.setDate(fri.getDate()+4);
+  return `${MONTHS[mon.getMonth()]} ${mon.getDate()}–${fri.getDate()}`;
+}
+
+function getRotDotClass(loc, day){
+  if(loc==='Holiday') return 'rot-dot-holiday';
+  if(loc==='No Onsite'||loc==='No Work Onsite') return 'rot-dot-noonsite';
+  if(loc==='Leave') return 'rot-dot-leave';
+  if(loc==='SURP'||loc==='SURP Office') return 'rot-dot-surp';
+  if(loc==='ITDC') return 'rot-dot-itdc';
+  if(loc==='WFH') return 'rot-dot-wfh';
+  return 'rot-dot-empty';
+}
+
+function getCellBg(loc, day){
+  if(loc==='Holiday') return 'rot-cell-holiday';
+  if(loc==='No Onsite'||loc==='No Work Onsite') return 'rot-cell-noonsite';
+  if(loc==='Leave') return 'rot-cell-leave';
+  if(loc==='SURP'||loc==='SURP Office') return 'rot-cell-surp';
+  if(loc==='ITDC') return 'rot-cell-itdc';
+  if(loc==='WFH') return 'rot-cell-wfh';
+  return '';
+}
+
+function formatRotWeekLabel(monISO){
+  const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const mon=new Date(monISO+'T00:00:00');
+  const fri=new Date(mon); fri.setDate(fri.getDate()+4);
+  if(mon.getMonth()===fri.getMonth())
+    return `${MONTHS[mon.getMonth()]} ${mon.getDate()}–${fri.getDate()}, ${fri.getFullYear()}`;
+  return `${MONTHS[mon.getMonth()]} ${mon.getDate()} – ${MONTHS[fri.getMonth()]} ${fri.getDate()}, ${fri.getFullYear()}`;
+}
+
+// Load rotation data from cloud on page open
+async function loadRotationFromCloud(){
+  try {
+    if(typeof window.storage!=='undefined'){
+      const res=await window.storage.get('ovpdx_rotation');
+      if(res&&res.value){
+        const cloud=JSON.parse(res.value);
+        // Merge with local
+        const local=getRotationData();
+        const merged=Object.assign({},local,cloud);
+        localStorage.setItem('ovpdx_rotation',JSON.stringify(merged));
+      }
+    }
+  } catch(e){}
+}
+
+function initRotationPage(){
+  generateRotationWeekOptions();
+  renderRotationTable();
+}
+
 </body>
 </html>
